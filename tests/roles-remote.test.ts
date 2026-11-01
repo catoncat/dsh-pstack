@@ -77,6 +77,20 @@ describe("pstack role Remote contribution", () => {
     expect(parseSaveRoleResult({ ok: true, snapshot })).toEqual({ ok: true, snapshot });
   });
 
+  it("rejects a role snapshot outside the manifest", () => {
+    expect(() =>
+      parseRoleFileSnapshot({
+        path: "/tmp/pstack-models.mdc",
+        status: "loaded",
+        roles: [
+          { key: "retired-role", shape: "single", configured: false, routes: [], issues: [] },
+        ],
+        issues: [],
+        canSave: true,
+      }),
+    ).toThrow(/not in the role manifest/);
+  });
+
   it("parses the live catalogue shape the page consumes", () => {
     expect(
       parseCatalogue({

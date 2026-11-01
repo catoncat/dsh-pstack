@@ -1,5 +1,5 @@
 /**
- * The slices of the DSH 0.2.1-rc.3 host this plugin binds to.
+ * The slices of the DSH host this plugin binds to.
  *
  * Every import below is `import type`, which `verbatimModuleSyntax` erases at build
  * time, so the bundle carries no runtime import of `@deepseek-ai/*`. That is what keeps

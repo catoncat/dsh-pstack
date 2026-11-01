@@ -34,9 +34,6 @@ export const VENDORED_SKILLS_ROOT = join(DIST_ROOT, "skills", "vendored");
 /** Absolute path of the skills authored in this repository. */
 export const AUTHORED_SKILLS_ROOT = join(DIST_ROOT, "skills", "authored");
 
-/** Absolute path of the generated agent preambles. */
-export const AGENTS_ROOT = join(PORT_ROOT, "agents");
-
 /** Absolute path of the `poteto-mode` instructions injected into a poteto-agent brief. */
 export const POTETO_MODE_SKILL_PATH = join(SKILLS_ROOT, "poteto-mode", "SKILL.md");
 
@@ -55,8 +52,3 @@ export const SKILL_ROOTS: readonly SkillRoot[] = [
   { path: VENDORED_SKILLS_ROOT, label: "vendored" },
   { path: AUTHORED_SKILLS_ROOT, label: "authored" },
 ];
-
-/** Absolute path of one agent preamble; `general` is a plain child and gets none. */
-export function agentPreamblePath(agent: string): string | undefined {
-  return agent === "general" ? undefined : join(AGENTS_ROOT, `${agent}.md`);
-}

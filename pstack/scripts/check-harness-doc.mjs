@@ -287,7 +287,7 @@ export function checkHarnessDoc({ root = DEFAULT_ROOT, repoRoot = root } = {}) {
   // C8 — documented facts still exist in source.
   const subagent = read(repoRoot, SUBAGENT_SRC);
   if (subagent !== undefined) {
-    const block = /const known = \[([\s\S]*?)\] as const;/.exec(subagent);
+    const block = /const DELEGATION_ARGUMENT_KEYS = \[([\s\S]*?)\] as const;/.exec(subagent);
     if (block === null) {
       add(`C8 ${SUBAGENT_SRC}: cannot find the argument list`);
     } else {

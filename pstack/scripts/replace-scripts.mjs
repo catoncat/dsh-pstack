@@ -22,7 +22,8 @@
  */
 
 import { cpSync, existsSync, readdirSync, rmSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 /** Where the build writes, mirroring the source tree below `runtime/`. */
 const BUILT = join("dist", "runtime", "skills");
@@ -50,6 +51,13 @@ if (unexpected.length > 0) {
   );
   process.exit(1);
 }
+const missing = REPLACED.filter((name) => !built.includes(name));
+if (missing.length > 0) {
+  console.error(
+    `replace:scripts: ${missing.join(", ")} is in the replaced list but has no built scripts; update the list or restore the runtime source`,
+  );
+  process.exit(1);
+}
 
 let replaced = 0;
 for (const skill of built) {
@@ -68,6 +76,18 @@ for (const skill of built) {
   replaced += 1;
 }
 
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
+const registryModule = await import(
+  new URL("../../src/internal/script-registry.ts", import.meta.url).href
+);
+for (const entry of registryModule.SCRIPT_ENTRIES) {
+  const script = join(ROOT, "pstack", "dist", "pstack", ...entry.assetPath.split("/"));
+  if (!existsSync(script)) {
+    console.error(`replace:scripts: ${entry.id} points at missing shipped file ${entry.assetPath}`);
+    process.exit(1);
+  }
+}
+
 console.log(
-  `replace:scripts: replaced ${replaced} skill script director${replaced === 1 ? "y" : "ies"}`,
+  `replace:scripts: replaced ${replaced} skill script director${replaced === 1 ? "y" : "ies"}; ${registryModule.SCRIPT_ENTRIES.length} script ids resolved`,
 );

@@ -58,6 +58,9 @@ export default defineConfig({
   },
   run: {
     tasks: {
+      test: {
+        command: "vp test",
+      },
       dev: {
         command: "vp pack --watch",
         dependsOn: ["@internal/pstack#build"],
@@ -65,6 +68,9 @@ export default defineConfig({
       build: {
         command: "vp pack",
         dependsOn: ["@internal/pstack#build"],
+      },
+      typecheck: {
+        command: "tsc --noEmit -p tsconfig.json",
       },
       playground: {
         command: "node playground/start.mjs",

@@ -11,6 +11,7 @@ export default defineConfig({
     ],
     dts: false,
     unbundle: true,
+    clean: ["dist/runtime"],
   },
   run: {
     tasks: {
