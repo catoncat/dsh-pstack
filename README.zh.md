@@ -15,13 +15,13 @@
 <p align="center">
   <a href="https://npmx.dev/package/dsh-pstack"><img src="https://img.shields.io/npm/v/dsh-pstack?style=flat-square&colorA=080f12&colorB=1fa669" alt="npm version" /></a>
   <a href="https://npmx.dev/package/dsh-pstack"><img src="https://img.shields.io/npm/dm/dsh-pstack?style=flat-square&colorA=080f12&colorB=1fa669" alt="npm downloads" /></a>
-  <a href="https://github.com/deepseek-ai/deepseek-harness"><img src="https://img.shields.io/badge/dsh-0.2.2--alpha.2-1f6feb?style=flat-square" alt="dsh 0.2.2-alpha.2" /></a>
+  <a href="https://github.com/deepseek-ai/deepseek-harness"><img src="https://img.shields.io/badge/dsh-%3E%3D0.2.1--rc.5-1f6feb?style=flat-square" alt="dsh >=0.2.1-rc.5" /></a>
   <a href="https://github.com/cursor/plugins/tree/main/pstack"><img src="https://img.shields.io/badge/pstack-0.15.36-d97706?style=flat-square" alt="pstack 0.15.36" /></a>
 </p>
 
 <p align="center">
   <a href="https://github.com/l246804/dsh-pstack/blob/main/LICENSE"><img src="https://img.shields.io/github/license/l246804/dsh-pstack?style=flat-square&colorA=080f12&colorB=1fa669" alt="license" /></a>
-  <a href="https://bundlephobia.com/result?p=dsh-pstack"><img src="https://img.shields.io/bundlephobia/minzip/dsh-pstack?style=flat-square&colorA=080f12&colorB=1fa669&label=minzip" alt="minzip size" /></a>
+  <a href="https://npmx.dev/package/dsh-pstack"><img src="https://img.shields.io/npm/unpacked-size/dsh-pstack?style=flat-square&colorA=080f12&colorB=1fa669" alt="unpacked size" /></a>
   <a href="https://www.jsdocs.io/package/dsh-pstack"><img src="https://img.shields.io/badge/jsdocs-reference-080f12?style=flat-square&colorA=080f12&colorB=1fa669" alt="JSDocs" /></a>
 </p>
 
