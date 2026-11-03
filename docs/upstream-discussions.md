@@ -4,3 +4,4 @@
 
 | 标题 | URL | 主题 | 首次提交 | 最近更新 |
 |---|---|---|---|---|
+| [多代理工作流移植反馈：稳定工具与实验性插件](https://github.com/deepseek-ai/deepseek-harness/discussions/11992) | https://github.com/deepseek-ai/deepseek-harness/discussions/11992 | 移植反馈 | 2026-11-03 | 2026-11-03 |
