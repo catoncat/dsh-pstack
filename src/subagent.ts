@@ -72,6 +72,14 @@ export interface PstackSubagentConfig {
 
 const DEFAULT_CONFIG: PstackSubagentConfig = { provider: DEFAULT_SUBAGENT_PROVIDER };
 
+/**
+ * Depth a child runs at when a call omits `maxDepth` or passes an unusable value.
+ *
+ * A child is always at least depth 1 (it is one level below its parent), so this is the
+ * smallest value that can start a child while forbidding it from delegating further.
+ */
+export const DEFAULT_CHILD_MAX_DEPTH = 1;
+
 /** What a call asked for, after every required argument has been validated. */
 export interface DelegationArgs {
   readonly description: string;
@@ -79,7 +87,7 @@ export interface DelegationArgs {
   readonly agent: AgentKind;
   readonly role: string | null;
   readonly cwd: string | null;
-  readonly maxDepth: number;
+  readonly maxDepth: number | null;
   readonly roleIndex: number | null;
   readonly reasoningEffort: string | null;
 }
@@ -223,16 +231,31 @@ export const DELEGATION_ARGUMENT_KEYS = [
   "maxDepth",
 ] as const;
 
+/**
+ * Keys a call must pass. `maxDepth` is accepted but not required: a missing or unusable
+ * value resolves to `DEFAULT_CHILD_MAX_DEPTH` instead of forcing the caller to guess an
+ * integer, which is where the reflexive `0` came from.
+ */
+export const REQUIRED_DELEGATION_ARGUMENT_KEYS = [
+  "description",
+  "prompt",
+  "agent",
+  "role",
+  "roleIndex",
+  "reasoningEffort",
+  "cwd",
+] as const;
+
 /** Validate every required model-facing argument. Null declines an optional setting. */
 export function parseDelegationArgs(raw: unknown): DelegationArgs {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw))
     throw new DelegationError("arguments must be an object");
   const record = raw as Record<string, unknown>;
 
-  for (const key of DELEGATION_ARGUMENT_KEYS) {
+  for (const key of REQUIRED_DELEGATION_ARGUMENT_KEYS) {
     if (!Object.hasOwn(record, key))
       throw new DelegationError(
-        `missing required argument "${key}"; every argument must be passed explicitly`,
+        `missing required argument "${key}"; every argument except maxDepth must be passed explicitly`,
       );
   }
   for (const key of Object.keys(record)) {
@@ -263,9 +286,10 @@ export function parseDelegationArgs(raw: unknown): DelegationArgs {
   if (cwd !== null && !isNonEmptyString(cwd))
     throw new DelegationError("cwd must be a non-empty string or null");
 
-  const maxDepth = record["maxDepth"];
-  if (!isNonNegativeSafeInteger(maxDepth))
-    throw new DelegationError("maxDepth must be a non-negative safe integer");
+  const rawMaxDepth = record["maxDepth"];
+  const maxDepth = rawMaxDepth === undefined ? null : rawMaxDepth;
+  if (maxDepth !== null && !isNonNegativeSafeInteger(maxDepth))
+    throw new DelegationError("maxDepth must be a non-negative safe integer, or null/omitted");
 
   const roleIndex = record["roleIndex"];
   if (roleIndex !== null && !isNonNegativeSafeInteger(roleIndex))
@@ -339,20 +363,43 @@ export function routeLabel(route: Route, effortOverride?: string): string {
 /** Take the smallest of the requested depth, this row's cap, and the Host setting. */
 export function resolveDelegationDepth(
   configured: number | undefined,
-  requested: number | undefined,
+  requested: number | null | undefined,
   hostLimit: number | undefined,
 ): number | undefined {
-  if (requested !== undefined && !isNonNegativeSafeInteger(requested))
-    throw new DelegationError("maxDepth must be a non-negative safe integer");
-  if (configured !== undefined && requested !== undefined && requested > configured) {
+  if (requested !== undefined && requested !== null && !isNonNegativeSafeInteger(requested))
+    throw new DelegationError("maxDepth must be a non-negative safe integer or null");
+  if (
+    configured !== undefined &&
+    requested !== undefined &&
+    requested !== null &&
+    requested > configured
+  ) {
     throw new DelegationError(
       `maxDepth ${requested} exceeds this row's configured cap of ${configured}. Lower the request or raise \`pstack-subagent\` config.maxDepth.`,
     );
   }
   const candidates = [configured, requested, hostLimit].filter(
-    (value): value is number => value !== undefined,
+    (value): value is number => value !== undefined && value !== null,
   );
   return candidates.length === 0 ? undefined : Math.min(...candidates);
+}
+
+/**
+ * Turn the per-call `maxDepth` request into an effective depth request.
+ *
+ * A child is always at least depth 1, so `0` can never start one: it is reported and
+ * replaced with `DEFAULT_CHILD_MAX_DEPTH` rather than failing the whole call. Omitting
+ * `maxDepth` (null) also uses the default, so a caller never has to guess an integer.
+ */
+export function requestedChildDepth(requested: number | null, diagnostics: string[]): number {
+  if (requested === null) return DEFAULT_CHILD_MAX_DEPTH;
+  if (requested === 0) {
+    diagnostics.push(
+      `maxDepth 0 cannot start a child (the child itself is depth 1), so this call used ${DEFAULT_CHILD_MAX_DEPTH}. Omit maxDepth for that default, or pass 1 or more.`,
+    );
+    return DEFAULT_CHILD_MAX_DEPTH;
+  }
+  return requested;
 }
 
 /** Resolve the role file, routes, prompt, and depth into one plan. Pure of service calls. */
@@ -412,7 +459,11 @@ export function planDelegation(
   const prompt = composeChildPrompt({ injectedPaths: injected, task: args.prompt });
   const agentPreset = agentPresetFor(args.agent);
 
-  const depth = resolveDelegationDepth(config.maxDepth, args.maxDepth, undefined);
+  const depth = resolveDelegationDepth(
+    config.maxDepth,
+    requestedChildDepth(args.maxDepth, diagnostics),
+    undefined,
+  );
   const total = routes.length;
   const children: ChildPlan[] = routes.map((route, index) => {
     const agentOptions = agentOptionsFor(route, args.reasoningEffort ?? undefined);
@@ -723,9 +774,11 @@ export async function delegate(
 const TOOL_DESCRIPTION = [
   "Delegate self-contained work to one or more fresh child agents.",
   "",
-  "Every argument is required. Pass null for role, roleIndex, reasoningEffort, or cwd when that",
-  "setting is not used. Choose agent explicitly. maxDepth is a non-negative integer. No argument",
-  "has an implicit default.",
+  "Every argument is required except maxDepth. Pass null for role, roleIndex, reasoningEffort,",
+  "or cwd when that setting is not used. Choose agent explicitly. maxDepth is optional: omit it",
+  "(or pass null) for the safe default of 1, where the child exists but cannot start its own",
+  "children; pass 2 or more, within this row's configured cap, to let it delegate further. A 0 is",
+  "treated as 1, because a child is already depth 1 and 0 can never start one.",
   "",
   "Returns the id of every child it started plus the route each one resolved. The children run",
   "in the background: their results arrive later as completion notices in this conversation.",
@@ -779,9 +832,9 @@ function buildParameters(): Record<string, unknown> {
           "Required initial working directory, inside this session's directory or a separate Git worktree. Relative paths resolve against this session's directory. Null inherits the session directory.",
       },
       maxDepth: {
-        type: "integer",
+        type: ["integer", "null"],
         description:
-          "Required non-negative delegation-depth limit. It can only lower this row's configured cap.",
+          "Optional delegation-depth cap for the child. Omit or pass null for the safe default of 1 (the child exists but cannot start its own children). Pass 2 or more, within this row's configured cap, to let it delegate further. 0 is treated as 1: a child is already depth 1, so 0 can never start one.",
       },
       roleIndex: {
         type: ["integer", "null"],
@@ -794,7 +847,7 @@ function buildParameters(): Record<string, unknown> {
           "Required reasoning-effort override for every child this call starts. Use one token the target model advertises, or null to keep the role line's starting effort. An unknown token fails the whole call before any child starts.",
       },
     },
-    required: [...DELEGATION_ARGUMENT_KEYS],
+    required: [...REQUIRED_DELEGATION_ARGUMENT_KEYS],
   };
 }
 

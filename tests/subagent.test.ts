@@ -128,6 +128,56 @@ describe("pstack_subagent planning", () => {
     const plan = planDelegation(args({ role: "bug-fix" }), runtime(dshHome));
     expect(plan.diagnostics.join("\n")).toMatch(/pstack-models\.mdc:1: bug-fix: .* is not a route/);
   });
+
+  it("defaults to depth 1 when maxDepth is null", () => {
+    const dshHome = homeWithRoles(undefined);
+    const plan = planDelegation(args({ maxDepth: null }), runtime(dshHome), {
+      provider: "spawn",
+      maxDepth: 2,
+    });
+    expect(plan.children[0]!.maxDepth).toBe(1);
+  });
+
+  it("defaults to depth 1 when maxDepth is omitted entirely", () => {
+    const dshHome = homeWithRoles(undefined);
+    const omitted = parseDelegationArgs({
+      description: "inspect the parser",
+      prompt: "Read the parser and report.",
+      agent: "general",
+      role: null,
+      roleIndex: null,
+      reasoningEffort: null,
+      cwd: null,
+    });
+    const plan = planDelegation(omitted, runtime(dshHome), { provider: "spawn", maxDepth: 2 });
+    expect(plan.children[0]!.maxDepth).toBe(1);
+  });
+
+  it("treats maxDepth 0 as the safe default and reports why", () => {
+    const dshHome = homeWithRoles(undefined);
+    const plan = planDelegation(args({ maxDepth: 0 }), runtime(dshHome), {
+      provider: "spawn",
+      maxDepth: 2,
+    });
+    expect(plan.children[0]!.maxDepth).toBe(1);
+    expect(plan.diagnostics.join("\n")).toMatch(/maxDepth 0 cannot start a child/);
+  });
+
+  it("keeps an explicit maxDepth within the row's cap, and rejects a non-integer or an over-cap value", () => {
+    const dshHome = homeWithRoles(undefined);
+    const plan = planDelegation(args({ maxDepth: 2 }), runtime(dshHome), {
+      provider: "spawn",
+      maxDepth: 2,
+    });
+    expect(plan.children[0]!.maxDepth).toBe(2);
+    expect(() => args({ maxDepth: 1.5 })).toThrow(/maxDepth/);
+    expect(() =>
+      planDelegation(args({ maxDepth: 3 }), runtime(homeWithRoles(undefined)), {
+        provider: "spawn",
+        maxDepth: 2,
+      }),
+    ).toThrow(/exceeds/);
+  });
 });
 
 describe("pstack_subagent execution", () => {
