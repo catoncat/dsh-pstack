@@ -64,6 +64,7 @@ export default defineConfig({
       dev: {
         command: "vp pack --watch",
         dependsOn: ["@internal/pstack#build"],
+        cache: false,
       },
       build: {
         command: "vp pack",
@@ -74,15 +75,31 @@ export default defineConfig({
       },
       playground: {
         command: "node playground/start.mjs",
+        cache: false,
       },
       "playground:reset": {
         command: "node playground/start.mjs --reset",
+        cache: false,
       },
       "playground:reinstall": {
         command: "node playground/start.mjs --reinstall",
+        cache: false,
       },
       "playground:browser": {
         command: "node playground/browser.mjs",
+        cache: false,
+      },
+      cases: {
+        command: "node playground/cases-run.mjs",
+        cache: false,
+      },
+      "cases:list": {
+        command: "node playground/cases-run.mjs --list",
+        cache: false,
+      },
+      "cases:check": {
+        command: "node playground/cases-run.mjs --check",
+        cache: false,
       },
     },
   },

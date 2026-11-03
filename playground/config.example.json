@@ -1,0 +1,11 @@
+{
+  "providers": {
+    "<provider>": {
+      "apiKey": "<PROVIDER_API_KEY>",
+      "models": {
+        "<model-a>": ["low", "high"],
+        "<model-b>": ["low"]
+      }
+    }
+  }
+}

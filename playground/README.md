@@ -84,6 +84,43 @@ console → screenshot 放在同一进程树（daemon 会随沙箱 shell 结束�
 5. **真实会话派发子代理**（user 操作并确认；agent 读会话日志佐证）：用户在 17353 的会话里发一个触发
    `pstack_skill` / `pstack_subagent` 的任务，确认隐藏技能加载、子代理按角色/preset 路由、effort 生效、子会话返回。
 
+上面是可复现的**场景级**清单。可执行的用例是 `playground/cases/*.case.mjs`：每个文件独立导出
+一个用例（`id`/`title`/`build`/`verify`），runner 用 `import.meta.glob("./cases/*.case.mjs")` 自动注册。
+
+### 能力自动化 runner（可选）
+
+`playground/run-cases.mjs` 把 `cases/` 里的能力用例自动化（由 `cases-run.mjs` 用 Vite `runnerImport` 加载，
+使 `import.meta.glob("./cases/*.case.mjs")` 生效）：读 `playground/config.json` → 校验路由属于本机部署 →
+按用例临时写 `pstack-models.mdc` → `dsh headless --json` 跑一次真实会话 → 解析事件流做**能力级**断言
+（child 数量、route 互异、脚本输出等）→ 出报告。它不写死插件文案或 UI 内容。
+
+```bash
+cp playground/config.example.json playground/config.json   # 填 provider 的 apiKey 与模型（已 gitignore）
+vp run cases:list     # 列用例与就绪状态（不跑模型）
+vp run cases:check    # 只校验配置/部署/路由（不跑模型）
+vp run cases          # 跑全部可跑用例，报告写到 playground/.dsh/cases-report/
+vp run cases --case CASE-PANEL-01
+```
+
+`config.json` 每个 provider 一层，含 `apiKey` 与“模型 → 思考等级”：
+
+```json
+{
+  "providers": {
+    "<provider>": {
+      "apiKey": "<PROVIDER_API_KEY>",
+      "models": { "<model-a>": ["low", "high"], "<model-b>": ["low"] }
+    }
+  }
+}
+```
+
+- runner 按部署的 `apiKeyEnv` 自动把 apiKey 注入子进程；缺哪个 provider 的 key 会直接列出并退出。
+- 新增用例：在 `playground/cases/` 新建 `<topic>.case.mjs`，默认导出 `{ id, title, build, verify }`
+  （参考 `_template.mjs`）；`import.meta.glob` 会自动注册，无需改 runner。
+- 限制：`CASE-PRESET-01` 需在 17353 web 会话跑（headless profile 缺 `agentPresets` 服务）；runner 会
+  临时改写 `pstack-models.mdc` 并在结束后恢复，**不要与手动会话并发跑**。
+
 ## 说明
 
 - 改插件源码后需 `vp run build` 再重启 playground（当前无客户端热更新）。

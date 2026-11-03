@@ -24,5 +24,5 @@
 
 ## 真实插件测试场（playground）
 
-`playground/`：开发期唯一的真实运行测试环境。提交的 `playground/profile/` 是从随附 `web` 模板复制后加入 `dsh-pstack` 的可移植 profile；运行期 DSH home 固定为 `playground/.dsh`（gitignore，不提交），启动端口固定 `17353`。`playground/` 是 vite-plus 子包 `@internal/playground`；`start.mjs` 每次启动前同步 profile、宿主凭据与模型配置并安装本仓插件，由根 `vite.config.ts` 的 `playground` task（`vp run playground`）启动。
+`playground/`：开发期唯一的真实运行测试环境。提交的 `playground/profile/` 是从随附 `web` 模板复制后加入 `dsh-pstack` 的可移植 profile；运行期 DSH home 固定为 `playground/.dsh`（gitignore，不提交），启动端口固定 `17353`。`playground/` 是 vite-plus 子包 `@internal/playground`；`start.mjs` 每次启动前同步 profile、宿主凭据与模型配置并安装本仓插件，由根 `vite.config.ts` 的 `playground` task（`vp run playground`）启动。能力自动化 runner 由 `cases-run.mjs` 经 Vite `runnerImport` 加载 `run-cases.mjs`（使 `import.meta.glob` 生效），用例为 `cases/*.case.mjs` 动态注册；读 `playground/config.json` 的 provider apiKey 与“模型→思考等级”，用 `dsh headless --json` 跑能力用例（`vp run cases`），只断言能力级可观察事实。
 反例：不是 `tests/` 的 vitest（mock 宿主的单元测试）；也不是宿主 `~/.dsh` 或 `.tmp` 下的一次性测试环境。

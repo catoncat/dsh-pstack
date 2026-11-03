@@ -1,2 +1,5 @@
 # Runtime DSH home for the playground: sessions, logs, credentials, installed deps.
 .dsh/
+
+# Local config with provider keys and allowed routes; copy config.example.json.
+config.json
