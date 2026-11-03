@@ -10,13 +10,13 @@
 - 审查采用「先排除、再分层」：先读上游 `docs/harness/claude-code.md` 的 `Cursor-only features`，舍弃依赖 Cursor 平台的完整能力；剩余需求拆成原子能力，每项只归入映射、标准模式、可选插件中的一层。
 - 本文的「插件」一律指本仓 `dsh-pstack`；「可选插件」一律指 DSH 官方提供、默认未启用的插件或 bundle。
 - 「当前提交未证实」表示在固定提交与本次调查范围内找不到足够源码证据，不表示该能力在别的 DSH 版本也不存在。
-- 本轮是 `baseline` 轮次，没有 core Issue 或 EXT 输入。`docs/port-prepare.md` 确认 pstack 子树在 `1ba91fc..4dd1d05` 间没有文件变化（树哈希同为 `4719e1c`），因此沿用上一轮冻结的 135 项原子能力；DSH 侧按 `ce7073d` 重新取证，不沿用旧提交的 README 行号。差异影响见 1.8。
+- 本轮是 `baseline` 轮次，没有 core Issue 或 EXT 输入。`docs/port-prepare.md` 确认 pstack 子树在 `4dd1d05..ae5650f` 间没有文件变化（树哈希同为 `4719e1c4b4c43bac85d4206a8b41dd2899769c1c`），因此沿用上一轮冻结的 135 项原子能力。DSH 仍为 `ce7073d`，本轮重新核对全部证据行号。差异影响见 1.8。
 
 ### 1.2 上游提交与版本
 
 | 上游 | 检出路径 | 提交 | 版本 |
 |---|---|---|---|
-| pstack | `upstream/cursor-plugins/pstack` | `4dd1d05818d19792e7cd6e818f1667f95f7e1dbe` | `0.15.36`（`plugin.json`） |
+| pstack | `upstream/cursor-plugins/pstack` | `ae5650febf4320793844c12c4adaa937f417f8da` | `0.15.36`（`plugin.json`） |
 | DSH | `upstream/deepseek-harness` | `ce7073d51254c26cd63b22a60835b8f948deb447` | `0.2.2-alpha.2`（根 `package.json`） |
 
 证据：[pstack plugin.json](../upstream/cursor-plugins/pstack/plugin.json#L1-L21) · [DSH package.json](../upstream/deepseek-harness/package.json#L1-L12)。
@@ -43,7 +43,7 @@
 
 ### 1.4 独立保留范围
 
-`docs/extensions.md` 中 `proposed` 与 `active` 的条目是 DSH 版本地扩展，不是上游 pstack 能力，不混入本表的原子能力编号。本轮没有登记的扩展，也没有需要保留的 EXT 条目。
+`docs/extensions.md` 中 `proposed` 与 `active` 的条目是 DSH 版本地扩展，不是上游 pstack 能力，不混入本表的原子能力编号。截至本轮，登记表有 3 个 `active` 条目：EXT-003 pstack 角色模型配置页、EXT-004 pstack 推荐可选插件启用页、EXT-005 bundle 配置模态框；没有 `proposed`、`broken` 或 `retired` 条目。这些扩展的验收证据保留在对应 Issue，不改变第 2 至 4 节的能力计数。
 
 ### 1.5 分类口径
 
@@ -114,8 +114,8 @@
 
 | 事实 | 观察 | 对本轮影响 |
 |---|---|---|
-| pstack 子树 | `git diff --stat 1ba91fc..4dd1d05 -- pstack` 为空，树哈希同为 `4719e1c4b4c43bac85d4206a8b41dd2899769c1c` | 135 项能力、上游证据和编号沿用上一轮，没有新增或删除能力行 |
-| DSH 提交 | `f3803c9..ce7073d` 有 351 个提交，包版本仍为 `0.2.2-alpha.2` | 全部 DSH 证据按 `ce7073d` 重新定位，不能沿用旧行号 |
+| pstack 子树 | `git diff --stat 4dd1d05..ae5650f -- pstack` 为空，树哈希同为 `4719e1c4b4c43bac85d4206a8b41dd2899769c1c`；上游仓库其它变化只在 `third_party/lark-base` 等 pstack 子树之外 | 135 项能力、上游证据和编号沿用上一轮，没有新增或删除能力行 |
+| DSH 提交 | 与上一轮同为 `ce7073d`，包版本仍为 `0.2.2-alpha.2` | 全部 DSH 证据按 `ce7073d` 重新核对，行号不变 |
 | DSH 调度工具 | `schedule_create`、`schedule_edit`、`schedule_list`、`schedule_view` 取代旧的 reminder API，支持 RFC 5545 重复规则和 `this_session`、`new_once`、`new` 目标 | `PB-15` 与 G-10 的支持描述更新；DSH 仍无 CI、merge 或 ref 事件订阅 |
 | DSH forge 服务 | forge provider 增加 `submitReview` 与 `fetchChecks`，forge bundle 的 GUI 可发布 review；bundle README 明确模型侧仍无变更请求工具 | `OPT-02` 补足 GUI review 与完整检查详情；G-07 的模型侧缺口不变 |
 | DSH CUA 分发 | `@deepseek-ai/dsh-cua-bundle` 从可选 bundle 列表移到 on-demand catalog，仍默认关闭、仅 macOS | `OPT-04` 的启用路径改为按需安装后启用，覆盖结论不变 |
@@ -513,7 +513,7 @@
 
 `PI-04 orch CLI` 已随上游 `1ba91fc` 删除 `orch.ts` 与 `store.ts` 而退役，本轮不再进入插件实现范围；本地旧镜像由 `prepare` 删除。
 
-本轮 `implement port` 复核结论：上表 8 项均保留现有实现，没有新增、修改或删除的代码；各项实现位置、公共接口依据与验证用例记录在 `docs/port-review.md` 的「实现记录」。
+上表的 8 项是插件内实现范围，本轮只冻结需求；实现与审查证据由后续 `implement port` 和 `review port` 写入 `docs/port-review.md`。
 
 不属于插件内实现：
 
@@ -524,14 +524,14 @@
 
 ## 6. 本仓既定适配
 
-本节只记录 `docs/architecture.md` 与 `docs/decisions/` 中 `Status: accepted` 的长期适配选择。它们规定实现方向，不证明上游需求或 DSH 能力；当前实现是否相符留给 `implement` 与 `review` 验证。
+本节记录 `docs/architecture.md` 与 `docs/decisions/` 中已生效的长期适配选择，并标出仍为 `proposed` 的扩展记录。它们规定实现方向，不证明上游需求或 DSH 能力；当前实现是否相符留给 `implement` 与 `review` 验证。
 
 ### 6.1 AD-01 插件工具面与 agent preset
 
-- **决策**：[docs/decisions/2026-10-28-pstack-plugin-tools.md](../docs/decisions/2026-10-28-pstack-plugin-tools.md#L1-L35)（Status: accepted，2026-10-28）。
-- **内容**：根 `src/` 注册四个工具行和两个 agent preset。`pstack_skill` 通过 `ctx.skills.get()` 按名称加载 pstack 技能与相对资源；`pstack_models` 只读枚举 `ctx.llm` 的 provider、model、effort；`pstack_subagent` 按 `role` 解析 `provider/model [effort]`，把 `agent` 映射到 `poteto-agent` 或 `comment-sicko` preset；`pstack_script` 以封闭 `id` 运行随包 Node 脚本；`comment-sicko` 的只读约束由 preset 内 `dsh-tool-fs` 关闭 `write` 与 `edit` 实现。
+- **决策**：[docs/decisions/2026-10-28-pstack-plugin-tools.md](../docs/decisions/2026-10-28-pstack-plugin-tools.md#L1-L35)（Status: accepted，2026-10-28）。`pstack_roles` 的扩展由 [docs/decisions/2026-11-03-role-capability-query.md](../docs/decisions/2026-11-03-role-capability-query.md#L1-L29)（Status: proposed，2026-11-03）登记，当前工具面按 [docs/architecture.md#L10](../docs/architecture.md#L10) 记录。
+- **内容**：根 `src/` 提供六个插件入口，`cordis.patch.yml` 注册六条行，另声明两个 agent preset；五个模型可见工具是 `pstack_skill`、`pstack_models`、`pstack_roles`、`pstack_subagent`、`pstack_script`。`pstack_skill` 通过 `ctx.skills.get()` 按名称加载 pstack 技能与相对资源；`pstack_models` 只读枚举 `ctx.llm` 的 provider、model、effort；`pstack_roles` 只读返回每个角色的 `shape`、`autoPanel` 与 `roleIndex` 适用性；`pstack_subagent` 按 `role` 解析 `provider/model [effort]`，把 `agent` 映射到 `poteto-agent` 或 `comment-sicko` preset；`pstack_script` 以封闭 `id` 运行随包 Node 脚本；`comment-sicko` 的只读约束由 preset 内 `dsh-tool-fs` 关闭 `write` 与 `edit` 实现。
 - **能力范围**：`TOOL-04b`、`MOD-01`、`MOD-04`、`MOD-06`、`SET-01`、`SET-02`、`SET-04`、`SET-06`、`SUB-02`、`SUB-03`、`AGT-01`、`AGT-02`、`SCR-01` 至 `SCR-05`，以及依赖这些能力的 `SKL-01`、`SKL-02`、`SKL-05`、`SKL-06`、`SKL-07`、`SKL-11` 至 `SKL-14`、`SKL-24`、`SKL-27`、`SKL-29`、`SKL-30` 与相应 playbook。
-- **验收行为**：隐藏技能仍可被 pstack 路由但不进入普通模型目录；未知技能名返回明确错误；角色文件格式为 `$DSH_HOME/pstack-models.mdc`（Issue #1 已验收，与上游同名；决策记录已同步），重跑幂等，退役角色删除，缺失文件回退 `inherit-parent`，格式错误按行号报告；`pstack_subagent` 的 `general` 不挂 preset，两个命名 agent 走各自 preset；`pstack_script` 的 id 集合与 `src/internal/script-registry.ts` 一致；`comment-sicko` 的写工具被静态移除。
+- **验收行为**：隐藏技能仍可被 pstack 路由但不进入普通模型目录；未知技能名返回明确错误；角色文件格式为 `$DSH_HOME/pstack-models.mdc`（Issue #1 已验收，与上游同名；决策记录已同步），重跑幂等，退役角色删除，缺失文件回退 `inherit-parent`，格式错误按行号报告；`pstack_roles` 与 `src/internal/role-manifest.ts` 的 `ROLE_MANIFEST` 同源；`pstack_subagent` 的 `maxDepth` 可省略，省略、`null` 或 `0` 都按默认 1 处理；`pstack_subagent` 的 `general` 不挂 preset，两个命名 agent 走各自 preset；`pstack_script` 的 id 集合与 `src/internal/script-registry.ts` 一致；`comment-sicko` 的写工具被静态移除。
 - **源码核验位置**：`src/*.ts`、`cordis.patch.yml`、`tests/**/*.test.ts`（模块职责见 [docs/architecture.md#L9-L21](../docs/architecture.md#L9-L21)；实现与 review 均已通过）。
 - **已知代价**：`pstack_script` 不经过 bash 审批与文件系统沙箱，这是 Desktop Electron 运行时的已接受代价；插件组合变更需要改 `cordis.patch.yml` 并重新安装。
 
@@ -551,7 +551,7 @@
 - **能力范围**：`PATH-02`、`PATH-06`、全部 `SKL` 与 `PB` 的资源相对路径，以及 `doc` 阶段的主适配器产物。
 - **验收行为**：生成树只能由生成器改变，手写内容只进 `pstack/harness/` 与 `pstack/runtime/`；主适配器按生成树相对路径镜像替换；技能引用、检查名称映射与相对链接在生成时校验；`generate --check` 通过。
 - **源码核验位置**：`pstack/scripts/generate-pstack-harness-tree.mjs`、`pstack/harness/docs/harness/dsh.md`、`pstack/pstack/`（见 [docs/port-prepare.md#L14-L25](../docs/port-prepare.md#L14-L25)）。
-- **决策链接**：`docs/decisions/2026-10-29-pstack-harness-tree-port.md` 仍为 `proposed`，不构成本轮既定适配；本轮以 `docs/architecture.md` 与 `docs/port-prepare.md` 的当前结构为准。
+- **决策链接**：[docs/decisions/2026-10-29-pstack-harness-tree-port.md](../docs/decisions/2026-10-29-pstack-harness-tree-port.md#L1-L39)（Status: accepted，2026-10-29）。
 
 ### 6.4 AD-04 skills 目录的补充边界
 
@@ -858,6 +858,7 @@ B 的关键行为对照清单（`pstack/runtime/skills/statechart/scripts/statec
 | benny automation 文档 | 11 |
 | 文档形式配置模板 | 2 |
 | 可执行脚本入口 | 5 |
+| 本地扩展（active） | 3（EXT-003、EXT-004、EXT-005） |
 | 原子能力总数 | 135 |
 | 映射 | 47（完整 44、部分 3） |
 | 标准模式 | 72（完整 18、部分 54） |
@@ -869,4 +870,4 @@ B 的关键行为对照清单（`pstack/runtime/skills/statechart/scripts/statec
 | 待选择实现项 | 0 |
 | 未决证据 | 6（`U-01` 至 `U-06`） |
 
-审查结论：上游 136 个文档与 33 个测试语料均有去向；135 个原子能力全部落在映射、标准模式、可选插件或平台排除之一；标准模式与可选插件仍不完整的 8 项已进入插件内实现范围。`PI-01`、`PI-02`、`PI-08` 的实现方向已由 2026-10-28 的接受决策固定；`PI-03`、`PI-05`、`PI-06`、`PI-07` 为证据唯一；`PI-09` 的测试语料打包方式沿用 B 方案（2026-10-29）。
+审查结论：上游 136 个文档与 33 个测试语料均有去向；135 个原子能力全部落在映射、标准模式、可选插件或平台排除之一；3 个 active 扩展保留为本地扩展，不混入 135 项；标准模式与可选插件仍不完整的 8 项已进入插件内实现范围。`PI-01`、`PI-02`、`PI-08` 的实现方向已由 2026-10-28 的接受决策固定；`PI-03`、`PI-05`、`PI-06`、`PI-07` 为证据唯一；`PI-09` 的测试语料打包方式沿用 B 方案（2026-10-29）。
