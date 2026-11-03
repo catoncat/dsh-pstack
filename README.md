@@ -42,7 +42,8 @@
   <a href="#capabilities">Capabilities</a> ·
   <a href="#skills-directory">Skills directory</a> ·
   <a href="#optional-dsh-plugins">Optional DSH plugins</a> ·
-  <a href="#compatibility">Compatibility</a>
+  <a href="#compatibility">Compatibility</a> ·
+  <a href="#friendly-links">Friendly Links</a>
 </p>
 
 `dsh-pstack` ports [pstack](https://github.com/cursor/plugins/tree/main/pstack) to [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH). It keeps the upstream pstack skills, playbooks, and reference documents. Five native tools fill the gaps in DSH's interfaces, while an adaptation layer maps Cursor's tool names, subagent fields, model slugs, and paths to DSH.
@@ -185,6 +186,10 @@ A worktree Session has a different `cwd` from the original Session. The session-
 Upstream pstack adapts Claude Code with `docs/harness/claude-code.md`. It preserves the skill bodies. A separate host adaptation table maps `Task`, `AskQuestion`, todo, model slugs, and paths to the target host. The generator adds a one-line Claude Code adaptation note to skills that use Cursor names. Unsupported capabilities report `Skipped in Claude Code: <step>. <reason>.`
 
 dsh-pstack follows the same approach. The main adaptation document is [`pstack/harness/docs/harness/dsh.md`](./pstack/harness/docs/harness/dsh.md). It covers Tools, Subagent fields, Models, setup-pstack, Paths, Cursor-only features, Local replacements, and Optional plugins. The `pstack_*` tools, agent presets, and Node scripts replace fields that DSH lacks. At build time, upstream pstack and the local adaptation tree are rendered into `pstack/pstack/`, then packaged with `src/*.ts` and `skills/` into `dist/`.
+
+## Friendly Links
+
+[LinuxDo](https://linux.do/) — the new ideal community
 
 ## Credits
 

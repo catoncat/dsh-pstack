@@ -42,7 +42,8 @@
   <a href="#能力">能力</a> ·
   <a href="#skills-目录">skills 目录</a> ·
   <a href="#可选-dsh-插件">可选 DSH 插件</a> ·
-  <a href="#兼容性">兼容性</a>
+  <a href="#兼容性">兼容性</a> ·
+  <a href="#友情链接">友情链接</a>
 </p>
 
 `dsh-pstack` 是 [pstack](https://github.com/cursor/plugins/tree/main/pstack) 的 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）移植。它保留上游 pstack 的技能、playbook 与参考文档。5 个原生工具补上 DSH 的接口缺口，适配层则把 Cursor 的工具名、子代理字段、模型 slug 和路径映射到 DSH。
@@ -185,6 +186,10 @@ worktree Session 的 `cwd` 与原 Session 不同。session-search 插件只匹�
 上游 pstack 用 `docs/harness/claude-code.md` 适配 Claude Code。它保留技能正文，另用宿主适配表把 `Task`、`AskQuestion`、todo、模型 slug 和路径映射到目标宿主。生成器为使用 Cursor 名称的技能添加一行 Claude Code 适配提示。不支持的能力会报告 `Skipped in Claude Code: <step>. <reason>.`
 
 dsh-pstack 沿用这套做法。主适配文档是 [`pstack/harness/docs/harness/dsh.md`](./pstack/harness/docs/harness/dsh.md)，覆盖 Tools、Subagent fields、Models、setup-pstack、Paths、Cursor-only features、Local replacements 和 Optional plugins。`pstack_*` 工具、agent preset 和 Node 脚本替代 DSH 缺少的字段。构建时，上游 pstack 与本地适配树被渲染到 `pstack/pstack/`，再与 `src/*.ts`、`skills/` 一起打包到 `dist/`。
+
+## 友情链接
+
+[LinuxDo](https://linux.do/) —— 新的理想型社区
 
 ## 鸣谢
 
