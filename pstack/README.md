@@ -513,7 +513,7 @@
 
 `PI-04 orch CLI` 已随上游 `1ba91fc` 删除 `orch.ts` 与 `store.ts` 而退役，本轮不再进入插件实现范围；本地旧镜像由 `prepare` 删除。
 
-上表的 8 项是插件内实现范围，本轮只冻结需求；实现与审查证据由后续 `implement port` 和 `review port` 写入 `docs/port-review.md`。
+本轮 `implement port` 复核结论：上表 8 项均保留现有实现，没有新增、修改或删除的代码；本轮没有 `status: active` 的 FIX。各项实现位置、公共接口依据与验证用例记录在 `docs/port-review.md` 的「实现记录」。
 
 不属于插件内实现：
 
