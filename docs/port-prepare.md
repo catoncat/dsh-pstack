@@ -6,14 +6,14 @@
 
 | 上游 | 检出路径 | 提交 | 版本 |
 |---|---|---|---|
-| pstack | `upstream/cursor-plugins/pstack` | `4dd1d05818d19792e7cd6e818f1667f95f7e1dbe` | `0.15.36`（`plugin.json`） |
+| pstack | `upstream/cursor-plugins/pstack` | `ae5650febf4320793844c12c4adaa937f417f8da` | `0.15.36`（`plugin.json`） |
 | DSH | `upstream/deepseek-harness` | `ce7073d51254c26cd63b22a60835b8f948deb447` | `0.2.2-alpha.2`（根 `package.json`） |
 
-本轮由 `upstream` 分支更新子模块指针：pstack `1ba91fc` → `4dd1d05`，DSH `f3803c9` → `ce7073d`。`git diff --name-only 1ba91fc..4dd1d05 -- pstack` 为空，pstack 子树没有变化；DSH 区间有 351 个提交，包版本未变。`docs/port-state.yaml` 为 `idle/done`、`blocker: null`，本分支不修改它。
+本轮核对的子模块指针为：pstack 由 `4dd1d05` 更新到 `ae5650f`，DSH 保持 `ce7073d`。`git diff --name-only 4dd1d05..ae5650f -- pstack` 为空，`pstack` 子树哈希同为 `4719e1c4b4c43bac85d4206a8b41dd2899769c1c`；上游新增内容都在 `third_party/lark-base` 等 pstack 子树之外，pstack 版本仍为 `0.15.36`。`docs/port-state.yaml` 为 `idle/done`、`blocker: null`，本分支不修改它。
 
 ## 2. 结构追踪表
 
-上游 573 个文件：58 个 `SKILL.md`、23 个 playbook、29 个 reference、169 个 Markdown。生成树 557 个文件、约 7.5 MB。随包树 `dist/pstack` 178 个文件、约 3.7 MB；差异来自 statechart 测试语料只在生成树中、构建时被整目录替换，以及 15 个不进入生成树的上游元数据与 automation 文件。
+上游 573 个文件：58 个 `SKILL.md`、23 个 playbook、29 个 reference、169 个 Markdown。生成树 557 个文件、约 7.5 MB。随包树 `dist/pstack` 178 个文件、约 3.7 MB；差异来自 statechart 测试语料只在生成树中、构建时被整目录替换，以及 16 个不进入生成树的上游资产（`automations/`、`assets/logo.png`、插件元数据与 `.gitignore`）。
 
 | 上游资产 | 手写位置 | 生成位置 | 随包位置 |
 |---|---|---|---|
@@ -69,22 +69,22 @@
 
 ## 6. 验证记录
 
+本轮记录结构诊断与当前仓库门禁；需求冻结与适配文档核对留给 `audit`、`doc` 和 `review port`。
+
 | 检查 | 命令 | 退出码 | 结果 |
 |---|---|---|---|
+| 上游 pstack 子树 | `git -C upstream/cursor-plugins diff --name-only 4dd1d05..ae5650f -- pstack` | 0 | 输出为空；两端树哈希均为 `4719e1c4b4c43bac85d4206a8b41dd2899769c1c` |
 | 生成树漂移 | `node pstack/scripts/generate-pstack-harness-tree.mjs --check` | 0 | `pstack/pstack is up to date.` |
-| pstack 构建链 | `vp run @internal/pstack#build` | 0 | 4/4 任务成功，`replace:scripts: replaced 3 skill script directories` |
-| runtime 行为测试 | `vp run @internal/pstack#test` | 0 | 76 通过、0 失败 |
-| 根发布构建 | `vp run build` | 0 | 5/5 任务成功，`dist/*.mjs` 与 `.d.mts` 产出 |
-| 插件测试 | `vp test` | 0 | 7 个测试文件、39 个测试通过 |
-| 格式、静态与类型检查 | `vp check` | 0 | 49 个文件格式正确；0 错误、1 条既有 warning（`generate-pstack-harness-tree.mjs:204` 的 `require-array-sort-compare`） |
-| 适配文档对账 | `vp run @internal/pstack#check:harness-doc` | 0 | `harness doc is consistent with README, the upstream template, and src.` |
-| FIX 重放 | `node pstack/scripts/port-fixes.mjs replay` | 0 | `No active FIX records; replay passed.` |
+| pstack 构建链 | `vp run @internal/pstack#build` | 0 | `4/4 successful`；`replace:scripts: replaced 3 skill script directories; 5 script ids resolved` |
+| runtime 行为测试 | `vp run @internal/pstack#test` | 0 | `76` 通过、`0` 失败 |
+| 根测试 | `vp test` | 0 | 18 个测试文件、118 个测试通过 |
+| 格式、静态与类型检查 | `vp check` | 0 | 95 个文件格式正确；0 错误、1 条既有 warning（`generate-pstack-harness-tree.mjs:204` 的 `require-array-sort-compare`） |
 
 ## 7. 后续实现事项与未决项
 
 - 本轮没有发现需要 `implement` 处理的结构缺口。`statechart` 已按 B 方案完成 Node 移植（26 个源文件、1 个精选行为测试），`poteto-mode`、`show-me-your-work` 的镜像完整。
 - DSH 参考文档在 `f3803c9..ce7073d` 间改动较大：`docs/tool-catalog.md` 增删 103/222 行，`docs/subsystems/forge.md` 增删 82 行；`pstack/README.md` 的 DSH 证据行号可能过期，`audit` 必须按 `ce7073d` 重新冻结，不能沿用旧行号。
-- `pstack/README.md` 的审查基线仍写 `1ba91fc`/`f3803c9`，`docs/port-review.md` 仍是上一轮完成头部；`audit` 重建 README 与重置轮次工作文件时一并更新。`pstack/README.md` 中指向本文件的旧行号链接也需要在重建时改写。
-- `docs/decisions/2026-10-29-pstack-harness-tree-port.md` 仍为 `proposed`、`Implemented-by: -`，而当前结构已按该记录运行；本分支不修改决策记录，若要把它转为既定适配，由用户走 `decision-write` 的落地流程。
+- `pstack/README.md` 的审查基线仍是上一轮的 `4dd1d05`/`ce7073d`，`docs/port-review.md` 仍是上一轮完成头部；`audit` 重建 README 与重置轮次工作文件时，把 pstack 基线更新为本报告记录的 `ae5650f`，并改写指向本文件的旧行号链接。
+- 结构长期选择已由 accepted 决策 `docs/decisions/2026-10-29-pstack-harness-tree-port.md` 约束（`Scope: pstack/**`，`Implemented-by: commit:1d1d8b6c06e9e237c9a99089ffbb15d552b52723`）；本分支按该记录复核，不修改决策记录。
 
 下一步：`/pstack-port audit`。
