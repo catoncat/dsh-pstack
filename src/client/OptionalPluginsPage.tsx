@@ -12,6 +12,7 @@ import type {} from "@deepseek-ai/dsh-client-ui-plugin-manager/client";
 
 import {
   OPTIONAL_PLUGIN_GROUPS,
+  defaultRecommendationIds,
   type OptionalPluginGroup,
   type OptionalPluginId,
 } from "../internal/optional-plugins.ts";
@@ -163,6 +164,7 @@ export function OptionalPluginsView(props: OptionalPluginsViewProps): ReactEleme
     onRetry,
     t,
   } = props;
+  const recommendationIds = defaultRecommendationIds();
   const offRecommended = rows.filter(
     (row) => row.definition.recommended === true && row.status === "off",
   ).length;
@@ -207,7 +209,9 @@ export function OptionalPluginsView(props: OptionalPluginsViewProps): ReactEleme
             <button type="button" style={buttonStyle()} onClick={onRetry} disabled={bulkBusy}>
               {t("optionalRefresh")}
             </button>
-            <span style={{ color: COLOR_CAPTION, fontSize: 12 }}>{t("recommendedHint")}</span>
+            <span style={{ color: COLOR_CAPTION, fontSize: 12 }}>
+              {t("recommendedHint", { ids: recommendationIds.join(t("listSeparator")) })}
+            </span>
           </div>
           {summary === undefined ? null : (
             <div data-optional-summary style={{ color: COLOR_SECONDARY, fontSize: 12 }}>

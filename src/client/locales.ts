@@ -1,5 +1,6 @@
 /** Product copy for the pstack role model configuration page. */
 
+import type { RoleKey } from "../internal/role-manifest.ts";
 import type { LocaleCatalog } from "./i18n.ts";
 
 export const NS = "pstackRoles";
@@ -92,7 +93,7 @@ type RoleTranslate = (key: PstackRolesLocaleKey) => string;
 /** Role keys map to the exact locale keys that name and describe them. */
 const roleCopyKeys: Readonly<
   Record<
-    string,
+    RoleKey,
     { readonly name: PstackRolesLocaleKey; readonly description: PstackRolesLocaleKey }
   >
 > = {
@@ -224,11 +225,9 @@ export const catalogs = {
 
 /** Localized role name and usage, keyed by the exact role-file key. */
 export function rolePresentation(
-  key: string,
+  key: RoleKey,
   t: RoleTranslate,
 ): { readonly name: string; readonly description: string } {
   const copy = roleCopyKeys[key];
-  return copy === undefined
-    ? { name: key, description: "" }
-    : { name: t(copy.name), description: t(copy.description) };
+  return { name: t(copy.name), description: t(copy.description) };
 }

@@ -13,11 +13,13 @@ import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 
+import { scanRoleDocument } from "./role-grammar.ts";
 import {
   INHERIT_PARENT_ALIASES,
   PSTACK_MODELS_FILENAME,
   ROLE_MANIFEST,
   findRoleSpec,
+  normalizeRoleName,
   type RoleSpec,
 } from "./role-manifest.ts";
 
@@ -102,66 +104,56 @@ export function parseRoleConfiguration(text: string, path: string): RoleConfigur
   const roles = new Map<string, RoleEntry>();
   let budget: string | undefined;
 
-  stripFrontmatter(text)
-    .split("\n")
-    .forEach((rawLine, index) => {
-      const line = index + 1;
-      const trimmed = rawLine.trim();
-      if (trimmed === "") return;
-
-      if (trimmed.startsWith("#")) {
-        const match = /^#\s*budget:\s*(.+)$/i.exec(trimmed);
-        if (match !== null) budget = (match[1] as string).trim();
-        return;
-      }
-
-      const separator = trimmed.indexOf(":");
-      if (separator === -1) {
-        issues.push({
-          line,
-          message: `expected \`<role>: <value>\`, found ${JSON.stringify(trimmed)}`,
-        });
-        return;
-      }
-
-      const rawKey = trimmed.slice(0, separator).trim();
-      const rawValue = trimmed.slice(separator + 1).trim();
-      const key = normalizeRoleName(rawKey);
-      if (key === "") {
-        issues.push({ line, message: "the role key is empty" });
-        return;
-      }
-
-      const spec = findRoleSpec(key);
-      if (spec === undefined) {
-        issues.push({ line, message: unknownRoleMessage(rawKey, key) });
-        return;
-      }
-
-      const parsed = parseRouteValue(rawValue);
-      const entryIssues = [...parsed.issues];
-      if (spec.shape === "single" && parsed.routes.length > 1) {
-        entryIssues.push("a single-route role cannot hold a comma-separated list");
-      }
-      for (const issue of entryIssues) issues.push({ line, message: `${rawKey}: ${issue}` });
-      if (parsed.routes.length === 0) return;
-
-      const previous = roles.get(spec.key);
-      if (previous !== undefined) {
-        issues.push({
-          line,
-          message: `role "${spec.key}" is already configured on line ${previous.line}; line ${line} wins`,
-        });
-      }
-      roles.set(spec.key, {
+  for (const scanned of scanRoleDocument(text).lines) {
+    const { line } = scanned;
+    if (scanned.kind === "blank") continue;
+    if (scanned.kind === "comment") {
+      if (scanned.budget !== undefined) budget = scanned.budget;
+      continue;
+    }
+    if (scanned.kind === "malformed") {
+      issues.push({
         line,
-        rawKey,
-        key: spec.key,
-        spec,
-        routes: parsed.routes,
-        issues: entryIssues,
+        message:
+          scanned.rawLine === ""
+            ? "the role key is empty"
+            : `expected \`<role>: <value>\`, found ${JSON.stringify(scanned.rawLine)}`,
       });
+      continue;
+    }
+    if (scanned.kind === "unknown-role") {
+      issues.push({
+        line,
+        message: unknownRoleMessage(scanned.rawKey, normalizeRoleName(scanned.rawKey)),
+      });
+      continue;
+    }
+
+    const { rawKey, spec } = scanned;
+    const parsed = parseRouteValue(scanned.rawValue);
+    const entryIssues = [...parsed.issues];
+    if (spec.shape === "single" && parsed.routes.length > 1) {
+      entryIssues.push("a single-route role cannot hold a comma-separated list");
+    }
+    for (const issue of entryIssues) issues.push({ line, message: `${rawKey}: ${issue}` });
+    if (parsed.routes.length === 0) continue;
+
+    const previous = roles.get(spec.key);
+    if (previous !== undefined) {
+      issues.push({
+        line,
+        message: `role "${spec.key}" is already configured on line ${previous.line}; line ${line} wins`,
+      });
+    }
+    roles.set(spec.key, {
+      line,
+      rawKey,
+      key: spec.key,
+      spec,
+      routes: parsed.routes,
+      issues: entryIssues,
     });
+  }
 
   return budget === undefined
     ? { status: "loaded", path, roles, issues }
@@ -357,17 +349,7 @@ export class RoleNameError extends Error {
   }
 }
 
-/** Normalize a role name for lookup. Case, spacing, spacing around a comma, and a trailing colon are formatting. */
-export function normalizeRoleName(raw: string): string {
-  return raw
-    .normalize("NFC")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .replace(/\s*,\s*/g, ", ")
-    .replace(/:+$/, "")
-    .trim();
-}
+export { normalizeRoleName } from "./role-manifest.ts";
 
 /** Resolve a role name, or throw a diagnostic that names the near misses. */
 export function requireRole(raw: string): RoleSpec {
@@ -436,15 +418,6 @@ function editDistance(left: string, right: string): number {
     previous = current;
   }
   return previous[right.length] as number;
-}
-
-function stripFrontmatter(text: string): string {
-  const normalized = text.replaceAll("\r\n", "\n");
-  if (!normalized.startsWith("---\n")) return normalized;
-  const end = normalized.indexOf("\n---", 3);
-  if (end === -1) return normalized;
-  const after = normalized.indexOf("\n", end + 1);
-  return after === -1 ? "" : normalized.slice(after + 1);
 }
 
 function isMissingFile(error: unknown): boolean {

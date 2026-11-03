@@ -212,32 +212,33 @@ export function composeChildPrompt(input: {
 // Arguments
 // ---------------------------------------------------------------------------
 
+export const DELEGATION_ARGUMENT_KEYS = [
+  "description",
+  "prompt",
+  "agent",
+  "role",
+  "roleIndex",
+  "reasoningEffort",
+  "cwd",
+  "maxDepth",
+] as const;
+
 /** Validate every required model-facing argument. Null declines an optional setting. */
 export function parseDelegationArgs(raw: unknown): DelegationArgs {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw))
     throw new DelegationError("arguments must be an object");
   const record = raw as Record<string, unknown>;
 
-  const known = [
-    "description",
-    "prompt",
-    "agent",
-    "role",
-    "roleIndex",
-    "reasoningEffort",
-    "cwd",
-    "maxDepth",
-  ] as const;
-  for (const key of known) {
+  for (const key of DELEGATION_ARGUMENT_KEYS) {
     if (!Object.hasOwn(record, key))
       throw new DelegationError(
         `missing required argument "${key}"; every argument must be passed explicitly`,
       );
   }
   for (const key of Object.keys(record)) {
-    if (!(known as readonly string[]).includes(key))
+    if (!(DELEGATION_ARGUMENT_KEYS as readonly string[]).includes(key))
       throw new DelegationError(
-        `unknown argument "${key}"; accepted arguments are ${known.join(", ")}`,
+        `unknown argument "${key}"; accepted arguments are ${DELEGATION_ARGUMENT_KEYS.join(", ")}`,
       );
   }
 
@@ -793,16 +794,7 @@ function buildParameters(): Record<string, unknown> {
           "Required reasoning-effort override for every child this call starts. Use one token the target model advertises, or null to keep the role line's starting effort. An unknown token fails the whole call before any child starts.",
       },
     },
-    required: [
-      "description",
-      "prompt",
-      "agent",
-      "role",
-      "roleIndex",
-      "reasoningEffort",
-      "cwd",
-      "maxDepth",
-    ],
+    required: [...DELEGATION_ARGUMENT_KEYS],
   };
 }
 

@@ -1,7 +1,11 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vite-plus/test";
 
-import { OPTIONAL_PLUGINS, recommendedBundleNames } from "../src/internal/optional-plugins.ts";
+import {
+  OPTIONAL_PLUGINS,
+  defaultRecommendationIds,
+  recommendedBundleNames,
+} from "../src/internal/optional-plugins.ts";
 import {
   dismissGuidance,
   enableRecommendedPlugins,
@@ -77,9 +81,7 @@ describe("optional plugin catalogue", () => {
       "@deepseek-ai/dsh-experimental-tool-worktree",
       "@deepseek-ai/dsh-experimental-session-search",
     ]);
-    expect(
-      OPTIONAL_PLUGINS.filter((plugin) => plugin.recommended).map((plugin) => plugin.id),
-    ).toEqual(["OPT-01", "OPT-06"]);
+    expect(defaultRecommendationIds()).toEqual(["OPT-01", "OPT-06"]);
     expect(OPTIONAL_PLUGINS.find((plugin) => plugin.id === "OPT-02")?.suggested).toBe(true);
     expect(OPTIONAL_PLUGINS.find((plugin) => plugin.id === "OPT-08")?.switchable).toBe(false);
   });

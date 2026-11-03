@@ -6,8 +6,7 @@
  * inline it without pulling a file-system module into the browser.
  */
 
-import type { CatalogueResult } from "../models.ts";
-import type { RoleValueShape } from "./role-manifest.ts";
+import type { RoleKey, RoleValueShape } from "./role-manifest.ts";
 
 /** Which spelling of "inherit the parent route" a role line uses. */
 export type InheritAlias = "inherit-parent" | "auto";
@@ -24,7 +23,7 @@ export type RouteView =
 
 /** One of the 17 roles in manifest order. */
 export interface RoleView {
-  readonly key: string;
+  readonly key: RoleKey;
   readonly shape: RoleValueShape;
   /** Whether the role file configures this role. */
   readonly configured: boolean;
@@ -62,6 +61,3 @@ export interface SaveRoleRequest {
 export type SaveRoleResult =
   | { readonly ok: true; readonly snapshot: RoleFileSnapshot }
   | { readonly ok: false; readonly reason: string };
-
-/** The live model directory the page offers. */
-export type RoleCatalogue = CatalogueResult;

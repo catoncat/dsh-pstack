@@ -24,6 +24,7 @@ import type {
 } from "@deepseek-ai/dsh-typert-protocol";
 
 import type { CatalogueResult } from "./models.ts";
+import { isRoleKey } from "./internal/role-manifest.ts";
 import type {
   RoleFileSnapshot,
   SaveRoleRequest,
@@ -122,8 +123,8 @@ function parseRoleFileIssue(value: unknown): RoleFileSnapshot["issues"][number] 
 
 function parseRoleView(value: unknown, index: number): RoleFileSnapshot["roles"][number] {
   const record = parseRecord(value, `roles[${index}]`);
-  if (typeof record["key"] !== "string")
-    throw new TypeError(`roles[${index}].key must be a string`);
+  if (typeof record["key"] !== "string" || !isRoleKey(record["key"]))
+    throw new TypeError(`roles[${index}].key is not in the role manifest`);
   if (record["shape"] !== "single" && record["shape"] !== "list") {
     throw new TypeError(`roles[${index}].shape is unknown`);
   }

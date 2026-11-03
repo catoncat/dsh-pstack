@@ -78,13 +78,6 @@ export function remainingRecommendedCount(rows: readonly OptionalPluginRow[]): n
     .length;
 }
 
-/** The bundle names the one-click action should try, in catalogue order. */
-export function recommendedTargets(rows: readonly OptionalPluginRow[]): readonly string[] {
-  return rows
-    .filter((row) => row.definition.recommended === true && row.definition.bundle !== undefined)
-    .map((row) => row.definition.bundle as string);
-}
-
 /** One row's attempted outcome; `error` is a rejected Remote call. */
 export interface RecommendedOutcome {
   readonly id: OptionalPluginId;

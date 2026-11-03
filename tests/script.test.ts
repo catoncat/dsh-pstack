@@ -83,8 +83,11 @@ describe("pstack_script arguments", () => {
 });
 
 describe("pstack_script execution", () => {
-  it("runs a bundled script through the built package when the tree exists", async () => {
-    if (!existsSync(scriptPath("log"))) return;
+  it("runs a bundled script through the built package", async () => {
+    if (!existsSync(scriptPath("log")))
+      throw new Error(
+        `missing shipped script at ${scriptPath("log")}; run \`vp run build\` before \`vp test\``,
+      );
     const directory = mkdtempSync(join(tmpdir(), "pstack-script-"));
     directories.push(directory);
     const file = join(directory, "log.tsv");

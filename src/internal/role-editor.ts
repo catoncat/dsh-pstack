@@ -12,10 +12,12 @@ import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node
 import { dirname } from "node:path";
 
 import type { CatalogueResult } from "../models.ts";
+import { updateRoleDocument } from "./role-grammar.ts";
 import {
   INHERIT_PARENT_ALIASES,
   ROLE_MANIFEST,
   findRoleSpec,
+  type ManifestRoleSpec,
   type RoleSpec,
 } from "./role-manifest.ts";
 import {
@@ -45,7 +47,7 @@ function routeView(route: Route): RouteView {
   };
 }
 
-function roleView(spec: RoleSpec, entry: RoleEntry | undefined): RoleView {
+function roleView(spec: ManifestRoleSpec, entry: RoleEntry | undefined): RoleView {
   return {
     key: spec.key,
     shape: spec.shape,
@@ -214,47 +216,9 @@ export function renderRoleValue(routes: readonly Route[]): string {
     .join(", ");
 }
 
-function bodyStart(lines: readonly string[]): number {
-  if (lines[0]?.trim() !== "---") return 0;
-  for (let index = 1; index < lines.length; index += 1) {
-    if (lines[index]?.trim() === "---") return index + 1;
-  }
-  return 0;
-}
-
-/**
- * Replace the winning line for one role, or append one when absent.
- *
- * Every other line is returned verbatim. A role configured twice keeps its
- * earlier line and replaces the last one, which is the line the parser treats
- * as winning; the duplicate remains visible as a per-line issue.
- */
+/** Update the winning role through the same line grammar used by the parser. */
 export function updateRoleText(text: string, spec: RoleSpec, value: string): string {
-  const lines = text.split("\n");
-  const crlf = text.includes("\r\n");
-  if (lines.length > 0 && lines[lines.length - 1] === "") lines.pop();
-
-  let match = -1;
-  for (let index = bodyStart(lines); index < lines.length; index += 1) {
-    const line = lines[index] as string;
-    const trimmed = line.endsWith("\r") ? line.slice(0, -1).trim() : line.trim();
-    if (trimmed === "" || trimmed.startsWith("#")) continue;
-    const separator = trimmed.indexOf(":");
-    if (separator === -1) continue;
-    if (normalizeRoleName(trimmed.slice(0, separator)) !== spec.key) continue;
-    match = index;
-  }
-
-  const rendered = `${spec.key}: ${value}`;
-  if (match >= 0) {
-    const original = lines[match] as string;
-    const indent = /^\s*/.exec(original)?.[0] ?? "";
-    const ending = original.endsWith("\r") ? "\r" : "";
-    lines[match] = `${indent}${rendered}${ending}`;
-  } else {
-    lines.push(`${rendered}${crlf ? "\r" : ""}`);
-  }
-  return `${lines.join("\n")}\n`;
+  return updateRoleDocument(text, spec, value);
 }
 
 function writeAtomically(path: string, text: string): void {

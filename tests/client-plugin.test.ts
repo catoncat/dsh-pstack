@@ -1,3 +1,4 @@
+import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vite-plus/test";
 import type { Context } from "@deepseek-ai/cordis";
 import type { TypertRemoteContribution } from "@deepseek-ai/dsh-typert-protocol";
@@ -131,5 +132,22 @@ describe("pstack roles browser half", () => {
     });
     expect(configFace.rolesT("title")).toBe(rolesCatalogs[baseLocale].title);
     expect(typeof dispose).toBe("function");
+  });
+
+  it("ships complete plugin metadata for every supported locale", () => {
+    for (const locale of SUPPORTED_LOCALES) {
+      const url = new URL(`../locale/${locale}.json`, import.meta.url);
+      expect(existsSync(url), `locale/${locale}.json`).toBe(true);
+      const metadata = JSON.parse(readFileSync(url, "utf8")) as {
+        readonly meta?: Record<string, unknown>;
+      };
+      for (const key of ["title", "description", "detail"]) {
+        expect(typeof metadata.meta?.[key], `${locale} ${key}`).toBe("string");
+        expect(String(metadata.meta?.[key]).trim()).not.toBe("");
+      }
+      const detail = String(metadata.meta?.detail);
+      expect(detail.endsWith(".md")).toBe(true);
+      expect(existsSync(new URL(`../${detail}`, import.meta.url))).toBe(true);
+    }
   });
 });

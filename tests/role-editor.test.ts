@@ -135,6 +135,80 @@ describe("role text editing", () => {
     expect(next).toBe("bug-fix: cpa/model-a\r\n");
   });
 
+  it("uses the parser's frontmatter boundary when updating a role", () => {
+    const original = "--- \n---\nBug-Fix:   cpa/model-a  ";
+    const next = updateRoleText(
+      original,
+      { key: "bug-fix", shape: "single", autoPanel: false },
+      "cpa/model-b",
+    );
+    expect(next).toBe("--- \n---\nBug-Fix:   cpa/model-b  ");
+    const parsed = parseRoleConfiguration(next, "x");
+    if (parsed.status !== "loaded") throw new Error("expected a loaded role file");
+    expect(parsed.roles.get("bug-fix")?.line).toBe(1);
+  });
+
+  it("shares frontmatter line numbering and winning-role selection", () => {
+    const original = "---\ntitle: roles\n---\nbug-fix: cpa/model-a\n";
+    const next = updateRoleText(
+      original,
+      { key: "bug-fix", shape: "single", autoPanel: false },
+      "cpa/model-b",
+    );
+    expect(next).toBe("---\ntitle: roles\n---\nbug-fix: cpa/model-b\n");
+    const parsed = parseRoleConfiguration(next, "x");
+    if (parsed.status !== "loaded") throw new Error("expected a loaded role file");
+    expect(parsed.roles.get("bug-fix")?.line).toBe(1);
+  });
+
+  it("preserves key spelling, whitespace, and a missing final newline", () => {
+    const next = updateRoleText(
+      "Bug-Fix:   cpa/model-a  ",
+      { key: "bug-fix", shape: "single", autoPanel: false },
+      "cpa/model-b",
+    );
+    expect(next).toBe("Bug-Fix:   cpa/model-b  ");
+    expect(next.endsWith("\n")).toBe(false);
+  });
+
+  it("replaces an empty role value without dropping the key separator", () => {
+    expect(
+      updateRoleText(
+        "bug-fix:\n",
+        { key: "bug-fix", shape: "single", autoPanel: false },
+        "cpa/model-b",
+      ),
+    ).toBe("bug-fix:cpa/model-b\n");
+    expect(
+      updateRoleText(
+        "bug-fix:   \n",
+        { key: "bug-fix", shape: "single", autoPanel: false },
+        "cpa/model-b",
+      ),
+    ).toBe("bug-fix:cpa/model-b\n");
+  });
+
+  it("preserves a missing final newline when appending a role", () => {
+    const next = updateRoleText(
+      "bug-fix: cpa/model-a",
+      { key: "perf-issue", shape: "single", autoPanel: false },
+      "cpa/model-b",
+    );
+    expect(next).toBe("bug-fix: cpa/model-a\nperf-issue: cpa/model-b\n");
+  });
+
+  it("updates the last duplicate role selected by the parser", () => {
+    const next = updateRoleText(
+      "bug-fix: cpa/model-a\nbug-fix: cpa/model-b\n",
+      { key: "bug-fix", shape: "single", autoPanel: false },
+      "cpa/model-c",
+    );
+    expect(next).toBe("bug-fix: cpa/model-a\nbug-fix: cpa/model-c\n");
+    const parsed = parseRoleConfiguration(next, "x");
+    if (parsed.status !== "loaded") throw new Error("expected a loaded role file");
+    expect(parsed.roles.get("bug-fix")?.line).toBe(2);
+  });
+
   it("renders every list entry, never only the first", () => {
     expect(
       renderRoleValue([

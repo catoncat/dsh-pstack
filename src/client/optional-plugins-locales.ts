@@ -31,7 +31,8 @@ const base = {
   enablingRecommended: "Enabling recommended plugins…",
   recommendedSummary:
     "{applied} applied, {restart} need a restart, {failed} failed, {skipped} skipped",
-  recommendedHint: "Default recommendations: OPT-01, OPT-06.",
+  recommendedHint: "Default recommendations: {ids}.",
+  listSeparator: ", ",
   enablePlugin: "Enable",
   disablePlugin: "Disable",
   pluginWorking: "Working…",
@@ -111,7 +112,8 @@ export const catalogs = {
     enablingRecommended: "正在启用推荐项…",
     recommendedSummary:
       "成功 {applied} 项，需重启 {restart} 项，失败 {failed} 项，跳过 {skipped} 项",
-    recommendedHint: "默认推荐 OPT-01、OPT-06。",
+    recommendedHint: "默认推荐 {ids}。",
+    listSeparator: "、",
     enablePlugin: "启用",
     disablePlugin: "关闭",
     pluginWorking: "处理中…",

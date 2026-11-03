@@ -118,14 +118,11 @@ export const OPTIONAL_PLUGINS: readonly OptionalPluginDefinition[] = [
   },
 ];
 
-/** The default recommendation set, in enable order. */
-export const DEFAULT_RECOMMENDED_PLUGINS: readonly OptionalPluginId[] = ["OPT-01", "OPT-06"];
-
-/** Find one catalogue row by id. */
-export function optionalPlugin(id: OptionalPluginId): OptionalPluginDefinition {
-  const found = OPTIONAL_PLUGINS.find((plugin) => plugin.id === id);
-  if (found === undefined) throw new Error(`unknown optional plugin ${id}`);
-  return found;
+/** The default recommendation ids, in catalogue order. */
+export function defaultRecommendationIds(): readonly OptionalPluginId[] {
+  return OPTIONAL_PLUGINS.filter((plugin) => plugin.recommended === true).map(
+    (plugin) => plugin.id,
+  );
 }
 
 /** Bundle packages the one-click action enables, in documented order. */

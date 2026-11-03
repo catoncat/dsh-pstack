@@ -32,7 +32,7 @@ export const PSTACK_MODELS_FILENAME = "pstack-models.mdc";
 export const INHERIT_PARENT_ALIASES: readonly string[] = ["inherit-parent", "auto"];
 
 /** The 17 roles, in manifest order. */
-export const ROLE_MANIFEST: readonly RoleSpec[] = [
+export const ROLE_MANIFEST = [
   { key: "feature, refactoring", shape: "single", autoPanel: false },
   { key: "bug-fix", shape: "single", autoPanel: false },
   { key: "perf-issue", shape: "single", autoPanel: false },
@@ -50,10 +50,31 @@ export const ROLE_MANIFEST: readonly RoleSpec[] = [
   { key: "swarm workers", shape: "list", autoPanel: false },
   { key: "architect runners", shape: "list", autoPanel: true },
   { key: "interrogate reviewers", shape: "list", autoPanel: true },
-];
+] as const satisfies readonly RoleSpec[];
+
+export type RoleKey = (typeof ROLE_MANIFEST)[number]["key"];
+
+export function isRoleKey(value: string): value is RoleKey {
+  return ROLE_MANIFEST.some((role) => role.key === value);
+}
+
+/** Normalize formatting while keeping commas that belong to a role name. */
+export function normalizeRoleName(raw: string): string {
+  return raw
+    .normalize("NFC")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .replace(/\s*,\s*/g, ", ")
+    .replace(/:+$/, "")
+    .trim();
+}
+
+export type ManifestRoleSpec = (typeof ROLE_MANIFEST)[number];
 
 /** Exact manifest lookup. Callers normalize the key first. */
-export function findRoleSpec(key: string): RoleSpec | undefined {
+export function findRoleSpec(key: string): ManifestRoleSpec | undefined {
+  if (!isRoleKey(key)) return undefined;
   return ROLE_MANIFEST.find((role) => role.key === key);
 }
 

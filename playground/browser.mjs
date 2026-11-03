@@ -4,7 +4,7 @@
 // The agent sandbox does not allow Chrome's normal user-data dirs or its setuid
 // sandbox, and agent-browser's daemon dies with the sandbox process tree. This
 // helper centralises the workaround used when validating the playground UI:
-//   - writable HOME / XDG dirs under playground/.dsh (git-ignored)
+//   - writable HOME / XDG dirs under the short system temporary runtime path
 //   - Chrome launched with --no-sandbox
 //   - one process tree for open → wait → eval → console → screenshot → close
 //

@@ -17,7 +17,6 @@ import {
   providerChoices,
   removeRoute,
   replaceRoute,
-  sameRoutes,
   saveRequestFor,
   type DraftRoute,
 } from "./state.ts";
@@ -613,14 +612,4 @@ export function RoleSettingsPage(props: RoleSettingsPageProps): ReactElement {
       t={t}
     />
   );
-}
-
-/** Whether one card differs from the saved value; exported for the container's tests. */
-export function isRoleDirty(role: RoleView, routes: readonly DraftRoute[]): boolean {
-  return !sameRoutes(role.routes.length === 0 ? [inheritRoute()] : role.routes, routes);
-}
-
-/** Formatting helper shared with tests and the page. */
-export function routeText(route: DraftRoute): string {
-  return formatRoute(route);
 }

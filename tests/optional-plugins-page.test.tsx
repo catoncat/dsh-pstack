@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vite-plus/test";
 
 import type { BundleSnapshot } from "../src/client/optional-plugins-state.ts";
+import { defaultRecommendationIds } from "../src/internal/optional-plugins.ts";
 import {
   changeResultText,
   OptionalPluginsActivationView,
@@ -88,7 +89,9 @@ describe("optional plugin recommendation section", () => {
       expect(html).toContain(copy.conflictWarning);
       expect(html).toContain(copy.nonBundleGuidance);
       expect(html).toContain(copy.enableRecommended);
-      expect(html).toContain(copy.recommendedHint);
+      expect(html).toContain(
+        copy.recommendedHint.replace("{ids}", defaultRecommendationIds().join(copy.listSeparator)),
+      );
     }
   });
 
