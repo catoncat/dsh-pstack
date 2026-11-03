@@ -786,7 +786,7 @@ function buildParameters(): Record<string, unknown> {
       roleIndex: {
         type: ["integer", "null"],
         description:
-          "Required entry index for a list-valued role that is not an automatic panel, 0 or greater. Requires a non-null role. Null selects the first entry.",
+          "Required entry index for a list-valued role that is not an automatic panel, 0 or greater. Requires a non-null role. Null selects the first entry. Call `pstack_roles` to see which roles accept an index.",
       },
       reasoningEffort: {
         type: ["string", "null"],

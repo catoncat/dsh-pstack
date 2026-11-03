@@ -16,6 +16,7 @@ import {
   updateRoleText,
   validateSaveRequest,
 } from "../src/internal/role-editor.ts";
+import { ROLE_MANIFEST } from "../src/internal/role-manifest.ts";
 
 const directories: string[] = [];
 
@@ -54,14 +55,13 @@ const catalogue: CatalogueResult = {
 };
 
 describe("role file snapshot", () => {
-  it("shows all 17 manifest roles in order for a missing file", () => {
+  it("shows every manifest role in order for a missing file", () => {
     const { path } = home();
     const snapshot = snapshotFromConfiguration(readRoleConfiguration(path));
     expect(snapshot.status).toBe("missing");
     expect(snapshot.canSave).toBe(true);
-    expect(snapshot.roles).toHaveLength(17);
-    expect(snapshot.roles[0]!.key).toBe("feature, refactoring");
-    expect(snapshot.roles[16]!.key).toBe("interrogate reviewers");
+    expect(snapshot.roles).toHaveLength(ROLE_MANIFEST.length);
+    expect(snapshot.roles.map((role) => role.key)).toEqual(ROLE_MANIFEST.map((role) => role.key));
     expect(snapshot.roles.every((role) => !role.configured)).toBe(true);
   });
 

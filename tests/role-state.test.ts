@@ -14,6 +14,7 @@ import {
 } from "../src/client/state.ts";
 import { parseRoleConfiguration } from "../src/internal/role-config.ts";
 import { snapshotFromConfiguration } from "../src/internal/role-editor.ts";
+import { ROLE_MANIFEST } from "../src/internal/role-manifest.ts";
 import type { CatalogueResult } from "../src/models.ts";
 
 const catalogue: CatalogueResult = {
@@ -43,7 +44,7 @@ describe("role page draft state", () => {
       path: "/tmp/pstack-models.mdc",
     });
     const drafts = draftsFromSnapshot(snapshot);
-    expect(Object.keys(drafts)).toHaveLength(17);
+    expect(Object.keys(drafts)).toHaveLength(ROLE_MANIFEST.length);
     expect(drafts["bug-fix"]).toEqual([{ kind: "inherit", alias: "inherit-parent" }]);
   });
 

@@ -96,6 +96,7 @@ See [`pstack/README.md`](./pstack/README.md) for the full capability map, gaps, 
 |---|---|
 | `pstack_skill` | Loads a hidden skill registered by this plugin by name, and reads relative resources inside the skill directory. |
 | `pstack_models` | Read-only list of the providers, models, and efforts DSH actually offers, used by `/setup-pstack`. |
+| `pstack_roles` | Read-only list of every pstack role's shape and whether it is an automatic panel, so a `pstack_subagent` call passes the right `roleIndex`. |
 | `pstack_subagent` | Reads `$DSH_HOME/pstack-models.mdc` per role, parses `provider/model [effort]`, selects a preset by `agent`, and can start several subagents at once. |
 | `pstack_script` | Runs bundled Node scripts by fixed id without Bun or shell scripts. |
 

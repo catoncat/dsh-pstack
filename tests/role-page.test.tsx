@@ -83,7 +83,7 @@ describe("role configuration page", () => {
       previous = index;
     }
     expect(html).toContain("inherit-parent");
-    expect(html.match(/>Save</g)).toHaveLength(17);
+    expect(html.match(/>Save</g)).toHaveLength(ROLE_MANIFEST.length);
   });
 
   it("shows configured routes, list routes, and file issues with line numbers", () => {

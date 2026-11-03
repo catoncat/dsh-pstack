@@ -96,6 +96,7 @@
 |---|---|
 | `pstack_skill` | 按名称加载本插件注册的隐藏技能，也能读取技能目录内的相对资源。 |
 | `pstack_models` | 只读列出 DSH 实际提供的 provider、model 和 effort，供 `/setup-pstack` 使用。 |
+| `pstack_roles` | 只读列出每个 pstack 角色的 shape 与是否为自动面板，帮助 `pstack_subagent` 调用传对 `roleIndex`。 |
 | `pstack_subagent` | 按角色读取 `$DSH_HOME/pstack-models.mdc`，解析 `provider/model [effort]`，按 `agent` 选择 preset，一次可启动多个子代理。 |
 | `pstack_script` | 用固定 id 运行随包 Node 脚本，不依赖 Bun 或 shell 脚本。 |
 
