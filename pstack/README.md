@@ -761,7 +761,7 @@ B 的关键行为对照清单（`pstack/runtime/skills/statechart/scripts/statec
 
 ### 8.5 文档产物与覆盖口径
 
-主适配文档是 [pstack/harness/docs/harness/dsh.md](harness/docs/harness/dsh.md)，生成副本是 [pstack/pstack/docs/harness/dsh.md](pstack/docs/harness/dsh.md)。它保留上游模板的六个章节，并增加 [Local replacements](harness/docs/harness/dsh.md#local-replacements) 与 [Optional plugins](harness/docs/harness/dsh.md#optional-plugins) 两个固定追加小节，分别覆盖运行期替代与 OPT-01 至 OPT-09 的包名、启用能力、未启用 fallback 和支持边界。技能、playbook、reference 与 principle 正文保持上游原文，由生成器在需要 Cursor 名称映射的技能中加入适配文档指针。
+文档状态：2026-11-03 完成。主适配文档是 [pstack/harness/docs/harness/dsh.md](harness/docs/harness/dsh.md)，生成副本是 [pstack/pstack/docs/harness/dsh.md](pstack/docs/harness/dsh.md)。它保留上游模板的六个章节，并增加 [Local replacements](harness/docs/harness/dsh.md#local-replacements) 与 [Optional plugins](harness/docs/harness/dsh.md#optional-plugins) 两个固定追加小节，分别覆盖运行期替代与 OPT-01 至 OPT-09 的包名、启用能力、未启用 fallback 和支持边界。技能、playbook、reference 与 principle 正文保持上游原文，由生成器在需要 Cursor 名称映射的技能中加入适配文档指针。
 
 最终覆盖以固定上游提交和本轮测试为限。完整覆盖不排除技能本身声明的通用外部前提；条件覆盖必须启用括号中的插件或安装外部工具；部分覆盖仍有明确语义差异；平台排除按上游规则输出跳过行并继续，不计为通过。六项未决证据保留在 9.3，不因文档完成而核销。
 

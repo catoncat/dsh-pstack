@@ -30,7 +30,7 @@
     <tr>
       <td align="center"><strong>58</strong><br /><sub>pstack skills</sub></td>
       <td align="center"><strong>23</strong><br /><sub>playbooks</sub></td>
-      <td align="center"><strong>4</strong><br /><sub>native tools</sub></td>
+      <td align="center"><strong>5</strong><br /><sub>native tools</sub></td>
       <td align="center"><strong>2</strong><br /><sub>agent presets</sub></td>
       <td align="center"><strong>5</strong><br /><sub>bundled scripts</sub></td>
     </tr>
@@ -45,7 +45,7 @@
   <a href="#compatibility">Compatibility</a>
 </p>
 
-`dsh-pstack` ports [pstack](https://github.com/cursor/plugins/tree/main/pstack) to [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH). It keeps the upstream pstack skills, playbooks, and reference documents. Four native tools replace the interfaces that DSH lacks, while an adaptation layer maps Cursor's tool names, subagent fields, model slugs, and paths to DSH.
+`dsh-pstack` ports [pstack](https://github.com/cursor/plugins/tree/main/pstack) to [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH). It keeps the upstream pstack skills, playbooks, and reference documents. Five native tools fill the gaps in DSH's interfaces, while an adaptation layer maps Cursor's tool names, subagent fields, model slugs, and paths to DSH.
 
 Most upstream pstack skills declare `disable-model-invocation: true`. `poteto-mode` routes to those hidden skills by name, but DSH's `skill` tool only exposes the model-visible catalog. DSH also has no equivalents for Cursor's model slugs, `subagent_type`, `readonly`, and Bun scripts. dsh-pstack handles those differences in the plugin layer. You can start with `/poteto-mode` after installation.
 
@@ -125,7 +125,7 @@ Open **Plugins → Installed plugins → dsh-pstack** and click **Configure** in
 
 ## Optional DSH plugins
 
-DSH ships with the following plugins, which are disabled by default. dsh-pstack does not require them during installation. Some pstack flows need these plugins to run end to end. To enable a plugin, enter its package name in **Add plugin** on the Plugins page. Alternatively, run `dsh plugin --profile <profile> add <package>`, then restart the profile. Except for `@deepseek-ai/dsh-mcp-client`, the bundles and providers here are experimental.
+DSH provides the following optional plugins, which are disabled by default. Most ship with DSH; `@deepseek-ai/dsh-cua-bundle` installs on demand. dsh-pstack does not require them during installation. Some pstack flows need these plugins to run end to end. To enable a plugin, enter its package name in **Add plugin** on the Plugins page. Alternatively, run `dsh plugin --profile <profile> add <package>`, then restart the profile. Except for `@deepseek-ai/dsh-mcp-client`, the bundles and providers here are experimental.
 
 > [!NOTE]
 > Without an optional plugin, the pstack skills still load. Steps that need the plugin print `Skipped in DeepSeek Harness: <step>. <reason>.` and continue. Missing `gh`, Java/TLC, or video tools also cause the corresponding steps to report blocked or degrade to screenshots. dsh-pstack never marks an unrun step as passed.
@@ -136,7 +136,7 @@ DSH ships with the following plugins, which are disabled by default. dsh-pstack 
 |---|---|---|
 | `@deepseek-ai/dsh-experimental-session-search` | Five read-only tools search and trace historical Sessions for `/recall`, `/reflect`, and `/show-me-your-work`: `session_search`, `session_event_search`, `session_trace`, `session_event_trace`, and `session_event_read`. | Matches only Sessions with the same `cwd`; use `session_event_search` for the current Session; there is no Cursor `.jsonl` transcript path. |
 | `@deepseek-ai/dsh-experimental-worktree`<br />`@deepseek-ai/dsh-experimental-tool-worktree` | `create_worktree` creates a local branch and worktree and switches the current Session directory, isolating parallel candidates for `/arena`, `/swarm`, and `/architect`. | `from` reads only local refs and does not fetch; there is no cloud VM; creating worktrees repeatedly changes `cwd`; it does not automatically give each subagent its own tree. |
-| `@deepseek-ai/dsh-experimental-forge-bundle` | PR panel, checks, review, mark ready, merge, and Session binding, plus starting a Session from the composer with a new worktree, serving `/babysit`, `/shipping`, and `/autopilot-*`. | GitHub only, requires `gh` login; there is no take tool on the model side; there is no stack verdict or `origin` CLI; it can coexist with the worktree bundle. |
+| `@deepseek-ai/dsh-experimental-forge-bundle` | PR panel, checks, review, mark ready, merge, and Session binding, plus starting a Session from the composer with a new worktree, serving `/babysit`, `/shipping`, and `/autopilot-*`. | GitHub only, requires `gh` login; there is no model-side change-request tool; there is no stack verdict or `origin` CLI; it can coexist with the worktree bundle. |
 
 ### Verification and evidence
 
@@ -144,16 +144,16 @@ Choose one of three browser providers: `@deepseek-ai/dsh-experimental-browser-us
 
 | Plugin | Capability when enabled | Boundaries and conflicts |
 |---|---|---|
-| `@deepseek-ai/dsh-browser-use` + one provider | Navigation, clicking, typing, screenshots, and ARIA snapshots; Stagehand also provides act, find, and extract, for verification skills and UI reproduction. | The base package does nothing without a provider; one provider per Session; screenshots need an image model; no video; Stagehand needs Chromium and a non-DeepSeek model. |
-| `@deepseek-ai/dsh-cua-bundle` | macOS app clicking, typing, screenshots, and permission pages, for desktop app verification. | macOS PTC only; Windows is incomplete; no video. |
-| `@deepseek-ai/dsh-experimental-terminal-bundle` | Six global terminal tools that keep a shell or REPL alive across calls and support background send, for CLI and TUI verification. | Terminal only; added to every Agent; persistent state must be cleaned up; switching invalidates the KV cache. |
+| `@deepseek-ai/dsh-browser-use` + one provider | Navigation, clicking, typing, screenshots, and ARIA snapshots; Stagehand also provides act, observe, and extract, for verification skills and UI reproduction. | The base package does nothing without a provider; one provider per Session; screenshots need an image-capable model; no video; Stagehand needs Chromium and a non-DeepSeek model. |
+| `@deepseek-ai/dsh-cua-bundle` | macOS app clicking, typing, screenshots, permission pages, and session-level authorization, for desktop app verification. | macOS PTC only; single computer-use provider slot; Windows is incomplete; no video. |
+| `@deepseek-ai/dsh-experimental-terminal-bundle` | Six global terminal tools that keep a shell or REPL alive across calls, support background send, and isolate terminals by owner, for CLI and TUI verification. | Terminal only; added to every Agent; persistent state must be cleaned up; switching invalidates the KV cache. |
 | `@deepseek-ai/dsh-mcp-client` | Mounts MCP servers; tools appear as `mcp__<server>__<tool>`, and `mcp-resources` lists servers with resources, serving evidence investigation for `/why` and `/teach`. | No default server; configuration is per server; no automatic category discovery. |
 
 ### Multi-agent
 
 | Plugin | Capability when enabled | Boundaries and conflicts |
 |---|---|---|
-| `@deepseek-ai/dsh-experimental-agent-team-profile` | Lead and teammate roles, a shared task board, nine team tools, and a Web roster, serving `/orchestrate` and `/autopilot-*`. | Disables `subagent` and `subagent_fork`. Conflicts with `pstack_subagent`. See the warning below. |
+| `@deepseek-ai/dsh-experimental-agent-team-profile` | Lead and teammate roles, a shared task board, nine team tools, and a Web roster, serving `/orchestrate` and `/autopilot-*`. | Disables `subagent` and `subagent_fork`. Conflicts with `pstack_subagent`. There is no pstack PR frontier, ledger, or stack verdict. See the warning below. |
 | `@deepseek-ai/dsh-experimental-ralph-bundle` | Global `ralph`, a foreground loop with a fresh child each round, serving `/autonomous-run`. | Not a persistent loop in the same Session; no event watcher; does not replace goals, heartbeats, or the decision log. |
 
 > [!WARNING]
@@ -164,7 +164,7 @@ Choose one of three browser providers: `@deepseek-ai/dsh-experimental-browser-us
 | Item | Version | Notes |
 |---|---|---|
 | DSH | `>=0.2.1-rc.5` | Minimum supported version; verified through the `0.2.2-alpha.2` baseline |
-| pstack | `0.15.36` | Upstream baseline commit `4dd1d05` |
+| pstack | `0.15.36` | Upstream baseline commit `ae5650f` |
 | Node.js | `>=24.21.1` | Runtime requirement |
 | Cordis | `~4.0.6-alpha.1` | Peer dependency |
 
@@ -184,7 +184,7 @@ A worktree Session has a different `cwd` from the original Session. The session-
 
 Upstream pstack adapts Claude Code with `docs/harness/claude-code.md`. It preserves the skill bodies. A separate host adaptation table maps `Task`, `AskQuestion`, todo, model slugs, and paths to the target host. The generator adds a one-line Claude Code adaptation note to skills that use Cursor names. Unsupported capabilities report `Skipped in Claude Code: <step>. <reason>.`
 
-dsh-pstack follows the same approach. The main adaptation document is [`pstack/harness/docs/harness/dsh.md`](./pstack/harness/docs/harness/dsh.md). It covers Tools, Subagent fields, Models, setup-pstack, Paths, and Cursor-only features. The `pstack_*` tools, agent presets, and Node scripts replace fields that DSH lacks. At build time, upstream pstack and the local adaptation tree are rendered into `pstack/pstack/`, then packaged with `src/*.ts` and `skills/` into `dist/`.
+dsh-pstack follows the same approach. The main adaptation document is [`pstack/harness/docs/harness/dsh.md`](./pstack/harness/docs/harness/dsh.md). It covers Tools, Subagent fields, Models, setup-pstack, Paths, Cursor-only features, Local replacements, and Optional plugins. The `pstack_*` tools, agent presets, and Node scripts replace fields that DSH lacks. At build time, upstream pstack and the local adaptation tree are rendered into `pstack/pstack/`, then packaged with `src/*.ts` and `skills/` into `dist/`.
 
 ## Credits
 

@@ -30,7 +30,7 @@
     <tr>
       <td align="center"><strong>58</strong><br /><sub>pstack 技能</sub></td>
       <td align="center"><strong>23</strong><br /><sub>playbook</sub></td>
-      <td align="center"><strong>4</strong><br /><sub>原生工具</sub></td>
+      <td align="center"><strong>5</strong><br /><sub>原生工具</sub></td>
       <td align="center"><strong>2</strong><br /><sub>agent preset</sub></td>
       <td align="center"><strong>5</strong><br /><sub>随包脚本</sub></td>
     </tr>
@@ -45,7 +45,7 @@
   <a href="#兼容性">兼容性</a>
 </p>
 
-`dsh-pstack` 是 [pstack](https://github.com/cursor/plugins/tree/main/pstack) 的 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）移植。它保留上游 pstack 的技能、playbook 与参考文档。4 个原生工具替代 DSH 缺少的接口，适配层则把 Cursor 的工具名、子代理字段、模型 slug 和路径映射到 DSH。
+`dsh-pstack` 是 [pstack](https://github.com/cursor/plugins/tree/main/pstack) 的 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）移植。它保留上游 pstack 的技能、playbook 与参考文档。5 个原生工具补上 DSH 的接口缺口，适配层则把 Cursor 的工具名、子代理字段、模型 slug 和路径映射到 DSH。
 
 上游 pstack 的技能大多声明 `disable-model-invocation: true`。`poteto-mode` 按名称路由到这些隐藏技能，但 DSH 的 `skill` 工具只暴露模型可见目录。DSH 也没有与 Cursor 的模型 slug、`subagent_type`、`readonly` 和 Bun 脚本对等的接口。dsh-pstack 在插件层处理这些差异，安装后可以从 `/poteto-mode` 开始工作。
 
@@ -125,7 +125,7 @@
 
 ## 可选 DSH 插件
 
-以下插件随 DSH 提供，默认关闭。安装 dsh-pstack 时不要求安装这些插件，但部分 pstack 流程需要它们才能完整执行。要启用插件，在「插件」页面用**添加插件**输入包名。也可以运行 `dsh plugin --profile <profile> add <package>`，然后重启 profile。除 `@deepseek-ai/dsh-mcp-client` 外，本节列出的 bundle 与 provider 都是实验性的。
+DSH 提供以下可选插件，默认关闭。多数随 DSH 提供，`@deepseek-ai/dsh-cua-bundle` 需按需安装。安装 dsh-pstack 时不要求安装这些插件，但部分 pstack 流程需要它们才能完整执行。要启用插件，在「插件」页面用**添加插件**输入包名。也可以运行 `dsh plugin --profile <profile> add <package>`，然后重启 profile。除 `@deepseek-ai/dsh-mcp-client` 外，本节列出的 bundle 与 provider 都是实验性的。
 
 > [!NOTE]
 > 未启用可选插件时，pstack 技能仍可加载。需要插件的步骤会输出 `Skipped in DeepSeek Harness: <step>. <reason>.` 后继续。缺少 `gh`、Java/TLC 或视频工具时，对应步骤会报告 blocked 或降级为截图。dsh-pstack 不会把未运行的步骤标记为通过。
@@ -136,7 +136,7 @@
 |---|---|---|
 | `@deepseek-ai/dsh-experimental-session-search` | 5 个只读工具：`session_search`、`session_event_search`、`session_trace`、`session_event_trace`、`session_event_read`，搜索和追踪历史会话，服务 `/recall`、`/reflect`、`/show-me-your-work`。 | 只匹配同一 `cwd` 的会话；当前会话用 `session_event_search`；没有 Cursor 的 `.jsonl` 转写路径。 |
 | `@deepseek-ai/dsh-experimental-worktree`<br />`@deepseek-ai/dsh-experimental-tool-worktree` | `create_worktree` 建本地分支和工作树，切换当前 Session 目录，用于 `/arena`、`/swarm`、`/architect` 的并行候选隔离。 | `from` 只读本地 ref，不 fetch；无云 VM；连续建树会改 `cwd`；不会自动给每个子代理分树。 |
-| `@deepseek-ai/dsh-experimental-forge-bundle` | PR 面板、checks、review、mark ready、merge、Session 绑定，也能从 composer 用新 worktree 启动 Session，服务 `/babysit`、`/shipping`、`/autopilot-*`。 | 仅 GitHub，需 `gh` 登录；模型侧没有 take 工具；没有 stack verdict，也没有 `origin` CLI；可与 worktree bundle 共存。 |
+| `@deepseek-ai/dsh-experimental-forge-bundle` | PR 面板、checks、review、mark ready、merge、Session 绑定，也能从 composer 用新 worktree 启动 Session，服务 `/babysit`、`/shipping`、`/autopilot-*`。 | 仅 GitHub，需 `gh` 登录；模型侧没有变更请求工具；没有 stack verdict，也没有 `origin` CLI；可与 worktree bundle 共存。 |
 
 ### 验证与证据
 
@@ -144,16 +144,16 @@
 
 | 插件 | 打开后的能力 | 边界与冲突 |
 |---|---|---|
-| `@deepseek-ai/dsh-browser-use` + 一个 provider | 导航、点击、输入、截图和 ARIA snapshot；Stagehand 另有 act、find、extract，用于验证技能和 UI 复现。 | 基础包没有 provider 时不生效；每个 Session 一个 provider；截图要图像模型；无视频；Stagehand 需要 Chromium 和非 DeepSeek 模型。 |
-| `@deepseek-ai/dsh-cua-bundle` | macOS 应用点击、输入、截图和权限页，用于桌面应用验证。 | 仅 macOS PTC；Windows 未完成；无视频。 |
-| `@deepseek-ai/dsh-experimental-terminal-bundle` | 6 个全局终端工具，跨调用保持 shell / REPL，支持后台 send，用于 CLI / TUI 验证。 | 只覆盖终端；会加到所有 Agent；持久状态要清理；切换会失效 KV cache。 |
+| `@deepseek-ai/dsh-browser-use` + 一个 provider | 导航、点击、输入、截图和 ARIA snapshot；Stagehand 另有 act、observe、extract，用于验证技能和 UI 复现。 | 基础包没有 provider 时不生效；每个 Session 一个 provider；截图要图像模型；无视频；Stagehand 需要 Chromium 和非 DeepSeek 模型。 |
+| `@deepseek-ai/dsh-cua-bundle` | macOS 应用点击、输入、截图、权限页和会话级授权，用于桌面应用验证。 | 仅 macOS PTC；单 computer-use provider 槽；Windows 未完成；无视频。 |
+| `@deepseek-ai/dsh-experimental-terminal-bundle` | 6 个全局终端工具，跨调用保持 shell / REPL，支持后台 send 和按 owner 隔离，用于 CLI / TUI 验证。 | 只覆盖终端；会加到所有 Agent；持久状态要清理；切换会失效 KV cache。 |
 | `@deepseek-ai/dsh-mcp-client` | 挂载 MCP server，工具以 `mcp__<server>__<tool>` 出现，`mcp-resources` 列出带资源的 server，服务 `/why`、`/teach` 的证据调查。 | 无默认 server；需逐项配置；无自动类别发现。 |
 
 ### 多代理
 
 | 插件 | 打开后的能力 | 边界与冲突 |
 |---|---|---|
-| `@deepseek-ai/dsh-experimental-agent-team-profile` | Lead / teammate、共享任务板、9 个团队工具和 Web roster，服务 `/orchestrate`、`/autopilot-*`。 | 禁用 `subagent` 和 `subagent_fork`，与 `pstack_subagent` 冲突。见下方警告。 |
+| `@deepseek-ai/dsh-experimental-agent-team-profile` | Lead / teammate、共享任务板、9 个团队工具和 Web roster，服务 `/orchestrate`、`/autopilot-*`。 | 禁用 `subagent` 和 `subagent_fork`，与 `pstack_subagent` 冲突。没有 pstack 的 PR frontier、ledger 或 stack verdict。见下方警告。 |
 | `@deepseek-ai/dsh-experimental-ralph-bundle` | 全局 `ralph`，每轮 fresh child 的 foreground 循环，服务 `/autonomous-run`。 | 不是同一 Session 常驻循环；无事件 watcher；不替代 goal、心跳和 decision log。 |
 
 > [!WARNING]
@@ -164,7 +164,7 @@
 | 项目 | 版本 | 说明 |
 |---|---|---|
 | DSH | `>=0.2.1-rc.5` | 最低支持版本；已验证至 `0.2.2-alpha.2` 基线 |
-| pstack | `0.15.36` | 上游基线提交 `4dd1d05` |
+| pstack | `0.15.36` | 上游基线提交 `ae5650f` |
 | Node.js | `>=24.21.1` | 运行时要求 |
 | Cordis | `~4.0.6-alpha.1` | peer dependency |
 
@@ -184,7 +184,7 @@ worktree Session 的 `cwd` 与原 Session 不同。session-search 插件只匹�
 
 上游 pstack 用 `docs/harness/claude-code.md` 适配 Claude Code。它保留技能正文，另用宿主适配表把 `Task`、`AskQuestion`、todo、模型 slug 和路径映射到目标宿主。生成器为使用 Cursor 名称的技能添加一行 Claude Code 适配提示。不支持的能力会报告 `Skipped in Claude Code: <step>. <reason>.`
 
-dsh-pstack 沿用这套做法。主适配文档是 [`pstack/harness/docs/harness/dsh.md`](./pstack/harness/docs/harness/dsh.md)，覆盖 Tools、Subagent fields、Models、setup-pstack、Paths 和 Cursor-only features。`pstack_*` 工具、agent preset 和 Node 脚本替代 DSH 缺少的字段。构建时，上游 pstack 与本地适配树被渲染到 `pstack/pstack/`，再与 `src/*.ts`、`skills/` 一起打包到 `dist/`。
+dsh-pstack 沿用这套做法。主适配文档是 [`pstack/harness/docs/harness/dsh.md`](./pstack/harness/docs/harness/dsh.md)，覆盖 Tools、Subagent fields、Models、setup-pstack、Paths、Cursor-only features、Local replacements 和 Optional plugins。`pstack_*` 工具、agent preset 和 Node 脚本替代 DSH 缺少的字段。构建时，上游 pstack 与本地适配树被渲染到 `pstack/pstack/`，再与 `src/*.ts`、`skills/` 一起打包到 `dist/`。
 
 ## 鸣谢
 
