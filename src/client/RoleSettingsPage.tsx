@@ -84,6 +84,18 @@ function buttonStyle(primary = false): CSSProperties {
   };
 }
 
+function dangerButtonStyle(): CSSProperties {
+  return {
+    border: `1px solid color-mix(in srgb, ${COLOR_ERROR} 55%, transparent)`,
+    borderRadius: 8,
+    padding: "5px 12px",
+    cursor: "pointer",
+    font: "inherit",
+    background: `color-mix(in srgb, ${COLOR_ERROR} 10%, transparent)`,
+    color: COLOR_ERROR,
+  };
+}
+
 function fieldStyle(basis: number, fullWidth = false): CSSProperties {
   return {
     flex: fullWidth ? "1 1 auto" : `1 1 ${basis}px`,
@@ -243,7 +255,7 @@ function RoleRouteRow(props: {
       {routes.length > 1 ? (
         <button
           type="button"
-          style={{ ...buttonStyle(), justifySelf: "start" }}
+          style={{ ...dangerButtonStyle(), justifySelf: "start" }}
           onClick={() => onRemove(index)}
           disabled={readOnly}
         >
