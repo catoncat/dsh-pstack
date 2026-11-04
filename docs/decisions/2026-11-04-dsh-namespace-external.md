@@ -1,9 +1,9 @@
 # 决定：DSH 命名空间整体外链，dsh 依赖只登记为 devDependencies（cordis 另加 peer）
 
-Status: proposed
+Status: accepted
 Date: 2026-11-04
 Scope: package.json, pnpm-workspace.yaml, pnpm-lock.yaml, vite.config.ts, src/**, docs/**
-Implemented-by: -
+Implemented-by: commit:71eb18f017a48f30ddab92cef40e2fb8c98e3904
 Review: 2027-05-04
 
 ## 背景
