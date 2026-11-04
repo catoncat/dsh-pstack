@@ -136,8 +136,8 @@ DSH provides the following optional plugins, which are disabled by default. Most
 | Plugin | Capability when enabled | Boundaries and conflicts |
 |---|---|---|
 | `@deepseek-ai/dsh-experimental-session-search` | Five read-only tools search and trace historical Sessions for `/recall`, `/reflect`, and `/show-me-your-work`: `session_search`, `session_event_search`, `session_trace`, `session_event_trace`, and `session_event_read`. | Matches only Sessions with the same `cwd`; use `session_event_search` for the current Session; there is no Cursor `.jsonl` transcript path. |
-| `@deepseek-ai/dsh-experimental-worktree`<br />`@deepseek-ai/dsh-experimental-tool-worktree` | `create_worktree` creates a local branch and worktree and switches the current Session directory, isolating parallel candidates for `/arena`, `/swarm`, and `/architect`. In Web and Desktop, enable it through **Change requests & worktrees** (`@deepseek-ai/dsh-experimental-forge-bundle`); the standalone bundle has no Plugins page card and is only for profiles without the Web application. | `from` reads only local refs and does not fetch; there is no cloud VM; creating worktrees repeatedly changes `cwd`; it does not automatically give each subagent its own tree. Do not select this standalone bundle and the forge bundle together: both mount `worktree` and `tool-worktree`, so selecting both makes those component controls read-only. |
-| `@deepseek-ai/dsh-experimental-forge-bundle` | PR panel, checks, review, mark ready, merge, and Session binding, plus starting a Session from the composer with a new worktree and the model-side `create_worktree` tool, serving `/babysit`, `/shipping`, and `/autopilot-*`. | GitHub only, requires `gh` login for GitHub status (local worktree creation does not); there is no model-side change-request tool; there is no stack verdict or `origin` CLI; its single **Change requests & worktrees** switch also provides the worktree tool, so do not also enable the standalone worktree bundle. |
+| `@deepseek-ai/dsh-experimental-worktree`<br />`@deepseek-ai/dsh-experimental-tool-worktree` | `create_worktree` creates a local branch and worktree and switches the current Session directory, isolating parallel candidates for `/arena`, `/swarm`, and `/architect`. | `from` reads only local refs and does not fetch; there is no cloud VM; creating worktrees repeatedly changes `cwd`; it does not automatically give each subagent its own tree. |
+| `@deepseek-ai/dsh-experimental-forge-bundle` | PR panel, checks, review, mark ready, merge, and Session binding, plus starting a Session from the composer with a new worktree, serving `/babysit`, `/shipping`, and `/autopilot-*`. | GitHub only, requires `gh` login; there is no model-side change-request tool; there is no stack verdict or `origin` CLI; it can coexist with the worktree bundle. |
 
 ### Verification and evidence
 
@@ -164,7 +164,7 @@ Choose one of three browser providers: `@deepseek-ai/dsh-experimental-browser-us
 
 | Item | Version | Notes |
 |---|---|---|
-| DSH | `>=0.2.1-rc.5` | Minimum supported version; verified through the `0.2.2-alpha.3` baseline |
+| DSH | `>=0.2.1-rc.5` | Minimum supported version; verified through the `0.2.2-alpha.2` baseline |
 | pstack | `0.15.36` | Upstream baseline commit `ae5650f` |
 | Node.js | `>=24.21.1` | Runtime requirement |
 | Cordis | `~4.0.6-alpha.1` | Peer dependency |

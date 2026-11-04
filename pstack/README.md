@@ -602,7 +602,7 @@ B 的关键行为对照清单（`pstack/runtime/skills/statechart/scripts/statec
 
 ## 8. 分阶段状态
 
-下表逐项记录实现、审查、文档与最终覆盖状态；`审查` 列先按 2026-11-04 首轮 `review port` 的复核结果记录。同日针对 DOC-01 的复审未通过：适配文档仍沿用旧 forge/worktree 入口；EXT-004 已修复默认推荐与互斥行为并恢复 `active`。下表的能力与实现覆盖不因该文档问题而改变，最终结论见 `docs/port-review.md`。`实现` 列的 `已实现` 表示该能力按第 2～4 节分类的映射、标准模式、可选插件或插件内路径已落地并核验；`不适用（平台排除）` 表示按上游排除基线不实现。`文档` 列定位实际适配产物；`最终覆盖` 区分完整、已覆盖（有适配语义差异）、条件覆盖、部分覆盖和平台排除，括号内列出外部条件、剩余差异或对应缺口。
+下表逐项记录实现、审查、文档与最终覆盖状态；`审查` 列先按 2026-11-04 首轮 `review port` 的复核结果记录。实现审查保持通过，EXT-004 已修复默认推荐与互斥行为并恢复 `active`。DOC-01 已归为 documentation-only 的 `doc` 阶段待办；`implement port` 提前写入的适配文档已撤回，不在实现阶段核销。下表的能力与实现覆盖不因该文档待办而改变，最终结论见 `docs/port-review.md`。`实现` 列的 `已实现` 表示该能力按第 2～4 节分类的映射、标准模式、可选插件或插件内路径已落地并核验；`不适用（平台排除）` 表示按上游排除基线不实现。`文档` 列定位实际适配产物；`最终覆盖` 区分完整、已覆盖（有适配语义差异）、条件覆盖、部分覆盖和平台排除，括号内列出外部条件、剩余差异或对应缺口。
 
 ### 8.1 模板、脚本与路径
 
@@ -761,7 +761,7 @@ B 的关键行为对照清单（`pstack/runtime/skills/statechart/scripts/statec
 
 ### 8.5 文档产物与覆盖口径
 
-文档状态：2026-11-04 `implement port` 修正 DOC-01——`dsh.md` 的 OPT-01/OPT-02 已同步 Web/Desktop 经 Change requests & worktrees 统一启用、独立 worktree bundle 无 Plugins 卡片且不得与 forge bundle 同时选择、forge bundle 附带模型侧 `create_worktree`，双语根 README 已更新同一启用条件与互斥边界并记 DSH `0.2.2-alpha.3` 已验证基线；待 `review port` 复核。主适配文档是 [pstack/harness/docs/harness/dsh.md](harness/docs/harness/dsh.md)，生成副本是 [pstack/pstack/docs/harness/dsh.md](pstack/docs/harness/dsh.md)。它保留上游模板的六个章节，并增加 [Local replacements](harness/docs/harness/dsh.md#local-replacements) 与 [Optional plugins](harness/docs/harness/dsh.md#optional-plugins) 两个固定追加小节，分别覆盖运行期替代与 OPT-01 至 OPT-09 的包名、启用能力、未启用 fallback 和支持边界。技能、playbook、reference 与 principle 正文保持上游原文，由生成器在需要 Cursor 名称映射的技能中加入适配文档指针。
+文档状态：2026-11-04 实现审查通过，DOC-01 保留为 documentation-only 的 `doc` 阶段待办。待 `doc` 同步 `dsh.md` 的 OPT-01/OPT-02、双语根 README 的启用条件与 DSH `0.2.2-alpha.3` 已验证基线，并记录最终覆盖；统一入口、隐藏卡片、模型侧 `create_worktree`、互斥以及 Web/Desktop 既有独立选择由 profile 文件管理的依据已冻结。`implement port` 的提前文档改动已撤回。主适配文档是 [pstack/harness/docs/harness/dsh.md](harness/docs/harness/dsh.md)，生成副本是 [pstack/pstack/docs/harness/dsh.md](pstack/docs/harness/dsh.md)。它保留上游模板的六个章节，并增加 [Local replacements](harness/docs/harness/dsh.md#local-replacements) 与 [Optional plugins](harness/docs/harness/dsh.md#optional-plugins) 两个固定追加小节，分别覆盖运行期替代与 OPT-01 至 OPT-09 的包名、启用能力、未启用 fallback 和支持边界。技能、playbook、reference 与 principle 正文保持上游原文，由生成器在需要 Cursor 名称映射的技能中加入适配文档指针。
 
 最终覆盖以固定上游提交和本轮测试为限。完整覆盖不排除技能本身声明的通用外部前提；条件覆盖必须启用括号中的插件或安装外部工具；部分覆盖仍有明确语义差异；平台排除按上游规则输出跳过行并继续，不计为通过。六项未决证据保留在 9.3，不因文档完成而核销。
 

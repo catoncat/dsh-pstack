@@ -9,10 +9,10 @@
 ### DOC-01：OPT-01 与 OPT-02 的适配文档未同步 forge/worktree 合并
 
 - `origin`：doc
-- `status`：fixed-pending-review
-- `affected_ext`：EXT-004
-- `required_behavior`：`pstack/README.md` §1.8 已确认 DSH `05b1cae` 将 forge 面板与模型侧 `create_worktree` 合并到 `@deepseek-ai/dsh-experimental-forge-bundle`；适配文档必须同步说明 OPT-01 在 Web/Desktop 经 OPT-02 启用、独立 bundle 无 Plugins 卡片，以及 OPT-02 同时提供模型侧 `create_worktree`。双语根 README 必须保留这些启用条件与能力边界；文档状态与已验证基线须更新到本轮日期和 DSH `0.2.2-alpha.3`。`EXT-004` 的推荐目录与默认启用项仍指向独立 worktree bundle，需复核这是有意保留的非 Web 路径还是应改默认推荐，不能直接宣称 OPT-01 与 OPT-02 的启用行为已一致。
-- `evidence`：当前 `pstack/harness/docs/harness/dsh.md` 的 OPT-01 行要求启用独立 worktree 包，OPT-02 行写「The optional bundle adds no model-side change-request tool」且未列 `create_worktree`；当前提交 DSH 的 [tool-worktree README](../upstream/deepseek-harness/packages/experimental/tool-worktree/README.md#L26-L37) 明确独立 bundle 无 Plugins 卡片且 Web/Desktop 经 forge bundle 提供工具，[forge-bundle README](../upstream/deepseek-harness/packages/experimental/forge-bundle/README.md#L26-L40) 明确同一开关同时挂载面板与模型工具。当前 `README.md` 与 `README.zh.md` 仍写 worktree 与 forge 可共存、已验证至 `0.2.2-alpha.2`，而 `src/internal/optional-plugins.ts` 仍把独立 tool-worktree 作为 OPT-01 默认推荐。`pstack/README.md` §8.5 文档完成日期仍为 2026-11-03，与本结论冲突。
+- `status`：open（documentation-only；`doc` 阶段待办，不退回实现）
+- `affected_ext`：EXT-004（实现与验收保持 active，无需修复）
+- `required_behavior`：在 `doc` 阶段同步 OPT-01/OPT-02 的适配文档与全部语言版根 README：Web/Desktop 默认通过 OPT-02 的 **Change requests & worktrees** 同时启用面板和模型侧 `create_worktree`；独立 bundle 无 Plugins 卡片，其它 profile 可在 `dsh.profile.bundles` 选择，Web/Desktop 中既有独立选择保持隐藏并由 profile 文件管理；不得把独立 bundle 绝对限定为无 Web 的 profile，也不得同时选择独立 bundle 与 forge bundle。兼容基线更新为 DSH `0.2.2-alpha.3`，`pstack/README.md` 记录最终覆盖。
+- `evidence`：[tool-worktree README](../upstream/deepseek-harness/packages/experimental/tool-worktree/README.md#L26-L37) 证明统一入口、隐藏卡片和独立组合；[forge-bundle README](../upstream/deepseek-harness/packages/experimental/forge-bundle/README.md#L26-L40) 证明同一开关附带模型工具；[升级指南](../upstream/deepseek-harness/docs/upgrade-guide/v0.2.2-alpha.2/forge-worktree-entry/guide.md#L12-L14) 证明重复 id 与互斥，[同指南第 29 行](../upstream/deepseek-harness/docs/upgrade-guide/v0.2.2-alpha.2/forge-worktree-entry/guide.md#L29-L29) 证明 Web/Desktop 的隐藏独立选择由 profile 文件管理。提交 `0458128` 曾提前在 `implement port` 修改这些文档，现已恢复至其父提交 `f14e1ad` 的内容；这些修改只作为 doc 阶段的已验证事实与修订参考，不视为已交付适配产物。
 
 ## 实现记录
 
@@ -239,9 +239,10 @@ active EXT 验收均包含在上述 `vp test` 中：EXT-003 的 45 个用例（`
 - 未运行 `playground/cases-run.mjs`、真实 TLC、视频或外部 forge 流程；其外部前提与证据限制保留在 §9.3，与 DOC-01 无新增关系。
 - 除 DOC-01 外，没有新增证据不足或未覆盖项。
 
-## 实现记录（2026-11-04，`implement port`，DOC-01）
+## 阶段纠偏记录（2026-11-04，`implement port`，DOC-01）
 
-- 工作项：DOC-01（`origin: doc`，`affected_ext: EXT-004`），本轮唯一开放 port finding；无 `status: active` FIX；无 core Issue/EXT。范围仅文档同步：`pstack/harness/docs/harness/dsh.md`、根 `README.md`、根 `README.zh.md` 与 `pstack/README.md` §8.5，不改 `src/**`、`tests/**`、`pstack/runtime/**`、EXT 登记与 FIX 台账。
+- **记录性质**：本节保留一次阶段误用的历史证据，不是有效的 port 实现交付。DOC-01 是 `doc` 阶段待办，不应由 `implement port` 修改适配文档。
+- 工作项：DOC-01（`origin: doc`，`affected_ext: EXT-004`），本轮唯一 documentation-only 待办；无 `status: active` FIX；无 core Issue/EXT。误用范围仅文档同步：`pstack/harness/docs/harness/dsh.md`、根 `README.md`、根 `README.zh.md` 与 `pstack/README.md` §8.5，不改 `src/**`、`tests/**`、`pstack/runtime/**`、EXT 登记与 FIX 台账。
 - 上游基线：pstack `ae5650febf4320793844c12c4adaa937f417f8da`（`0.15.36`）；DSH `05b1cae8db6e674c5685101494d4eec24652424a`（`0.2.2-alpha.3`）。两个子模块工作树无改动，`git status --porcelain` 起始无输出。
 - 冻结事实（DSH `05b1cae`）：[tool-worktree README](../upstream/deepseek-harness/packages/experimental/tool-worktree/README.md#L28-L28) 说明 Web/Desktop 经 Change requests & worktrees 启用、独立 bundle 无 Plugins 卡片、其它 profile 走 `dsh.profile.bundles`；[forge-bundle README](../upstream/deepseek-harness/packages/experimental/forge-bundle/README.md#L30-L30) 说明同一开关同时启用面板与模型侧 `create_worktree`；[升级指南](../upstream/deepseek-harness/docs/upgrade-guide/v0.2.2-alpha.2/forge-worktree-entry/guide.md#L12-L14) 说明同时选择独立 bundle 与 forge bundle 会插入重复 `worktree` / `tool-worktree` id、必须移除独立选择。
 - 修复内容（对照 `required_behavior`）：
@@ -264,7 +265,81 @@ active EXT 验收均包含在上述 `vp test` 中：EXT-003 的 45 个用例（`
 
 - 未覆盖/有意跳过：未启动 playground Web 服务或操作真实 UI，本轮为文档同步，不涉及真实运行层；未改 `playground/README.md` 的本地 DSH 基线说明（非 port 文档产物，属 `playground/` 开发环境注记，超出本工作项范围）。
 - 适用范围检查：`git diff --name-only` 为 `README.md`、`README.zh.md`、`pstack/README.md`、`pstack/harness/docs/harness/dsh.md`、`pstack/pstack/docs/harness/dsh.md`；`pstack/pstack/**` 仅由生成器刷新。除上述文档与状态文件外无改动。
-- 结论：DOC-01 置 `fixed-pending-review`，`docs/port-state.yaml` 设 `active/review`，等待 `/pstack-port review port` 复核。
+- 纠偏结论：上述测试证明 EXT-004 与共享实现未受影响，但不能证明提前交付文档的阶段合法。四条适配文档已恢复至 `0458128^`（`f14e1ad`）的准确内容；`docs/port-review.md` 保留本节作为证据，`pstack/README.md` 只保留当前审查状态。DOC-01 不作为 `fixed-pending-review` 实现 finding，而保留为 documentation-only 的 doc 待办。
+
+## 阶段误用复审记录（2026-11-04，`review port`，DOC-01）
+
+> 本节曾把 documentation-only 待办误判为需要退回实现的 finding；该结论与 `/pstack-port implement port` 下一步已被末节「阶段纠偏复审记录」取代。
+
+- 受审提交：`0458128b94ba2d76085145d5a1b1e2f40bc39c6b`（`docs: pstack port baseline implement（DOC-01 适配文档同步 forge/worktree）`）；审查开始时 `git status --porcelain` 无输出。
+- 上游基线：pstack `ae5650febf4320793844c12c4adaa937f417f8da`（`0.15.36`）；DSH `05b1cae8db6e674c5685101494d4eec24652424a`（`0.2.2-alpha.3`）。两个子模块工作树无改动。
+- 审查范围：DOC-01 的 `required_behavior`、README 全部 135 个能力行与 PI-01～PI-09 的现有实现、公共 API、权限、最小性与共享影响，以及全部 active EXT 和 active FIX。
+- 工作项：没有 core Issue 或 core EXT；EXT-003、EXT-004、EXT-005 均为 active；没有 active 或退役 FIX。EXT-004 的修复与 Issue #4 验收沿用上一节记录，本轮未发现需要重新标 broken 的行为。
+- 适用 `AGENTS.md`：根 `AGENTS.md`、`playground/AGENTS.md`、`docs/decisions/AGENTS.md`；只读 DSH 证据另读其根、`packages/`、`packages/experimental/` 与 `docs/` 的适用约定。
+- 适用决策：`2026-10-28-pstack-plugin-tools.md`、`2026-10-29-pstack-harness-tree-port.md`、`2026-10-28-skills-directory-scope.md`、`2026-10-30-playground-real-plugin-testing.md`、`2026-10-30-script-commands-in-vite-config.md`、`2026-10-30-pstack-config-page-i18n.md` 为 accepted；`2026-10-30-dsh-version-range.md`、`2026-11-03-role-capability-query.md`、`2026-11-03-maxdepth-optional-default-one.md` 为 proposed，按检索约定读取并核对当前事实，不作为已落地锚点。本轮没有决策记录变更。
+- 验证环境：仓库根 `/home/leihaohao/workspace/dsh-pstack`；Vite+ Node `24.22.1`、vite-plus `1.4.0`、Vitest `5.0.5`；直接 Node `26.13.0`；DSH CLI `0.2.2-alpha.3`。真实运行检查仅使用 `playground/.dsh` 的 `pstack-playground` profile 做 `--dump-config`，不新建 home/profile，不启动服务或调用用户所选模型。
+
+### 再复审门禁与行为验证
+
+| 检查 | 命令或范围 | 退出码 | 结果 |
+|---|---|---:|---|
+| 静态检查 | `vp check` | 0 | 95 个文件格式正确；0 errors；既有 `pstack/scripts/generate-pstack-harness-tree.mjs:204` warning 保留 |
+| 显式类型 | `vp run typecheck` | 0 | `tsc --noEmit` 通过（缓存重放） |
+| 插件测试 | `vp test` | 0 | 18 个文件、122 个测试通过，包含全部 active EXT 验收用例 |
+| 运行时测试 | `vp run @internal/pstack#test` | 0 | 12 个 suite、76 个测试通过（缓存重放） |
+| 构建 | `vp run build` | 0 | 5/5 任务成功；3 组技能脚本替换，5 个脚本 id 解析，22 个 Host 产物与 Client 产物生成 |
+| 适配文档对账 | `vp run @internal/pstack#check:harness-doc` | 0 | 结构、OPT id 与包名等既有检查通过；不检查根 README 对隐藏独立选择的语义边界 |
+| 生成树漂移 | `node pstack/scripts/generate-pstack-harness-tree.mjs --check` | 0 | `pstack/pstack is up to date.`；源与生成 `dsh.md` 一致 |
+| FIX replay | `node pstack/scripts/port-fixes.mjs replay` | 0 | 没有 active FIX；`No active FIX records; replay passed.` |
+| 能力编号与链接 | `node .tmp/review-port-check.mjs` | 0 | 135 个状态编号、无重复；324 个相对文件链接存在且行号均在范围内 |
+| playground 合成 | `DSH_HOME=$PWD/playground/.dsh dsh --profile pstack-playground --dump-config` | 0 | 6 条 pstack 行、2 个 preset 与 `maxDepth: 2` 存在；未启用冲突可选 bundle |
+
+active EXT 验收均包含在上述 `vp test` 中：EXT-003 的 45 个用例（`role-page` 8、`role-editor` 22、`role-state` 6、`roles-remote` 5、`roles-service` 4）、EXT-004 的 20 个用例（`optional-plugins-page` 6、`optional-plugins` 14）、EXT-005 的 4 个用例（`bundle-config-dialog` 2、`client-plugin` 2）全部通过。
+
+### 再复审发现与分诊
+
+1. **DOC-01 由 `fixed-pending-review` 改为 `reopened`。** 主适配文档、OPT-02 的 `create_worktree`、互斥与版本基线修正有效，但双语根 README 第 139 行的「只用于没有 Web 应用的 profile」排除了 DSH 升级指南第 29 行明确保留的 Web/Desktop 隐藏独立选择。应把统一开关写成 Web/Desktop 默认入口，同时说明隐藏独立选择由 profile 文件管理；互斥规则保持不变。该文档问题由 port 修复，不建立 blocker。
+2. **EXT-004 保持 active。** 默认推荐仍是 OPT-02/OPT-06，独立 worktree 只作 profile 说明；单项与一键启用均拒绝互斥组合，关闭操作不被冲突阻止。全部 20 个 EXT-004 验收用例通过，真实安装与 UI 证据沿用 Issue #4 的复核验收记录。
+3. **公共接口与权限未见新增阻断。** 本轮只改文档，没有新增工具、入口、文件写入或进程执行；`vp run typecheck`、构建和 playground 合成通过，五个模型可见工具及既有权限边界不变。
+4. **范围与最小性。** DOC-01 实现提交只改双语根 README、`dsh.md` 手写源与生成副本、port 状态和审查文档，没有生产代码、测试、运行时、上游或 FIX 台账变化。本轮审查只更新 `docs/port-review.md`、`docs/port-state.yaml` 与 `pstack/README.md`；`git diff --check` 通过。
+
+### 再复审结论
+
+不通过。全部五条必需门禁与全部 active EXT 验收退出 0，但 DOC-01 的双语根 README 仍对独立 worktree bundle 的适用场景作了过窄限制。`docs/port-state.yaml` 设 `active/implement`、`blocker: null`，不进入 `doc`。下一步：`/pstack-port implement port`。
+
+### 有意跳过与证据不足
+
+- 未启动 playground Web 服务或重复操作真实 UI；本轮是文档边界复核，EXT-004 的真实安装与 UI 证据已由 Issue #4 复核验收记录。未运行涉及用户所选模型的会话。
+- 未运行 `playground/cases-run.mjs`、真实 TLC、视频或外部 forge 流程；其外部前提与证据限制保留在 §9.3，与 DOC-01 无新增关系。
+- 除 DOC-01 外，没有新增证据不足或未覆盖项。
+
+## 阶段纠偏复审记录（2026-11-04，`review port`，实现审查与 doc 待办分离）
+
+- 纠偏原因：根 `README.md` / `README.zh.md` 的动态内容由 `doc` 同步，`pstack/harness/**/dsh.md` 与生成副本也属于 `doc` 的适配产物。`0458128` 在 `implement port` 提前修改它们不符合阶段边界；上一节又误将 DOC-01 退回实现。
+- 回退范围：`README.md`、`README.zh.md`、`pstack/harness/docs/harness/dsh.md`、`pstack/pstack/docs/harness/dsh.md` 已恢复至 `0458128^`（`f14e1ad`）的准确内容，`git diff --exit-code f14e1ad -- <四个路径>` 退出 0。临时补丁仅存于 gitignored `.tmp/premature-doc-changes.patch`，供 `doc` 参考，不属于交付产物。
+- 保留范围：EXT-004 的 `src/**`、`tests/**` 修复、active 登记与 Issue #4 验收不变；PI-01～PI-09、公共 API、权限和全部 active FIX 的实现审查证据不变。没有 blocker，没有 EXT broken。
+- 适用约定：根 `AGENTS.md`、`playground/AGENTS.md`、`docs/decisions/AGENTS.md`；accepted 决策为 `2026-10-28-pstack-plugin-tools.md`、`2026-10-29-pstack-harness-tree-port.md`、`2026-10-28-skills-directory-scope.md`、`2026-10-30-playground-real-plugin-testing.md`、`2026-10-30-script-commands-in-vite-config.md`、`2026-10-30-pstack-config-page-i18n.md`。验证环境与前节相同：Vite+ Node `24.22.1`、vite-plus `1.4.0`、Vitest `5.0.5`、DSH CLI `0.2.2-alpha.3`；未启动服务或调用用户模型。
+
+| 检查 | 命令 | 退出码 | 结果 |
+|---|---|---:|---|
+| 静态检查 | `vp check` | 0 | 95 个文件格式正确；0 errors；既有生成器第 204 行 warning 保留 |
+| 插件测试 | `vp test` | 0 | 18 个文件、122 个测试通过；EXT-003 45、EXT-004 20、EXT-005 4 个验收用例全部通过 |
+| 适配文档对账 | `vp run @internal/pstack#check:harness-doc` | 0 | 恢复后的既有文档结构与包名一致；DOC-01 的语义更新仍待 `doc` 完成 |
+| 生成树漂移 | `node pstack/scripts/generate-pstack-harness-tree.mjs --check` | 0 | `pstack/pstack is up to date.` |
+| FIX replay | `node pstack/scripts/port-fixes.mjs replay` | 0 | 无 active FIX；replay 通过 |
+| 回退精确性 | `git diff --exit-code f14e1ad -- README.md README.zh.md pstack/harness/docs/harness/dsh.md pstack/pstack/docs/harness/dsh.md` | 0 | 四条提前变更的文档与实现前版本逐字一致 |
+
+### 纠偏结论
+
+实现审查通过：135 个能力行的实现状态、全部 active EXT、全部 active FIX、公共 API 和权限没有新增问题。DOC-01 保留为 `open（documentation-only）` 的 `doc` 待办，不作为实现 finding，也不标 `fixed-pending-review`；其内容、事实依据与阶段边界见本报告顶部 Findings。
+
+当前没有需要 `/pstack-port implement port` 的行为或实现缺口。`docs/port-state.yaml` 设 `active/doc`、`blocker: null`，下一步 `/pstack-port doc`。`doc` 必须重新编写并验证适配文档与全部语言版根 README，不能直接把 `0458128` 的修改视为已交付；其中根 README 对独立 bundle 的绝对限制必须改为默认统一入口加隐藏 profile 管理路径。DOC-01 完成前不得按已完成轮次收尾。
+
+### 有意跳过与证据不足
+
+- 未再次启动 playground 或运行真实会话；本次是阶段边界纠偏与文档回退，EXT-004 的当前真实安装和 UI 证据沿用 Issue #4 验收。
+- 未运行真实 TLC、视频、外部 forge 流程；既有 U-01～U-06 限制不变。
+- 除 DOC-01 的 doc 待办外，无新增未覆盖或证据不足项。
 
 ## 未解决限制
 
