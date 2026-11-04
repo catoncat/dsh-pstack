@@ -131,14 +131,15 @@ To enable a plugin, open **Plugins → Add plugin**, select the package, and res
 
 | Use case | Plugin | Limits and conflicts |
 |---|---|---|
-| Session history | `@deepseek-ai/dsh-experimental-session-search` | Read-only. Matches Sessions with the same `cwd`. |
-| Worktrees and GitHub PRs | `@deepseek-ai/dsh-experimental-forge-bundle` | Includes `create_worktree`. Do not add standalone worktree bundles. |
-| Browser verification | `@deepseek-ai/dsh-browser-use` and one provider | One provider per Session. No video recording. |
-| Desktop verification | `@deepseek-ai/dsh-cua-bundle` | macOS PTC Sessions only. |
-| Persistent terminals | `@deepseek-ai/dsh-experimental-terminal-bundle` | Persistent shells and REPLs. |
-| MCP integrations | `@deepseek-ai/dsh-mcp-client` | Requires explicit server configuration. |
-| Agent teams | `@deepseek-ai/dsh-experimental-agent-team-profile` | Conflicts with `pstack_subagent`. |
-| Autonomous loops | `@deepseek-ai/dsh-experimental-ralph-bundle` | Starts a fresh child each round. No event watcher. |
+| Worktrees (non-Web profiles) | `@deepseek-ai/dsh-experimental-worktree` and `@deepseek-ai/dsh-experimental-tool-worktree` | No Plugins card. Select the standalone bundle in `dsh.profile.bundles`. Web and Desktop use the unified bundle below instead. Never enable both. |
+| Worktrees and GitHub PRs | `@deepseek-ai/dsh-experimental-forge-bundle` | Provides the **Change requests & worktrees** switch and `create_worktree`. GitHub status needs a logged-in `gh`. |
+| Session history | `@deepseek-ai/dsh-experimental-session-search` | Read-only. Requires exact `cwd` equality. Subagent transcript coverage is unconfirmed. |
+| Browser verification | `@deepseek-ai/dsh-browser-use` and one provider | One provider per Session. Screenshots need an image-capable model. No video recording. |
+| Desktop verification | `@deepseek-ai/dsh-cua-bundle` | macOS PTC Sessions only. Windows support is incomplete. No video recording. |
+| Persistent terminals | `@deepseek-ai/dsh-experimental-terminal-bundle` | Six persistent shell and REPL tools. No GUI control or video recording. |
+| MCP integrations | `@deepseek-ai/dsh-mcp-client` | No server configured by default. No automatic evidence-category discovery. |
+| Agent teams | `@deepseek-ai/dsh-experimental-agent-team-profile` | Conflicts with `pstack_subagent`. No pstack PR frontier, ledger, or stack verdict. |
+| Autonomous loops | `@deepseek-ai/dsh-experimental-ralph-bundle` | Starts a fresh child each round. No persistent loop or event watcher. |
 
 Most packages ship with DSH. `@deepseek-ai/dsh-cua-bundle` installs on demand. Except for the MCP client, these plugins are experimental.
 
@@ -146,14 +147,18 @@ Most packages ship with DSH. `@deepseek-ai/dsh-cua-bundle` installs on demand. E
 
 Choose one provider for `@deepseek-ai/dsh-browser-use`:
 
-- `@deepseek-ai/dsh-experimental-browser-use-stagehand-native`
+- `@deepseek-ai/dsh-experimental-browser-use-stagehand-native`: also needs Chromium and a supported non-DeepSeek model.
 - `@deepseek-ai/dsh-experimental-browser-use-playwright-mcp`
 - `@deepseek-ai/dsh-experimental-browser-use-chrome-devtools-mcp`
+
+Providers have different tool names and selectors. Browser and computer use share separate single-provider slots.
+
+The configuration page recommends Change requests & worktrees and session search. It never enables plugins automatically. Agent Teams is a conflict warning, not a recommendation.
 
 > [!WARNING]
 > Use either Agent Teams or `pstack_subagent`, not both. Agent Teams disables DSH's native subagent tools.
 
-When a plugin is disabled, dependent steps report skipped or blocked. They never report passed. See the [DSH adaptation guide](./pstack/harness/docs/harness/dsh.md#optional-plugins) for setup details and fallbacks.
+When a plugin is disabled, dependent steps report skipped or blocked. They never report passed. Use `gh` through `bash` without the forge bundle, and `git worktree add` without a worktree bundle. See the [DSH adaptation guide](./pstack/harness/docs/harness/dsh.md#optional-plugins) for setup details and fallbacks.
 
 ## ⚠️ Remaining gaps
 

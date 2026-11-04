@@ -131,14 +131,15 @@ vendored 技能的来源与哈希记录在 [`skills/skills-lock.json`](./skills/
 
 | 使用场景 | 插件 | 限制与冲突 |
 |---|---|---|
-| 历史会话 | `@deepseek-ai/dsh-experimental-session-search` | 只读，仅匹配 `cwd` 完全相同的 Session。 |
-| worktree 与 GitHub PR | `@deepseek-ai/dsh-experimental-forge-bundle` | 包含 `create_worktree`，不要再添加独立 worktree bundle。 |
-| 浏览器验证 | `@deepseek-ai/dsh-browser-use` 与一个 provider | 每个 Session 使用一个 provider，不支持录屏。 |
-| 桌面验证 | `@deepseek-ai/dsh-cua-bundle` | 仅支持 macOS PTC Session。 |
-| 持久终端 | `@deepseek-ai/dsh-experimental-terminal-bundle` | 提供持久 shell 与 REPL。 |
-| MCP 集成 | `@deepseek-ai/dsh-mcp-client` | 需要显式配置 server。 |
-| agent team | `@deepseek-ai/dsh-experimental-agent-team-profile` | 与 `pstack_subagent` 冲突。 |
-| 自主循环 | `@deepseek-ai/dsh-experimental-ralph-bundle` | 每轮使用新子代理，无事件 watcher。 |
+| 工作树（非 Web profile） | `@deepseek-ai/dsh-experimental-worktree` 和 `@deepseek-ai/dsh-experimental-tool-worktree` | 无 Plugins 卡片，在 `dsh.profile.bundles` 中选择独立 bundle。Web 和 Desktop 改用下一行的统一 bundle，不得同时启用。 |
+| worktree 与 GitHub PR | `@deepseek-ai/dsh-experimental-forge-bundle` | 提供 **Change requests & worktrees** 开关和 `create_worktree`，GitHub 状态需要已登录的 `gh`。 |
+| 历史会话 | `@deepseek-ai/dsh-experimental-session-search` | 只读，要求 `cwd` 完全相同；子代理 transcript 覆盖范围未证实。 |
+| 浏览器验证 | `@deepseek-ai/dsh-browser-use` 与一个 provider | 每个 Session 使用一个 provider，截图需要支持图像的模型，不支持录屏。 |
+| 桌面验证 | `@deepseek-ai/dsh-cua-bundle` | 仅支持 macOS PTC Session，Windows 支持尚不完整，不支持录屏。 |
+| 持久终端 | `@deepseek-ai/dsh-experimental-terminal-bundle` | 六个持久 shell 与 REPL 工具，不支持 GUI 控制或录屏。 |
+| MCP 集成 | `@deepseek-ai/dsh-mcp-client` | 默认无 server，需要显式配置；不会自动发现证据类别。 |
+| agent team | `@deepseek-ai/dsh-experimental-agent-team-profile` | 与 `pstack_subagent` 冲突；没有 pstack 的 PR frontier、ledger 或 stack verdict。 |
+| 自主循环 | `@deepseek-ai/dsh-experimental-ralph-bundle` | 每轮使用新子代理，不提供同一 Session 的常驻循环或事件 watcher。 |
 
 多数包随 DSH 提供，`@deepseek-ai/dsh-cua-bundle` 按需安装。除 MCP client 外，以上插件均为实验性插件。
 
@@ -146,14 +147,18 @@ vendored 技能的来源与哈希记录在 [`skills/skills-lock.json`](./skills/
 
 为 `@deepseek-ai/dsh-browser-use` 选择一个 provider：
 
-- `@deepseek-ai/dsh-experimental-browser-use-stagehand-native`
+- `@deepseek-ai/dsh-experimental-browser-use-stagehand-native`：还需要 Chromium 和受支持的非 DeepSeek 模型。
 - `@deepseek-ai/dsh-experimental-browser-use-playwright-mcp`
 - `@deepseek-ai/dsh-experimental-browser-use-chrome-devtools-mcp`
+
+不同 provider 的工具名与 selector 不同。浏览器和桌面控制各自使用一个 provider 槽。
+
+配置页默认推荐 Change requests & worktrees 和会话搜索，不会自动启用任何插件。Agent Teams 仅作为冲突警告，不属于推荐项。
 
 > [!WARNING]
 > Agent Teams 与 `pstack_subagent` 只能二选一。Agent Teams 会禁用 DSH 原生子代理工具。
 
-未启用可选插件时，依赖它的步骤会标记为 skipped 或 blocked，不会标记为通过。安装与降级方案见 [DSH 适配文档](./pstack/harness/docs/harness/dsh.md#optional-plugins)。
+未启用可选插件时，依赖它的步骤会标记为 skipped 或 blocked，不会标记为通过。没有 forge bundle 时通过 `bash` 使用 `gh`；没有 worktree bundle 时使用 `git worktree add`。安装与降级方案见 [DSH 适配文档](./pstack/harness/docs/harness/dsh.md#optional-plugins)。
 
 ## ⚠️ 仍存在的缺口
 

@@ -367,7 +367,7 @@
 
 - **支持什么**：`@deepseek-ai/dsh-experimental-session-search` 提供 `session_search`、`session_event_search`、`session_trace`、`session_event_trace`、`session_event_read`；`ctx.sessionQuery` 和 SQLite backend 在 base 中。[E18](../upstream/deepseek-harness/packages/experimental/session-search/README.md#L8-L20)
 - **不支持什么**：标准模式没有模型可见的跨会话读取工具；没有 Cursor 的 `~/.cursor/projects/<slug>/agent-transcripts/` 目录，也没有 `subagents/*.jsonl` 的路径约定；跨会话只允许精确相同 `cwd`；session-search 默认不含调用者会话。
-- **场景示例**：用户说 `/recall catch me up on the export work from last week`（`SKL-08`）；标准模式没有工具可搜上周会话，模型只能要求用户粘贴；启用 `OPT-06` 后 `session_search` 可按 workspace 搜到，但不存在最新 `.jsonl` 这种文件路径。
+- **场景示例**：用户说 `/recall catch me up on the export work from last week`（`SKL-08`）；标准模式没有工具可搜上周会话，模型只能要求用户粘贴；启用 `OPT-06` 后 `session_search` 可按精确相同的 `cwd` 搜到，但不存在最新 `.jsonl` 这种文件路径。
 - **建议**：在 pstack profile 启用 `OPT-06`；把 `recall`、`reflect`、`automate-me`、`show-me-your-work`、`session-pickup` 的路径说明改成使用会话搜索工具，并把精确 `cwd` 作为最低条件。
 - **涉及能力**：`PATH-05`、`SKL-08`、`SKL-27`、`SKL-29`、`SKL-30`、`PB-12`、`PB-19`、`PB-22`。
 
@@ -601,7 +601,7 @@ B 的关键行为对照清单（`pstack/runtime/skills/statechart/scripts/statec
 
 ## 8. 分阶段状态
 
-下表逐项记录实现、审查、文档与最终覆盖状态。`审查` 列按 2026-11-04 的 `review port` 全量复核结果记录，状态沿用上一轮完成结果；本轮 audit 只重建需求基线，不改变实现状态。实现审查通过，EXT-004 已修复默认推荐与互斥行为并恢复 `active`。documentation-only 的 DOC-01 已在上一轮 `doc` 阶段完成：主适配文档与双语根 README 已同步 forge/worktree 统一入口、隐藏卡片、互斥、模型侧 `create_worktree` 和 DSH `0.2.2-alpha.3` 已验证基线。`实现` 列的 `已实现` 表示该能力按第 2～4 节分类的映射、标准模式、可选插件或插件内路径已落地并核验；`不适用（平台排除）` 表示按上游排除基线不实现。`文档` 列定位实际适配产物；`最终覆盖` 区分完整、已覆盖（有适配语义差异）、条件覆盖、部分覆盖和平台排除，括号内列出外部条件、剩余差异或对应缺口。
+下表逐项记录实现、审查、文档与最终覆盖状态。`审查` 列采用 2026-11-04 的 `review port` 全量复核结果：135 项均无开放 finding，EXT-003、EXT-004、EXT-005 保持 `active`。本轮 `doc` 复核了主适配文档与双语根 README，并同步独立 worktree 的选择路径、互斥关系与可选插件限制。`实现` 列的 `已实现` 表示该能力按第 2～4 节分类的映射、标准模式、可选插件或插件内路径已落地并核验；`不适用（平台排除）` 表示按上游排除基线不实现。`文档` 列定位实际适配产物；`最终覆盖` 区分完整、已覆盖（有适配语义差异）、条件覆盖、部分覆盖和平台排除，括号内列出外部条件、剩余差异或对应缺口。
 
 ### 8.1 模板、脚本与路径
 
@@ -760,7 +760,7 @@ B 的关键行为对照清单（`pstack/runtime/skills/statechart/scripts/statec
 
 ### 8.5 文档产物与覆盖口径
 
-文档状态：上一轮 `doc` 阶段于 2026-11-04 完成。DOC-01 已解决：`dsh.md` 的 OPT-01/OPT-02 与双语根 README 已同步 Web/Desktop 默认统一入口、独立 bundle 无 Plugins 卡片、其它 profile 的选择路径、Web/Desktop 既有独立选择由 profile 文件管理、互斥、模型侧 `create_worktree` 和 DSH `0.2.2-alpha.3` 已验证基线。主适配文档是 [pstack/harness/docs/harness/dsh.md](harness/docs/harness/dsh.md)，生成副本是 [pstack/pstack/docs/harness/dsh.md](pstack/docs/harness/dsh.md)。它保留上游模板的六个章节，并增加 [Local replacements](harness/docs/harness/dsh.md#local-replacements) 与 [Optional plugins](harness/docs/harness/dsh.md#optional-plugins) 两个固定追加小节，分别覆盖运行期替代与 OPT-01 至 OPT-09 的包名、启用能力、未启用 fallback 和支持边界。技能、playbook、reference 与 principle 正文保持上游原文，由生成器在需要 Cursor 名称映射的技能中加入适配文档指针。
+文档状态：本轮 `doc` 阶段于 2026-11-04 完成。主适配文档是 [pstack/harness/docs/harness/dsh.md](harness/docs/harness/dsh.md)，生成副本是 [pstack/pstack/docs/harness/dsh.md](pstack/docs/harness/dsh.md)。它保留上游模板的六个章节，并增加 [Local replacements](harness/docs/harness/dsh.md#local-replacements) 与 [Optional plugins](harness/docs/harness/dsh.md#optional-plugins) 两个固定追加小节，分别覆盖运行期替代与 OPT-01 至 OPT-09 的包名、启用能力、未启用 fallback 和支持边界。双语根 README 记录相同的独立 worktree 选择路径、互斥关系和可选插件限制。技能、playbook、reference 与 principle 正文保持上游原文，由生成器在需要 Cursor 名称映射的技能中加入适配文档指针。
 
 最终覆盖以固定上游提交和本轮测试为限。完整覆盖不排除技能本身声明的通用外部前提；条件覆盖必须启用括号中的插件或安装外部工具；部分覆盖仍有明确语义差异；平台排除按上游规则输出跳过行并继续，不计为通过。六项未决证据保留在 9.3，不因文档完成而核销。
 
@@ -844,7 +844,7 @@ B 的关键行为对照清单（`pstack/runtime/skills/statechart/scripts/statec
 - pstack 技能描述超过 500 字符：经逐份测量最大 460 字符，不存在截断风险，见 9.2。
 - `orch` CLI 是否仍需移植：因上游删除 `orch.ts` 与 `store.ts` 而关闭，见第 5 节退役说明。
 
-### 9.4 审查统计
+### 9.4 覆盖统计
 
 | 项目 | 数量 |
 |---|---:|
@@ -859,6 +859,7 @@ B 的关键行为对照清单（`pstack/runtime/skills/statechart/scripts/statec
 | 可执行脚本入口 | 5 |
 | 本地扩展 | active 3（EXT-003、EXT-004、EXT-005） |
 | 原子能力总数 | 135 |
+| 最终覆盖 | 完整 79、已覆盖 6、条件覆盖 35、部分覆盖 2、平台排除 13 |
 | 映射 | 47（完整 44、部分 3） |
 | 标准模式 | 72（完整 18、部分 54） |
 | 可选插件 | 3（完整 1、部分 2） |
@@ -869,4 +870,4 @@ B 的关键行为对照清单（`pstack/runtime/skills/statechart/scripts/statec
 | 待选择实现项 | 0 |
 | 未决证据 | 6（`U-01` 至 `U-06`） |
 
-审查结论：上游 136 个文档与 33 个测试语料均有去向；135 个原子能力全部落在映射、标准模式、可选插件或平台排除之一；3 个本地扩展不混入 135 项，EXT-004 在 2026-11-04 修复并复核验收后恢复 `active`；标准模式与可选插件仍不完整的 8 项已进入插件内实现范围。`PI-01`、`PI-02`、`PI-08` 的实现方向已由 2026-10-28 的接受决策固定；`PI-03`、`PI-05`、`PI-06`、`PI-07` 为证据唯一；`PI-09` 的测试语料打包方式沿用 B 方案（2026-10-29）。
+最终覆盖结论：135 项中 79 项完整、6 项已覆盖但有适配语义差异、35 项需要所列插件或外部条件、2 项仍有部分覆盖缺口、13 项按上游平台排除。`SKL-25` 的技能 `paths` 不自动挂载，`SKL-32` 的 mp4 与逐帧核验需要外部工具；13 个平台排除项不计为通过。3 个本地扩展均为 `active`，不混入这 135 项。8 个插件内实现项均已实现并通过本轮审查；验证记录与未覆盖证据见 [docs/port-review.md](../docs/port-review.md)。
