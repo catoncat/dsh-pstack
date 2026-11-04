@@ -1,9 +1,9 @@
 # 决定：插件以 DSH Web profile 为唯一基准，非 Web profile 适配内容不再登记
 
-Status: proposed
+Status: accepted
 Date: 2026-11-04
 Scope: README.md, README.zh.md, docs/**, src/**, tests/**, pstack/**, playground/**, .agents/skills/pstack-port/**
-Implemented-by: -
+Implemented-by: commit:7234caa1867fdfe472b97b61c98672dbe55f0ff8
 Review: 2027-05-04
 
 ## 背景
