@@ -2,7 +2,12 @@ schema: 1
 port:
   state: active
   round: baseline
-  phase: doc
+  phase: review
   started_at: "2026-11-04T10:46:34+08:00"
-  updated_at: "2026-11-04T11:04:33+08:00"
-blocker: null
+  updated_at: "2026-11-04T11:21:53+08:00"
+blocker:
+  active_item: EXT-004
+  mode: issue
+  allowed_routes: [implement EXT-004, review EXT-004]
+  resume_route: review port
+  reason: "DSH 05b1cae 合并 forge 与工作树入口后，EXT-004 仍默认推荐隐藏的独立 worktree bundle，且未阻止与 forge 重复挂载。"

@@ -43,7 +43,7 @@
 
 ### 1.4 独立保留范围
 
-`docs/extensions.md` 中 `proposed` 与 `active` 的条目是 DSH 版本地扩展，不是上游 pstack 能力，不混入本表的原子能力编号。截至本轮，登记表有 3 个 `active` 条目：EXT-003 pstack 角色模型配置页、EXT-004 pstack 推荐可选插件启用页、EXT-005 bundle 配置模态框；没有 `proposed`、`broken` 或 `retired` 条目。这些扩展的验收证据保留在对应 Issue，不改变第 2 至 4 节的能力计数。
+`docs/extensions.md` 中 `proposed` 与 `active` 的条目是 DSH 版本地扩展，不是上游 pstack 能力，不混入本表的原子能力编号。本轮登记 EXT-003 pstack 角色模型配置页、EXT-004 pstack 推荐可选插件启用页、EXT-005 bundle 配置模态框。2026-11-04 的后续 `review port` 将 EXT-004 标为 `broken`：DSH 合并 forge/worktree 入口后，其默认推荐与组合开关不再满足 Web/Desktop 的启用约束，复核证据见 `docs/extensions/EXT-004/review.md`；其余两项为 `active`，没有 `proposed` 或 `retired` 条目。这些扩展的验收证据保留在对应 Issue，不改变第 2 至 4 节的能力计数。
 
 ### 1.5 分类口径
 
@@ -602,7 +602,7 @@ B 的关键行为对照清单（`pstack/runtime/skills/statechart/scripts/statec
 
 ## 8. 分阶段状态
 
-下表逐项记录实现、审查、文档与最终覆盖状态；`审查` 列按 2026-11-04 的 `review port` 全量复核结果记录。`实现` 列的 `已实现` 表示该能力按第 2～4 节分类的映射、标准模式、可选插件或插件内路径已落地并核验；`不适用（平台排除）` 表示按上游排除基线不实现。`文档` 列定位实际适配产物；`最终覆盖` 区分完整、已覆盖（有适配语义差异）、条件覆盖、部分覆盖和平台排除，括号内列出外部条件、剩余差异或对应缺口。
+下表逐项记录实现、审查、文档与最终覆盖状态；`审查` 列先按 2026-11-04 首轮 `review port` 的复核结果记录。同日针对 DOC-01 的复审未通过：适配文档仍沿用旧 forge/worktree 入口，EXT-004 标为 `broken` 并返回独立修复；下表的能力与实现覆盖不因该文档和推荐页问题而改变，最终结论见 `docs/port-review.md`。`实现` 列的 `已实现` 表示该能力按第 2～4 节分类的映射、标准模式、可选插件或插件内路径已落地并核验；`不适用（平台排除）` 表示按上游排除基线不实现。`文档` 列定位实际适配产物；`最终覆盖` 区分完整、已覆盖（有适配语义差异）、条件覆盖、部分覆盖和平台排除，括号内列出外部条件、剩余差异或对应缺口。
 
 ### 8.1 模板、脚本与路径
 
@@ -761,7 +761,7 @@ B 的关键行为对照清单（`pstack/runtime/skills/statechart/scripts/statec
 
 ### 8.5 文档产物与覆盖口径
 
-文档状态：2026-11-03 完成。主适配文档是 [pstack/harness/docs/harness/dsh.md](harness/docs/harness/dsh.md)，生成副本是 [pstack/pstack/docs/harness/dsh.md](pstack/docs/harness/dsh.md)。它保留上游模板的六个章节，并增加 [Local replacements](harness/docs/harness/dsh.md#local-replacements) 与 [Optional plugins](harness/docs/harness/dsh.md#optional-plugins) 两个固定追加小节，分别覆盖运行期替代与 OPT-01 至 OPT-09 的包名、启用能力、未启用 fallback 和支持边界。技能、playbook、reference 与 principle 正文保持上游原文，由生成器在需要 Cursor 名称映射的技能中加入适配文档指针。
+文档状态：2026-11-04 复审未通过（DOC-01，待 EXT-004 修复后恢复 `review port`）。主适配文档是 [pstack/harness/docs/harness/dsh.md](harness/docs/harness/dsh.md)，生成副本是 [pstack/pstack/docs/harness/dsh.md](pstack/docs/harness/dsh.md)。它保留上游模板的六个章节，并增加 [Local replacements](harness/docs/harness/dsh.md#local-replacements) 与 [Optional plugins](harness/docs/harness/dsh.md#optional-plugins) 两个固定追加小节，分别覆盖运行期替代与 OPT-01 至 OPT-09 的包名、启用能力、未启用 fallback 和支持边界。技能、playbook、reference 与 principle 正文保持上游原文，由生成器在需要 Cursor 名称映射的技能中加入适配文档指针。
 
 最终覆盖以固定上游提交和本轮测试为限。完整覆盖不排除技能本身声明的通用外部前提；条件覆盖必须启用括号中的插件或安装外部工具；部分覆盖仍有明确语义差异；平台排除按上游规则输出跳过行并继续，不计为通过。六项未决证据保留在 9.3，不因文档完成而核销。
 
@@ -858,7 +858,7 @@ B 的关键行为对照清单（`pstack/runtime/skills/statechart/scripts/statec
 | benny automation 文档 | 11 |
 | 文档形式配置模板 | 2 |
 | 可执行脚本入口 | 5 |
-| 本地扩展（active） | 3（EXT-003、EXT-004、EXT-005） |
+| 本地扩展 | active 2（EXT-003、EXT-005）；broken 1（EXT-004，2026-11-04 复审） |
 | 原子能力总数 | 135 |
 | 映射 | 47（完整 44、部分 3） |
 | 标准模式 | 72（完整 18、部分 54） |
@@ -870,4 +870,4 @@ B 的关键行为对照清单（`pstack/runtime/skills/statechart/scripts/statec
 | 待选择实现项 | 0 |
 | 未决证据 | 6（`U-01` 至 `U-06`） |
 
-审查结论：上游 136 个文档与 33 个测试语料均有去向；135 个原子能力全部落在映射、标准模式、可选插件或平台排除之一；3 个 active 扩展保留为本地扩展，不混入 135 项；标准模式与可选插件仍不完整的 8 项已进入插件内实现范围。`PI-01`、`PI-02`、`PI-08` 的实现方向已由 2026-10-28 的接受决策固定；`PI-03`、`PI-05`、`PI-06`、`PI-07` 为证据唯一；`PI-09` 的测试语料打包方式沿用 B 方案（2026-10-29）。
+审查结论：上游 136 个文档与 33 个测试语料均有去向；135 个原子能力全部落在映射、标准模式、可选插件或平台排除之一；3 个本地扩展不混入 135 项，其中 EXT-004 在 2026-11-04 复审判为 `broken`；标准模式与可选插件仍不完整的 8 项已进入插件内实现范围。`PI-01`、`PI-02`、`PI-08` 的实现方向已由 2026-10-28 的接受决策固定；`PI-03`、`PI-05`、`PI-06`、`PI-07` 为证据唯一；`PI-09` 的测试语料打包方式沿用 B 方案（2026-10-29）。
