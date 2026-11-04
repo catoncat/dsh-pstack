@@ -43,7 +43,7 @@
   <a href="#skills-directory">Skills directory</a> ·
   <a href="#optional-dsh-plugins">Optional DSH plugins</a> ·
   <a href="#compatibility">Compatibility</a> ·
-  <a href="#friendly-links">Friendly Links</a>
+  <a href="#friendly-links">Friendly links</a>
 </p>
 
 `dsh-pstack` ports [pstack](https://github.com/cursor/plugins/tree/main/pstack) to [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH). It keeps the upstream pstack skills, playbooks, and reference documents. Five native tools fill the gaps in DSH's interfaces, while an adaptation layer maps Cursor's tool names, subagent fields, model slugs, and paths to DSH.
@@ -136,8 +136,8 @@ DSH provides the following optional plugins, which are disabled by default. Most
 | Plugin | Capability when enabled | Boundaries and conflicts |
 |---|---|---|
 | `@deepseek-ai/dsh-experimental-session-search` | Five read-only tools search and trace historical Sessions for `/recall`, `/reflect`, and `/show-me-your-work`: `session_search`, `session_event_search`, `session_trace`, `session_event_trace`, and `session_event_read`. | Matches only Sessions with the same `cwd`; use `session_event_search` for the current Session; there is no Cursor `.jsonl` transcript path. |
-| `@deepseek-ai/dsh-experimental-worktree`<br />`@deepseek-ai/dsh-experimental-tool-worktree` | `create_worktree` creates a local branch and worktree and switches the current Session directory, isolating parallel candidates for `/arena`, `/swarm`, and `/architect`. | `from` reads only local refs and does not fetch; there is no cloud VM; creating worktrees repeatedly changes `cwd`; it does not automatically give each subagent its own tree. |
-| `@deepseek-ai/dsh-experimental-forge-bundle` | PR panel, checks, review, mark ready, merge, and Session binding, plus starting a Session from the composer with a new worktree, serving `/babysit`, `/shipping`, and `/autopilot-*`. | GitHub only, requires `gh` login; there is no model-side change-request tool; there is no stack verdict or `origin` CLI; it can coexist with the worktree bundle. |
+| `@deepseek-ai/dsh-experimental-worktree`<br />`@deepseek-ai/dsh-experimental-tool-worktree` | `create_worktree` creates a local branch and worktree and switches the current Session directory, isolating parallel candidates for `/arena`, `/swarm`, and `/architect`. In Web and Desktop, enable it through **Change requests & worktrees** (`@deepseek-ai/dsh-experimental-forge-bundle`); the standalone bundle has no Plugins page card. A profile without the Web application may select it in `dsh.profile.bundles`. | `from` reads only local refs and does not fetch; there is no cloud VM; creating worktrees repeatedly changes `cwd`; it does not automatically give each subagent its own tree. An existing standalone selection in Web or Desktop remains hidden and must be managed through the profile file. Do not select the standalone bundle and the forge bundle together: duplicate `worktree` and `tool-worktree` ids make those component controls read-only. |
+| `@deepseek-ai/dsh-experimental-forge-bundle` | PR panel, checks, review, mark ready, merge, and Session binding, plus starting a Session from the composer with a new worktree and the model-side `create_worktree` tool, serving `/babysit`, `/shipping`, and `/autopilot-*`. | GitHub only; GitHub status requires `gh` login, but local worktree creation does not. There is no model-side change-request tool, stack verdict, or `origin` CLI. The **Change requests & worktrees** switch provides both the panel and `create_worktree`; do not also select the standalone worktree bundle. |
 
 ### Verification and evidence
 
@@ -164,7 +164,7 @@ Choose one of three browser providers: `@deepseek-ai/dsh-experimental-browser-us
 
 | Item | Version | Notes |
 |---|---|---|
-| DSH | `>=0.2.1-rc.5` | Minimum supported version; verified through the `0.2.2-alpha.2` baseline |
+| DSH | `>=0.2.1-rc.5` | Minimum supported version; verified through the `0.2.2-alpha.3` baseline |
 | pstack | `0.15.36` | Upstream baseline commit `ae5650f` |
 | Node.js | `>=24.21.1` | Runtime requirement |
 | Cordis | `~4.0.6-alpha.1` | Peer dependency |
@@ -187,9 +187,9 @@ Upstream pstack adapts Claude Code with `docs/harness/claude-code.md`. It preser
 
 dsh-pstack follows the same approach. The main adaptation document is [`pstack/harness/docs/harness/dsh.md`](./pstack/harness/docs/harness/dsh.md). It covers Tools, Subagent fields, Models, setup-pstack, Paths, Cursor-only features, Local replacements, and Optional plugins. The `pstack_*` tools, agent presets, and Node scripts replace fields that DSH lacks. At build time, upstream pstack and the local adaptation tree are rendered into `pstack/pstack/`, then packaged with `src/*.ts` and `skills/` into `dist/`.
 
-## Friendly Links
+## Friendly links
 
-[LinuxDo](https://linux.do/) — the new ideal community
+[LinuxDo](https://linux.do/): the new ideal community
 
 ## Credits
 

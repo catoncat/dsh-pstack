@@ -116,7 +116,7 @@
 |---|---|---|
 | pstack 子树 | 未变，仍为 `ae5650f`，树哈希 `4719e1c4b4c43bac85d4206a8b41dd2899769c1c`；原有 135 项能力、上游证据和编号沿用 | 没有新增或删除能力行 |
 | DSH 提交 | `ce7073d` → `05b1cae`（`dsh-v0.2.2-alpha.3`，111 个提交）。34 个被引用文件中 25 个未变；9 个变化，其中 8 个为等行替换（行号不变），仅 `packages/experimental/forge-bundle/README.md` 增 2 行 | 全部 DSH 证据按 `05b1cae` 重新核对；`OPT-02`、G-07 的 forge-bundle 行号后移 2 行 |
-| DSH forge/worktree bundle 合并 | `@deepseek-ai/dsh-experimental-forge-bundle` 现在同时挂载 forge 面板与 worktree 模型工具 `create_worktree`；独立 `@deepseek-ai/dsh-experimental-tool-worktree` bundle 不再有 Plugins 卡片，Web/Desktop 经 Change requests & worktrees 一并启用，其它 profile 在 `dsh.profile.bundles` 选择 | `OPT-01` 启用路径改写；`OPT-02` 能力补上模型侧 `create_worktree`；G-05、G-07 措辞更新，能力结论不变 |
+| DSH forge/worktree bundle 合并 | `@deepseek-ai/dsh-experimental-forge-bundle` 同时挂载 forge 面板与 worktree 模型工具 `create_worktree`；独立 `@deepseek-ai/dsh-experimental-tool-worktree` bundle 没有 Plugins 卡片，Web/Desktop 默认经 Change requests & worktrees 一并启用，其它 profile 在 `dsh.profile.bundles` 选择。Web/Desktop 中既有独立选择保持隐藏并由 profile 文件管理；同时选择独立 bundle 与 forge bundle 会插入重复 id | `OPT-01` 启用路径改写；`OPT-02` 能力补上模型侧 `create_worktree`；G-05、G-07 措辞更新，能力结论不变 |
 | DSH fs 观察策略 | `dsh-tool-fs` 的 read-before-write/edit 观察策略改为随 `fs-observation-policy` 行默认禁用；`apply_patch` 在 `dsh-base` 与 Web `standard` preset 启用 | 没有 pstack 能力行依赖该策略，`edit`/`write` 主路径行为不变，结论不变 |
 | DSH computer-use | macOS 权限请求 API 增加 `locale` 参数，实现细节变化 | 不影响 `OPT-04` 与 G-04 的覆盖结论 |
 
@@ -334,7 +334,7 @@
 
 | 编号 | 可选插件 ID | 默认状态、实验性、启用条件 | 覆盖能力 | 支持范围与缺口 | 证据 |
 |---|---|---|---|---|---|
-| OPT-01 | `@deepseek-ai/dsh-experimental-tool-worktree`，配套 `@deepseek-ai/dsh-experimental-worktree` | 默认关闭；实验性；Web/Desktop 通过 Change requests & worktrees（`OPT-02`）一并启用；独立 bundle 无 Plugins 卡片，其它 profile 在 `dsh.profile.bundles` 选择，或显式挂载两行 | `SUB-05`、`SUB-07`、`SKL-11`、`SKL-12`、`SKL-13`、`PB-07`、`PB-16` 至 `PB-18` 的本地隔离部分 | 支持创建新分支和检出目录，`from` 指定本地 ref，改变当前 Session 目录。缺口是无云 VM，不自动为每个子代理开工作树，`from` 不 fetch，多个候选要自己用 shell 建树 | [packages/experimental/tool-worktree/README.md#L5-L34](../upstream/deepseek-harness/packages/experimental/tool-worktree/README.md#L5-L34) · [E13](../upstream/deepseek-harness/docs/tool-catalog.md#L2608-L2634) |
+| OPT-01 | `@deepseek-ai/dsh-experimental-tool-worktree`，配套 `@deepseek-ai/dsh-experimental-worktree` | 默认关闭；实验性；Web/Desktop 默认通过 Change requests & worktrees（`OPT-02`）一并启用；独立 bundle 无 Plugins 卡片，其它 profile 在 `dsh.profile.bundles` 选择，或显式挂载两行；Web/Desktop 中既有独立选择保持隐藏并由 profile 文件管理，且不得与 `OPT-02` 同时选择 | `SUB-05`、`SUB-07`、`SKL-11`、`SKL-12`、`SKL-13`、`PB-07`、`PB-16` 至 `PB-18` 的本地隔离部分 | 支持创建新分支和检出目录，`from` 指定本地 ref，改变当前 Session 目录。缺口是无云 VM，不自动为每个子代理开工作树，`from` 不 fetch，多个候选要自己用 shell 建树 | [packages/experimental/tool-worktree/README.md#L5-L34](../upstream/deepseek-harness/packages/experimental/tool-worktree/README.md#L5-L34) · [E13](../upstream/deepseek-harness/docs/tool-catalog.md#L2608-L2634) |
 | OPT-02 | `@deepseek-ai/dsh-experimental-forge-bundle` | 默认关闭；实验性；在 Plugins 启用 Change requests & worktrees；GitHub 状态需宿主 `gh` 登录，本地工作树创建不需要 | `PB-13`、`PB-14`、`PB-17`、`PB-18`、`PB-23` 的 GitHub 状态展示，以及本地 `create_worktree` | 支持 PR 状态轮询、按需读取完整 checks、面板侧行内评论与 review 提交、mark ready、merge、Session 绑定、工作树选项，以及模型侧 `create_worktree` 工具。缺口是模型侧没有变更请求工具，只有面板；没有 pstack 的 stack 或 queued-stack verdict；没有 `origin` CLI | [packages/experimental/forge-bundle/README.md#L10-L67](../upstream/deepseek-harness/packages/experimental/forge-bundle/README.md#L10-L67) · [packages/experimental/client-ui-forge/README.md#L28-L40](../upstream/deepseek-harness/packages/experimental/client-ui-forge/README.md#L28-L40) · [E14](../upstream/deepseek-harness/docs/subsystems/forge.md#L5-L18) |
 | OPT-03 | `@deepseek-ai/dsh-browser-use` 加 `@deepseek-ai/dsh-experimental-browser-use-stagehand-native`、`@deepseek-ai/dsh-experimental-browser-use-playwright-mcp` 或 `@deepseek-ai/dsh-experimental-browser-use-chrome-devtools-mcp` | 默认关闭；provider 实验性；显式挂载 `dsh-browser-use` 加一个 provider | `SKL-18`、`SKL-19`、`PB-02`、`PB-03`、`PB-05`、`PB-09`、`PB-10` 的浏览器驱动 | 支持导航、点击、输入、截图、ARIA snapshot。缺口是没有视频录制；Stagehand 原生 provider 需要 Chromium 和独立模型；不同 provider 的 selector 与工具不同；单 provider 槽互斥 | [E15](../upstream/deepseek-harness/docs/subsystems/browser-use.md#L9-L15) · [packages/experimental/browser-use-stagehand-native/README.md#L9-L20](../upstream/deepseek-harness/packages/experimental/browser-use-stagehand-native/README.md#L9-L20) |
 | OPT-04 | `@deepseek-ai/dsh-cua-bundle` | 按需安装、默认关闭；实验性；仅 macOS PTC；在 Plugins 安装并启用 bundle | `SKL-18`、`SKL-19`、`PB-02`、`PB-05`、`PB-09`、`PB-10` 的桌面应用驱动 | 支持 macOS 应用点击、输入、截图，权限页和会话级授权。缺口是仅 macOS，Windows 未完成；没有视频录制；只在 PTC session；单 provider 槽互斥 | [packages/experimental/cua-bundle/README.md#L10-L20](../upstream/deepseek-harness/packages/experimental/cua-bundle/README.md#L10-L20) · [E16](../upstream/deepseek-harness/docs/subsystems/computer-use.md#L9-L27) |
@@ -408,8 +408,8 @@
 
 - **支持什么**：DSH 的 `/name` 注入可以让每条用户消息带上 `poteto-mode`；agent preset 可以让整个 Session 使用固定 persona 与工具组合。[E03](../upstream/deepseek-harness/packages/skill/tool-skill/README.md#L54-L56) · [E22](../upstream/deepseek-harness/packages/preset/agent-preset/README.md#L28-L48)
 - **不支持什么**：没有 Cursor 的 Option+Enter Custom Mode 开关；技能附着只对当前消息生效，不会自动保持到后续轮次；agent preset 在 Session 创建时选定，不能像 mode 一样随时切换。
-- **场景示例**：用户在 Cursor 里用 Option+Enter 把 `/poteto-mode` 变成常驻模式（`SKL-01`）；DSH 里普通 Enter 只影响一条消息，下一条消息不再带模式，除非用户重新输入 `/poteto-mode` 或选择 pstack 的 session preset。
-- **建议**：提供一个可选的 `poteto-mode` agent preset，在 `PI-08` 中一起交付，并在 `poteto-help` 与 guide 中说明每条任务输入 `/poteto-mode` 或新会话选 pstack preset。
+- **场景示例**：用户在 Cursor 里用 Option+Enter 把 `/poteto-mode` 变成常驻模式（`SKL-01`）；DSH 里普通 Enter 只影响一条消息，下一条消息不再带模式，用户须重新输入 `/poteto-mode`。随包的 `poteto-agent` 是 delegate preset，不承担根 playbook，不能替代 Custom Mode。
+- **建议**：在 `poteto-help` 与 guide 中说明每条任务输入 `/poteto-mode`。若需常驻根模式，另建根 agent preset；它不属于本轮 `PI-08` 的两个 delegate preset，当前未随包提供。
 - **涉及能力**：`SKL-01`、`SKL-02`。
 
 #### G-09 嵌套子代理深度与并发
@@ -503,12 +503,12 @@
 | 编号 | 覆盖能力 | 验收行为 | 实现建议状态 |
 |---|---|---|---|
 | PI-01 | `TOOL-04b`、`SKL-01`、`SKL-02`、`SKL-29` | 技能加载器按名称加载 pstack 任意 `SKILL.md` 与相对资源，不受 `disable-model-invocation` 限制；未知名称返回明确错误；用户 `/name` 入口不变；`poteto-mode` 能路由到 `how`、`why`、`architect` 等 | 已选择（见 6.1 AD-01） |
-| PI-02 | `MOD-01`、`MOD-04`、`MOD-06`、`SET-01`、`SET-02`、`SET-04`、`SET-06` | `setup-pstack` 能枚举 DSH provider、model、effort，询问预算，展示并确认角色，写入一份可重读的 pstack 模型配置；所有 pstack 技能能按角色解析出 provider、model、effort；重跑幂等，退役角色被删除，缺失配置回退技能默认 | 已选择（见 6.1 AD-01） |
+| PI-02 | `MOD-01`、`MOD-04`、`MOD-06`、`SET-01`、`SET-02`、`SET-04`、`SET-06` | `setup-pstack` 能枚举 DSH provider、model、effort，询问预算，展示并确认角色，写入一份可重读的 pstack 模型配置；所有 pstack 技能能按角色解析出 provider、model、effort；重跑幂等，退役角色按行号报告并从新文件删除，缺失配置回退 `inherit-parent` | 已选择（见 6.1 AD-01） |
 | PI-03 | `SCR-01`、`PB-21` | `check-plan.mjs` 的 Node 等价实现保留全部检查：H1、How to read this、Program checklist、五个 program H3、10 lanes、perf 四项、review gate、appendix、退出码 1 与 2 | 证据唯一（见 7.2） |
 | PI-05 | `SCR-02`、`PB-13`、`PB-14`、`PB-17`、`PB-18` | `watch-pr` 的 Node 等价实现保留 simple、stack、queued-stack 模式，`--status-only`，JSON 与 pretty 输出，`READY`、`WAITING`、`ADVANCE`、`COMPLETE` 判定和退出码；不依赖 `origin` | 证据唯一（见 7.2） |
 | PI-06 | `SCR-03`、`PB-22` | `worktree-audit` 的 Node 等价实现保留 base 解析，大小、年龄、merge、dirty、remote、PR、last-chat 列，bucket 分类，只读与 `df` 前后对比；Cursor 转写路径改为 DSH 会话搜索或明确不可用 | 证据唯一（见 7.2） |
 | PI-07 | `SCR-04`、`SKL-30`、`PB-04` | `log.sh` 的 Node 等价实现保留 TSV header、UTC 时间戳、tab 与 newline 清理、公式前缀转义、首次写 header、用法错误退出 1 | 证据唯一（见 7.2） |
-| PI-08 | `SUB-02`、`SUB-03`、`AGT-01`、`AGT-02`、`SKL-05`、`SKL-24` | 提供 `poteto-agent`、`comment-sicko` 两个代理 id，只读工具组合与 persona，可选提供 `poteto-mode` session preset；`subagent` 能选择它们，或提供专用 `pstack_agent` 工具；普通 `subagent` 行为不变 | 已选择（见 6.1 AD-01） |
+| PI-08 | `SUB-02`、`SUB-03`、`AGT-01`、`AGT-02`、`SKL-05`、`SKL-24` | 提供 `poteto-agent`、`comment-sicko` 两个 delegate 代理 id、对应工具组合与 persona；`subagent` 能选择它们，或提供专用 `pstack_agent` 工具；普通 `subagent` 行为不变；`poteto-agent` 不作为根 playbook runner | 已选择（见 6.1 AD-01） |
 | PI-09 | `SCR-05`、`SKL-33` | `statechart` 的 Node 等价实现保留 CLI 选项、TLA+ 与 TLC 调用、`report.md`、`chart.mmd`、`tlc.out`、`tlc-RULE.out` 输出、0、1、2、130、143 退出码和 500 状态图上限；不把 TLC、Java、mise 变成 DSH 内置能力 | 已选择：B（见 7.1） |
 
 `PI-04 orch CLI` 已随上游 `1ba91fc` 删除 `orch.ts` 与 `store.ts` 而退役，本轮不再进入插件实现范围；本地旧镜像由 `prepare` 删除。
@@ -602,7 +602,7 @@ B 的关键行为对照清单（`pstack/runtime/skills/statechart/scripts/statec
 
 ## 8. 分阶段状态
 
-下表逐项记录实现、审查、文档与最终覆盖状态；`审查` 列先按 2026-11-04 首轮 `review port` 的复核结果记录。实现审查保持通过，EXT-004 已修复默认推荐与互斥行为并恢复 `active`。DOC-01 已归为 documentation-only 的 `doc` 阶段待办；`implement port` 提前写入的适配文档已撤回，不在实现阶段核销。下表的能力与实现覆盖不因该文档待办而改变，最终结论见 `docs/port-review.md`。`实现` 列的 `已实现` 表示该能力按第 2～4 节分类的映射、标准模式、可选插件或插件内路径已落地并核验；`不适用（平台排除）` 表示按上游排除基线不实现。`文档` 列定位实际适配产物；`最终覆盖` 区分完整、已覆盖（有适配语义差异）、条件覆盖、部分覆盖和平台排除，括号内列出外部条件、剩余差异或对应缺口。
+下表逐项记录实现、审查、文档与最终覆盖状态。实现审查通过，EXT-004 已修复默认推荐与互斥行为并恢复 `active`。documentation-only 的 DOC-01 已在 `doc` 阶段完成：主适配文档与双语根 README 已同步 forge/worktree 统一入口、隐藏卡片、互斥、模型侧 `create_worktree` 和 DSH `0.2.2-alpha.3` 已验证基线。`实现` 列的 `已实现` 表示该能力按第 2～4 节分类的映射、标准模式、可选插件或插件内路径已落地并核验；`不适用（平台排除）` 表示按上游排除基线不实现。`文档` 列定位实际适配产物；`最终覆盖` 区分完整、已覆盖（有适配语义差异）、条件覆盖、部分覆盖和平台排除，括号内列出外部条件、剩余差异或对应缺口。
 
 ### 8.1 模板、脚本与路径
 
@@ -761,7 +761,7 @@ B 的关键行为对照清单（`pstack/runtime/skills/statechart/scripts/statec
 
 ### 8.5 文档产物与覆盖口径
 
-文档状态：2026-11-04 实现审查通过，DOC-01 保留为 documentation-only 的 `doc` 阶段待办。待 `doc` 同步 `dsh.md` 的 OPT-01/OPT-02、双语根 README 的启用条件与 DSH `0.2.2-alpha.3` 已验证基线，并记录最终覆盖；统一入口、隐藏卡片、模型侧 `create_worktree`、互斥以及 Web/Desktop 既有独立选择由 profile 文件管理的依据已冻结。`implement port` 的提前文档改动已撤回。主适配文档是 [pstack/harness/docs/harness/dsh.md](harness/docs/harness/dsh.md)，生成副本是 [pstack/pstack/docs/harness/dsh.md](pstack/docs/harness/dsh.md)。它保留上游模板的六个章节，并增加 [Local replacements](harness/docs/harness/dsh.md#local-replacements) 与 [Optional plugins](harness/docs/harness/dsh.md#optional-plugins) 两个固定追加小节，分别覆盖运行期替代与 OPT-01 至 OPT-09 的包名、启用能力、未启用 fallback 和支持边界。技能、playbook、reference 与 principle 正文保持上游原文，由生成器在需要 Cursor 名称映射的技能中加入适配文档指针。
+文档状态：2026-11-04 `doc` 阶段完成。DOC-01 已解决：`dsh.md` 的 OPT-01/OPT-02 与双语根 README 已同步 Web/Desktop 默认统一入口、独立 bundle 无 Plugins 卡片、其它 profile 的选择路径、Web/Desktop 既有独立选择由 profile 文件管理、互斥、模型侧 `create_worktree` 和 DSH `0.2.2-alpha.3` 已验证基线。主适配文档是 [pstack/harness/docs/harness/dsh.md](harness/docs/harness/dsh.md)，生成副本是 [pstack/pstack/docs/harness/dsh.md](pstack/docs/harness/dsh.md)。它保留上游模板的六个章节，并增加 [Local replacements](harness/docs/harness/dsh.md#local-replacements) 与 [Optional plugins](harness/docs/harness/dsh.md#optional-plugins) 两个固定追加小节，分别覆盖运行期替代与 OPT-01 至 OPT-09 的包名、启用能力、未启用 fallback 和支持边界。技能、playbook、reference 与 principle 正文保持上游原文，由生成器在需要 Cursor 名称映射的技能中加入适配文档指针。
 
 最终覆盖以固定上游提交和本轮测试为限。完整覆盖不排除技能本身声明的通用外部前提；条件覆盖必须启用括号中的插件或安装外部工具；部分覆盖仍有明确语义差异；平台排除按上游规则输出跳过行并继续，不计为通过。六项未决证据保留在 9.3，不因文档完成而核销。
 

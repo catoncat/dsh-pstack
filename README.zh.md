@@ -136,8 +136,8 @@ DSH 提供以下可选插件，默认关闭。多数随 DSH 提供，`@deepseek-
 | 插件 | 打开后的能力 | 边界与冲突 |
 |---|---|---|
 | `@deepseek-ai/dsh-experimental-session-search` | 5 个只读工具：`session_search`、`session_event_search`、`session_trace`、`session_event_trace`、`session_event_read`，搜索和追踪历史会话，服务 `/recall`、`/reflect`、`/show-me-your-work`。 | 只匹配同一 `cwd` 的会话；当前会话用 `session_event_search`；没有 Cursor 的 `.jsonl` 转写路径。 |
-| `@deepseek-ai/dsh-experimental-worktree`<br />`@deepseek-ai/dsh-experimental-tool-worktree` | `create_worktree` 建本地分支和工作树，切换当前 Session 目录，用于 `/arena`、`/swarm`、`/architect` 的并行候选隔离。 | `from` 只读本地 ref，不 fetch；无云 VM；连续建树会改 `cwd`；不会自动给每个子代理分树。 |
-| `@deepseek-ai/dsh-experimental-forge-bundle` | PR 面板、checks、review、mark ready、merge、Session 绑定，也能从 composer 用新 worktree 启动 Session，服务 `/babysit`、`/shipping`、`/autopilot-*`。 | 仅 GitHub，需 `gh` 登录；模型侧没有变更请求工具；没有 stack verdict，也没有 `origin` CLI；可与 worktree bundle 共存。 |
+| `@deepseek-ai/dsh-experimental-worktree`<br />`@deepseek-ai/dsh-experimental-tool-worktree` | `create_worktree` 建本地分支和工作树，切换当前 Session 目录，用于 `/arena`、`/swarm`、`/architect` 的并行候选隔离。Web 与 Desktop 通过 **Change requests & worktrees**（`@deepseek-ai/dsh-experimental-forge-bundle`）一并启用；独立 bundle 没有 Plugins 卡片，没有 Web 应用的 profile 可在 `dsh.profile.bundles` 选择。 | `from` 只读本地 ref，不 fetch；无云 VM；连续建树会改 `cwd`；不会自动给每个子代理分树。Web 或 Desktop 中已有的独立选择保持隐藏，须通过 profile 文件管理。不要同时选择独立 bundle 与 forge bundle：重复的 `worktree` 和 `tool-worktree` id 会让这些组件控件变为只读。 |
+| `@deepseek-ai/dsh-experimental-forge-bundle` | PR 面板、checks、review、mark ready、merge、Session 绑定，也能从 composer 用新 worktree 启动 Session，并提供模型侧 `create_worktree` 工具，服务 `/babysit`、`/shipping`、`/autopilot-*`。 | 仅 GitHub；GitHub 状态需 `gh` 登录，本地建树不需要。模型侧没有变更请求工具，也没有 stack verdict 或 `origin` CLI。**Change requests & worktrees** 开关同时提供面板和 `create_worktree`，不要再选择独立 worktree bundle。 |
 
 ### 验证与证据
 
@@ -164,7 +164,7 @@ DSH 提供以下可选插件，默认关闭。多数随 DSH 提供，`@deepseek-
 
 | 项目 | 版本 | 说明 |
 |---|---|---|
-| DSH | `>=0.2.1-rc.5` | 最低支持版本；已验证至 `0.2.2-alpha.2` 基线 |
+| DSH | `>=0.2.1-rc.5` | 最低支持版本；已验证至 `0.2.2-alpha.3` 基线 |
 | pstack | `0.15.36` | 上游基线提交 `ae5650f` |
 | Node.js | `>=24.21.1` | 运行时要求 |
 | Cordis | `~4.0.6-alpha.1` | peer dependency |
@@ -189,7 +189,7 @@ dsh-pstack 沿用这套做法。主适配文档是 [`pstack/harness/docs/harness
 
 ## 友情链接
 
-[LinuxDo](https://linux.do/) —— 新的理想型社区
+[LinuxDo](https://linux.do/)：新的理想型社区
 
 ## 鸣谢
 
