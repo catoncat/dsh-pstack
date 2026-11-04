@@ -1,31 +1,22 @@
-<p align="center">
-  <img src="./assets/logo.png" width="144" alt="dsh-pstack logo" />
-</p>
-
-<h1 align="center">dsh-pstack</h1>
-
-<p align="center">
-  <strong>把 pstack 的严格代理工作流带进 DeepSeek Harness</strong>
-</p>
-
-<p align="center">
-  <a href="./README.md">English</a> · 中文
-</p>
-
-<p align="center">
-  <a href="https://npmx.dev/package/dsh-pstack"><img src="https://img.shields.io/npm/v/dsh-pstack?style=flat-square&colorA=080f12&colorB=1fa669" alt="npm version" /></a>
-  <a href="https://npmx.dev/package/dsh-pstack"><img src="https://img.shields.io/npm/dm/dsh-pstack?style=flat-square&colorA=080f12&colorB=1fa669" alt="npm downloads" /></a>
-  <a href="https://github.com/deepseek-ai/deepseek-harness"><img src="https://img.shields.io/badge/dsh-%3E%3D0.2.2--alpha.3-1f6feb?style=flat-square" alt="dsh >=0.2.2-alpha.3" /></a>
-  <a href="https://github.com/cursor/plugins/tree/main/pstack"><img src="https://img.shields.io/badge/pstack-0.15.36-d97706?style=flat-square" alt="pstack 0.15.36" /></a>
-</p>
-
-<p align="center">
-  <a href="https://github.com/l246804/dsh-pstack/blob/main/LICENSE"><img src="https://img.shields.io/github/license/l246804/dsh-pstack?style=flat-square&colorA=080f12&colorB=1fa669" alt="license" /></a>
-  <a href="https://npmx.dev/package/dsh-pstack"><img src="https://img.shields.io/npm/unpacked-size/dsh-pstack?style=flat-square&colorA=080f12&colorB=1fa669" alt="unpacked size" /></a>
-  <a href="https://www.jsdocs.io/package/dsh-pstack"><img src="https://img.shields.io/badge/jsdocs-reference-080f12?style=flat-square&colorA=080f12&colorB=1fa669" alt="JSDocs" /></a>
-</p>
-
 <div align="center">
+  <img src="./assets/logo.png" width="144" alt="dsh-pstack logo" />
+
+  <h1>dsh-pstack</h1>
+
+  <p>
+    <strong>把 pstack 的严格代理工作流带进 DeepSeek Harness</strong>
+  </p>
+
+  <p><a href="./README.md">English</a> · 中文</p>
+
+  <p>
+    <a href="https://npmx.dev/package/dsh-pstack"><img src="https://img.shields.io/npm/v/dsh-pstack?style=flat-square&colorA=080f12&colorB=1fa669" alt="npm version" /></a>
+    <a href="https://github.com/deepseek-ai/deepseek-harness"><img src="https://img.shields.io/badge/dsh-%3E%3D0.2.2--alpha.3-1f6feb?style=flat-square" alt="dsh >=0.2.2-alpha.3" /></a>
+    <a href="https://github.com/cursor/plugins/tree/main/pstack"><img src="https://img.shields.io/badge/pstack-0.15.36-d97706?style=flat-square" alt="pstack 0.15.36" /></a>
+    <a href="https://github.com/l246804/dsh-pstack/blob/main/LICENSE"><img src="https://img.shields.io/github/license/l246804/dsh-pstack?style=flat-square&colorA=080f12&colorB=1fa669" alt="license" /></a>
+    <a href="https://www.jsdocs.io/package/dsh-pstack"><img src="https://img.shields.io/badge/jsdocs-reference-080f12?style=flat-square&colorA=080f12&colorB=1fa669" alt="JSDoc reference" /></a>
+  </p>
+
   <table>
     <tr>
       <td align="center"><strong>58</strong><br /><sub>pstack 技能</sub></td>
@@ -35,29 +26,31 @@
       <td align="center"><strong>5</strong><br /><sub>随包脚本</sub></td>
     </tr>
   </table>
+
+  <p>
+    <a href="#quick-start">🚀 快速开始</a> ·
+    <a href="#️-常用命令">⌨️ 常用命令</a> ·
+    <a href="#-能力">🧩 能力</a> ·
+    <a href="#-可选-dsh-插件">🔌 可选插件</a> ·
+    <a href="#️-仍存在的缺口">⚠️ 仍存在的缺口</a> ·
+    <a href="#-兼容性">📦 兼容性</a>
+  </p>
 </div>
 
-<p align="center">
-  <a href="#快速开始">快速开始</a> ·
-  <a href="#能力">能力</a> ·
-  <a href="#skills-目录">skills 目录</a> ·
-  <a href="#可选-dsh-插件">可选 DSH 插件</a> ·
-  <a href="#兼容性">兼容性</a> ·
-  <a href="#友情链接">友情链接</a>
-</p>
+---
 
-`dsh-pstack` 是 [pstack](https://github.com/cursor/plugins/tree/main/pstack) 的 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）移植。它保留上游 pstack 的技能、playbook 与参考文档。5 个原生工具补上 DSH 的接口缺口，适配层则把 Cursor 的工具名、子代理字段、模型 slug 和路径映射到 DSH。
+`dsh-pstack` 将 [pstack](https://github.com/cursor/plugins/tree/main/pstack) 移植到 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH），保留其技能、playbook 与参考文档，并提供原生技能路由、按角色配置模型、子代理和 Node.js 脚本。
 
-上游 pstack 的技能大多声明 `disable-model-invocation: true`。`poteto-mode` 按名称路由到这些隐藏技能，但 DSH 的 `skill` 工具只暴露模型可见目录。DSH 也没有与 Cursor 的模型 slug、`subagent_type`、`readonly` 和 Bun 脚本对等的接口。dsh-pstack 在插件层处理这些差异，安装后可以从 `/poteto-mode` 开始工作。
-
-完整能力映射、缺口和验收状态见 [`pstack/README.md`](./pstack/README.md)。
+完整的移植审查见[能力对照表](./pstack/README.md)。
 
 > [!IMPORTANT]
-> 要求 DSH `>=0.2.2-alpha.3`、Node.js `>=24.21.1`。旧版 DSH 的版本对照见 [兼容性](#兼容性)。
+> 要求 DSH `>=0.2.2-alpha.3`、Node.js `>=24.21.1`。旧版 DSH 请根据[兼容性](#-兼容性)选择对应的插件版本。
 
-## 快速开始
+<a id="quick-start"></a>
 
-1. 安装插件：
+## 🚀 快速开始
+
+1. **安装插件。**
 
    ```sh
    dsh plugin --profile web add dsh-pstack
@@ -65,144 +58,137 @@
 
    也可以在 Web 或 Desktop 的「插件」页面安装。
 
-2. 重启对应的 profile，或新开一个 Session。
+2. **重启对应的 profile，或新开一个 Session。**
 
-3. 首次使用前运行：
+3. **初始化角色模型路由。**
 
    ```text
    /setup-pstack
    ```
 
-   该命令读取当前部署提供的 provider、model 与 reasoning effort，并写入 `$DSH_HOME/pstack-models.mdc`。缺少这个文件时，所有角色继承父级路由。初始化后可在 **插件 → 已安装插件 → dsh-pstack** 查看和编辑同一份配置。
+   该命令将可用路由写入 `$DSH_HOME/pstack-models.mdc`。缺少此文件时，角色继承父级模型。
 
-### 常用入口
+4. **开始工作流。**
 
-| 命令 | 用途 |
+   ```text
+   /poteto-mode
+   ```
+
+### ⚙️ 配置角色模型
+
+初始化后，打开 **插件 → 已安装插件 → dsh-pstack → 配置**，即可查看或修改路由。
+
+<p align="center">
+  <img src="assets/pstack-config-entry.png" width="800" alt="插件配置入口" />
+</p>
+
+## ⌨️ 常用命令
+
+| 工作流 | 命令 |
 |---|---|
-| `/poteto-mode` | 主工作流入口，按任务匹配 playbook，维护 todo 与证据 |
-| `/setup-pstack` | 配置角色模型，初始化 pstack 使用环境 |
-| `/how`、`/why`、`/teach` | 架构走查、证据调查、渐进式讲解 |
-| `/architect`、`/arena`、`/swarm` | 多方案设计、并行候选、切片并行实现 |
-| `/create-verification-skill` | 为真实项目生成验证技能 |
-| `/statechart` | 用 TLA+ 与 TLC 检查状态模型，输出 Mermaid 状态图 |
-| `/show-me-your-work` | 维护 TSV 决策日志，审计当前工作 |
-| `/retro` | 对一次编码会话做环境复盘 |
-| `/docs-drift` | 巡检项目自身指针发现的文档；`report` 只读，`fix` 仅修复获批项。 |
+| 规划与实现 | `/poteto-mode`、`/architect`、`/arena`、`/swarm` |
+| 理解与调查 | `/how`、`/why`、`/teach` |
+| 验证 | `/create-verification-skill`、`/statechart` |
+| 审查与维护 | `/show-me-your-work`、`/retro`、`/docs-drift` |
 
-## 能力
+## 🧩 能力
 
-### 原生工具
+### 🛠️ 原生工具
 
 | 工具 | 作用 |
 |---|---|
-| `pstack_skill` | 按名称加载本插件注册的隐藏技能，也能读取技能目录内的相对资源。 |
-| `pstack_models` | 只读列出 DSH 实际提供的 provider、model 和 effort，供 `/setup-pstack` 使用。 |
-| `pstack_roles` | 只读列出每个 pstack 角色的 shape 与是否为自动面板，帮助 `pstack_subagent` 调用传对 `roleIndex`。 |
-| `pstack_subagent` | 按角色读取 `$DSH_HOME/pstack-models.mdc`，解析 `provider/model [effort]`，按 `agent` 选择 preset，一次可启动多个子代理。 |
-| `pstack_script` | 用固定 id 运行随包 Node 脚本，不依赖 Bun 或 shell 脚本。 |
+| `pstack_skill` | 按名称加载隐藏的 pstack 技能及其相对资源。 |
+| `pstack_models` | 列出可用的 provider、model 和 reasoning effort。 |
+| `pstack_roles` | 展示角色 shape 与自动面板状态，确保委派时使用正确的参数。 |
+| `pstack_subagent` | 应用角色路由与 agent preset，支持并行子代理。 |
+| `pstack_script` | 用 Node.js 运行 `check-plan`、`watch-pr`、`worktree-audit`、`log` 或 `statechart`。 |
 
-`poteto-agent` 和 `comment-sicko` 两个 preset 分别负责实现型委派与只读评论审查。`pstack_script` 可以运行 `check-plan`、`watch-pr`、`worktree-audit`、`log`、`statechart` 五个随包脚本，脚本 id 是封闭枚举，不能拼任意路径。
-
-### 插件配置入口
-
-![在插件页头右上角点击「配置」入口](assets/pstack-config-entry.png)
-
-打开 **插件 → 已安装插件 → dsh-pstack**，点击 bundle 页头右上角的 **配置** 按钮即可打开配置弹窗。
-
-## skills 目录
-
-`skills/` 不是 pstack 上游目录。它只收 pstack 没提供、真实项目开发中又需要的技能。源目录是 `skills/authored/` 和 `skills/.agents/skills/`，构建后分别发布到 `dist/skills/authored/` 和 `dist/skills/vendored/`。`vendored` 逐字保留开源上游，`authored` 由本仓维护。pstack 技能对它们的引用只是使用关系，不改变收录标准。
-
-| 来源 | 技能 | 作用 | 补充的工程能力 |
-|---|---|---|---|
-| `vendored` | `writing-for-agents` | 写技能、`AGENTS.md`、`CLAUDE.md` 与被指针引用的文档，覆盖 context pointer、信息层级和渐进披露。 | 让 agent 文档的触发词、加载顺序和上下文成本可预测，也补上 Cursor `create-skill` 的写作路径。 |
-| `vendored` | `retro` | 对一次编码会话做环境复盘，检查导航、自动化检查、编码规范、工具经济与信息获取。 | 补上 pstack `/reflect`、`/correct` 没覆盖的环境体检，只出报告，不改仓库。 |
-| `authored` | `decision-write` | 决策记录的写入、落地和取代，Draft 与 Land 两种模式，`Status` 与 `Implemented-by` 必须成对。 | 补上真实项目常缺的决策生命周期。 |
-| `authored` | `decision-audit` | 只读审计决策记录的路由、状态、Scope、锚点与取代关系。 | 让决策记录持续可检索、可复核。 |
-| `authored` | `setup-project-docs` | 搭建 architecture、glossary、decisions 与根 `AGENTS.md` 指针，可重复补齐。 | 给新项目一套可持续的项目文档入口。 |
-| `authored` | `docs-drift` | 从项目指针发现维护文档，检查实现漂移、矛盾、术语、链接、冗余与无依据扩写，仅修复获批项。 | 不依赖固定文档布局，补充周期性文档巡检与受控清理。 |
-
-`vendored` 技能来自 `mattpocock/skills@59db609eb1e18aaf59b63284d0e52255aff0c63c`，来源、路径和哈希记录在 [`skills/skills-lock.json`](./skills/skills-lock.json)。两棵技能树都随包发布，但和 pstack 上游版本没有对应关系。
-
-## 可选 DSH 插件
-
-DSH 提供以下可选插件，默认关闭。多数随 DSH 提供，`@deepseek-ai/dsh-cua-bundle` 需按需安装。安装 dsh-pstack 时不要求安装这些插件，但部分 pstack 流程需要它们才能完整执行。要启用插件，在「插件」页面用**添加插件**输入包名。也可以运行 `dsh plugin --profile <profile> add <package>`，然后重启 profile。除 `@deepseek-ai/dsh-mcp-client` 外，本节列出的 bundle 与 provider 都是实验性的。
-
-> [!NOTE]
-> 未启用可选插件时，pstack 技能仍可加载。需要插件的步骤会输出 `Skipped in DeepSeek Harness: <step>. <reason>.` 后继续。缺少 `gh`、Java/TLC 或视频工具时，对应步骤会报告 blocked 或降级为截图。dsh-pstack 不会把未运行的步骤标记为通过。
-
-### 会话与隔离
-
-| 插件 | 打开后的能力 | 边界与冲突 |
-|---|---|---|
-| `@deepseek-ai/dsh-experimental-session-search` | 5 个只读工具：`session_search`、`session_event_search`、`session_trace`、`session_event_trace`、`session_event_read`，搜索和追踪历史会话，服务 `/recall`、`/reflect`、`/show-me-your-work`。 | 只匹配同一 `cwd` 的会话；当前会话用 `session_event_search`；没有 Cursor 的 `.jsonl` 转写路径。 |
-| `@deepseek-ai/dsh-experimental-worktree`<br />`@deepseek-ai/dsh-experimental-tool-worktree` | `create_worktree` 建本地分支和工作树，切换当前 Session 目录，用于 `/arena`、`/swarm`、`/architect` 的并行候选隔离。Web 与 Desktop 通过 **Change requests & worktrees**（`@deepseek-ai/dsh-experimental-forge-bundle`）一并启用；独立 bundle 没有 Plugins 卡片，没有 Web 应用的 profile 可在 `dsh.profile.bundles` 选择。 | `from` 只读本地 ref，不 fetch；无云 VM；连续建树会改 `cwd`；不会自动给每个子代理分树。Web 或 Desktop 中已有的独立选择保持隐藏，须通过 profile 文件管理。不要同时选择独立 bundle 与 forge bundle：重复的 `worktree` 和 `tool-worktree` id 会让这些组件控件变为只读。 |
-| `@deepseek-ai/dsh-experimental-forge-bundle` | PR 面板、checks、review、mark ready、merge、Session 绑定，也能从 composer 用新 worktree 启动 Session，并提供模型侧 `create_worktree` 工具，服务 `/babysit`、`/shipping`、`/autopilot-*`。 | 仅 GitHub；GitHub 状态需 `gh` 登录，本地建树不需要。模型侧没有变更请求工具，也没有 stack verdict 或 `origin` CLI。**Change requests & worktrees** 开关同时提供面板和 `create_worktree`，不要再选择独立 worktree bundle。 |
-
-### 验证与证据
-
-浏览器 provider 三选一：`@deepseek-ai/dsh-experimental-browser-use-stagehand-native`、`@deepseek-ai/dsh-experimental-browser-use-playwright-mcp`、`@deepseek-ai/dsh-experimental-browser-use-chrome-devtools-mcp`。
-
-| 插件 | 打开后的能力 | 边界与冲突 |
-|---|---|---|
-| `@deepseek-ai/dsh-browser-use` + 一个 provider | 导航、点击、输入、截图和 ARIA snapshot；Stagehand 另有 act、observe、extract，用于验证技能和 UI 复现。 | 基础包没有 provider 时不生效；每个 Session 一个 provider；截图要图像模型；无视频；Stagehand 需要 Chromium 和非 DeepSeek 模型。 |
-| `@deepseek-ai/dsh-cua-bundle` | macOS 应用点击、输入、截图、权限页和会话级授权，用于桌面应用验证。 | 仅 macOS PTC；单 computer-use provider 槽；Windows 未完成；无视频。 |
-| `@deepseek-ai/dsh-experimental-terminal-bundle` | 6 个全局终端工具，跨调用保持 shell / REPL，支持后台 send 和按 owner 隔离，用于 CLI / TUI 验证。 | 只覆盖终端；会加到所有 Agent；持久状态要清理；切换会失效 KV cache。 |
-| `@deepseek-ai/dsh-mcp-client` | 挂载 MCP server，工具以 `mcp__<server>__<tool>` 出现，`mcp-resources` 列出带资源的 server，服务 `/why`、`/teach` 的证据调查。 | 无默认 server；需逐项配置；无自动类别发现。 |
-
-### 多代理
-
-| 插件 | 打开后的能力 | 边界与冲突 |
-|---|---|---|
-| `@deepseek-ai/dsh-experimental-agent-team-profile` | Lead / teammate、共享任务板、9 个团队工具和 Web roster，服务 `/orchestrate`、`/autopilot-*`。 | 禁用 `subagent` 和 `subagent_fork`，与 `pstack_subagent` 冲突。没有 pstack 的 PR frontier、ledger 或 stack verdict。见下方警告。 |
-| `@deepseek-ai/dsh-experimental-ralph-bundle` | 全局 `ralph`，每轮 fresh child 的 foreground 循环，服务 `/autonomous-run`。 | 不是同一 Session 常驻循环；无事件 watcher；不替代 goal、心跳和 decision log。 |
-
-> [!WARNING]
-> 不要在同一 profile 中同时启用 `@deepseek-ai/dsh-experimental-agent-team-profile` 和 `pstack_subagent`。agent team 插件会禁用 `subagent` 和 `subagent_fork`，并提供另一套委派入口。每个 profile 只使用一套子代理系统。
-
-## 兼容性
-
-| 项目 | 版本 | 说明 |
-|---|---|---|
-| DSH | `>=0.2.2-alpha.3` | 最低支持版本；已验证至 `0.2.2-alpha.3` 基线 |
-| pstack | `0.15.36` | 上游基线提交 `ae5650f` |
-| Node.js | `>=24.21.1` | 运行时要求 |
-| Cordis | `~4.0.6-alpha.2` | DSH `0.2.2-alpha.3` 要求的 peer dependency |
-
-### DSH 版本对照
-
-| DSH 版本 | dsh-pstack 版本 |
-|---|---|
-| `0.2.2-alpha.2` 及更早版本 | `v0.2.1`，旧 forge/worktree 组合的最后一个发布版本 |
-| `0.2.2-alpha.3` 及更新版本 | 当前源码树的下一个发布版本 |
-
-只有此表记录版本分界；随包适配文档只描述当前 DSH 行为。
-
-升级 DSH 前，先在测试 profile 中验证实验性插件的包名、工具名和配置。升级上游 pstack 需要重新生成树并复核适配表。
+`poteto-agent` preset 用于实现型委派，`comment-sicko` preset 用于只读评论审查。
 
 > [!CAUTION]
-> `pstack_script` 使用 Host 的 Node 运行，会绕过 bash 审批和文件系统沙箱。请将其视为受信入口。
+> `pstack_script` 会绕过 bash 审批和文件系统沙箱，请将其视为受信入口。
 
-worktree Session 的 `cwd` 与原 Session 不同。session-search 插件只匹配完全相同的 `cwd`，因此要在原目录搜索旧 Session。
+### 📚 额外技能
 
-## 实现方式
+随包提供六个独立于 pstack 维护的技能。
 
-上游 pstack 用 `docs/harness/claude-code.md` 适配 Claude Code。它保留技能正文，另用宿主适配表把 `Task`、`AskQuestion`、todo、模型 slug 和路径映射到目标宿主。生成器为使用 Cursor 名称的技能添加一行 Claude Code 适配提示。不支持的能力会报告 `Skipped in Claude Code: <step>. <reason>.`
+| 技能 | 来源 | 作用 |
+|---|---|---|
+| `writing-for-agents` | `vendored` | 编写技能与清晰的 agent 文档。 |
+| `retro` | `vendored` | 只读复盘 agent 环境，不修改仓库。 |
+| `decision-write` | `authored` | 创建、落地和取代决策记录。 |
+| `decision-audit` | `authored` | 审计决策记录状态与关联关系。 |
+| `setup-project-docs` | `authored` | 搭建可持续维护的项目文档。 |
+| `docs-drift` | `authored` | 检查文档漂移并修复获批项。 |
 
-dsh-pstack 沿用这套做法。主适配文档是 [`pstack/harness/docs/harness/dsh.md`](./pstack/harness/docs/harness/dsh.md)，覆盖 Tools、Subagent fields、Models、setup-pstack、Paths、Cursor-only features、Local replacements 和 Optional plugins。`pstack_*` 工具、agent preset 和 Node 脚本替代 DSH 缺少的字段。构建时，上游 pstack 与本地适配树被渲染到 `pstack/pstack/`，再与 `src/*.ts`、`skills/` 一起打包到 `dist/`。
+vendored 技能的来源与哈希记录在 [`skills/skills-lock.json`](./skills/skills-lock.json)。
 
-## 友情链接
+## 🔌 可选 DSH 插件
 
-[LinuxDo](https://linux.do/)：新的理想型社区
+可选插件用于扩展特定工作流，安装 dsh-pstack 时无需一并安装。
 
-## 鸣谢
+要启用插件，请在 **插件 → 添加插件** 中选择对应的包，然后重启 profile。
+
+| 使用场景 | 插件 | 限制与冲突 |
+|---|---|---|
+| 历史会话 | `@deepseek-ai/dsh-experimental-session-search` | 只读，仅匹配 `cwd` 完全相同的 Session。 |
+| worktree 与 GitHub PR | `@deepseek-ai/dsh-experimental-forge-bundle` | 包含 `create_worktree`，不要再添加独立 worktree bundle。 |
+| 浏览器验证 | `@deepseek-ai/dsh-browser-use` 与一个 provider | 每个 Session 使用一个 provider，不支持录屏。 |
+| 桌面验证 | `@deepseek-ai/dsh-cua-bundle` | 仅支持 macOS PTC Session。 |
+| 持久终端 | `@deepseek-ai/dsh-experimental-terminal-bundle` | 提供持久 shell 与 REPL。 |
+| MCP 集成 | `@deepseek-ai/dsh-mcp-client` | 需要显式配置 server。 |
+| agent team | `@deepseek-ai/dsh-experimental-agent-team-profile` | 与 `pstack_subagent` 冲突。 |
+| 自主循环 | `@deepseek-ai/dsh-experimental-ralph-bundle` | 每轮使用新子代理，无事件 watcher。 |
+
+多数包随 DSH 提供，`@deepseek-ai/dsh-cua-bundle` 按需安装。除 MCP client 外，以上插件均为实验性插件。
+
+### 🌐 浏览器 provider
+
+为 `@deepseek-ai/dsh-browser-use` 选择一个 provider：
+
+- `@deepseek-ai/dsh-experimental-browser-use-stagehand-native`
+- `@deepseek-ai/dsh-experimental-browser-use-playwright-mcp`
+- `@deepseek-ai/dsh-experimental-browser-use-chrome-devtools-mcp`
+
+> [!WARNING]
+> Agent Teams 与 `pstack_subagent` 只能二选一。Agent Teams 会禁用 DSH 原生子代理工具。
+
+未启用可选插件时，依赖它的步骤会标记为 skipped 或 blocked，不会标记为通过。安装与降级方案见 [DSH 适配文档](./pstack/harness/docs/harness/dsh.md#optional-plugins)。
+
+## ⚠️ 仍存在的缺口
+
+即使启用所有推荐插件，以下限制仍然存在。
+
+| 领域 | 限制 |
+|---|---|
+| Cursor 平台服务 | 不支持 Automations、Cursor webhook、`SendToUser`、云代理和持久云端 Projects。 |
+| Bugbot | 无法启动、配置或等待 Bugbot；已有 Bugbot 评论仍可作为 PR review 处理。 |
+| PR 编排 | 没有模型侧变更请求工具，也没有 Agent Teams 的 PR frontier 与 ledger；`watch-pr` 仍提供 stack verdict。 |
+| Custom Mode | 没有常驻根 `poteto-mode` 或 Option+Enter 开关；每个任务需调用 `/poteto-mode`。 |
+| 事件驱动循环 | 不订阅 forge 事件；本地 goal、定时任务和 watcher 并非等价替代。 |
+| 视频证据 | 没有内置录屏与逐帧验证，需要外部录屏或 FFmpeg 工具。 |
+| 桌面覆盖 | computer use 仅支持 macOS PTC Session，Windows 支持尚不完整。 |
+| MCP 发现 | 不会自动发现证据类别，需要显式配置并识别 MCP 工具。 |
+
+## 📦 兼容性
+
+每行列出最新兼容的 dsh-pstack 发布版本及其包含的 pstack 版本。较新的 DSH 兼容分界排在上方。
+
+| DSH 版本 | 最新兼容的 dsh-pstack 发布版本 | 包含的 pstack 版本 |
+|---|---|---|
+| `0.2.2-alpha.3` 及更新版本 | 当前源码树的下一个发布版本 | `0.15.36` |
+| `0.2.2-alpha.2` 及更早版本 | `v0.2.1` | `0.15.36` |
+
+DSH 出现破坏性更新并产生新的兼容分界时，追加一行。
+
+## 💛 鸣谢
 
 - [pstack](https://github.com/cursor/plugins/tree/main/pstack) 由 Lauren Tan 与 Cursor 团队设计并开源。`poteto-mode`、23 个 playbook 和 24 条 principle 都来自上游。
 - [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 由 DeepSeek 团队提供。DSH 的插件、bundle、agent preset、subagent 和工具宿主接口让这次移植能以原生工具落地。
 - [mattpocock/skills](https://github.com/mattpocock/skills) 提供 vendored 的 `writing-for-agents` 与 `retro`。
 
-本项目是社区移植，不是 Cursor 或 DeepSeek 官方发行。上游 pstack 与 DSH 均为 MIT License。
+本项目是社区移植，不是 Cursor 或 DeepSeek 官方发行。
 
-## License
+## 📄 License
 
-[MIT](./LICENSE) License © [leiwang](https://github.com/l246804)
+本仓原创代码与文档采用 [MIT License](./LICENSE) © [leiwang](https://github.com/l246804)。上游项目及 vendored 技能保留各自的许可证与声明。

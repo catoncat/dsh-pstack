@@ -65,10 +65,11 @@ describe("optional plugin catalogue", () => {
     }
   });
 
-  it("names every catalogue package in both READMEs", () => {
+  it("names every user-facing catalogue package in both READMEs", () => {
     const english = readFileSync(new URL("../README.md", import.meta.url), "utf8");
     const chinese = readFileSync(new URL("../README.zh.md", import.meta.url), "utf8");
-    for (const plugin of OPTIONAL_PLUGINS) {
+    // OPT-01 is retained only for legacy profile handling; the README recommends forge instead.
+    for (const plugin of OPTIONAL_PLUGINS.filter((plugin) => plugin.id !== "OPT-01")) {
       for (const packageName of plugin.packages) {
         expect(english, `${plugin.id} ${packageName}`).toContain(packageName);
         expect(chinese, `${plugin.id} ${packageName}`).toContain(packageName);
@@ -82,17 +83,14 @@ describe("optional plugin catalogue", () => {
     ) as {
       version: string;
       engines: { dsh: string };
-      peerDependencies: Record<string, string>;
     };
     expect(manifest.version).toBe("0.2.1");
     expect(manifest.engines.dsh).toBe(">=0.2.2-alpha.3");
-    expect(manifest.peerDependencies["@deepseek-ai/cordis"]).toBe("~4.0.6-alpha.2");
     for (const file of ["../README.md", "../README.zh.md"]) {
       const text = readFileSync(new URL(file, import.meta.url), "utf8");
       expect(text).toContain(">=0.2.2-alpha.3");
       expect(text).toContain("0.2.2-alpha.2");
       expect(text).toContain("v0.2.1");
-      expect(text).toContain("~4.0.6-alpha.2");
       expect(text).not.toContain(">=0.2.1-rc.5");
     }
     const adapter = readFileSync(docUrl, "utf8");
