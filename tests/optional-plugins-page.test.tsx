@@ -42,9 +42,10 @@ function bundle(name: string, overrides: Partial<BundleSnapshot> = {}): BundleSn
   };
 }
 
+/** The default fixture: the unified forge bundle enabled, every other state represented. */
 const bundles: readonly BundleSnapshot[] = [
-  bundle("@deepseek-ai/dsh-experimental-tool-worktree", { enabled: true }),
-  bundle("@deepseek-ai/dsh-experimental-forge-bundle"),
+  bundle("@deepseek-ai/dsh-experimental-tool-worktree"),
+  bundle("@deepseek-ai/dsh-experimental-forge-bundle", { enabled: true }),
   bundle("@deepseek-ai/dsh-cua-bundle", {
     error: { code: "unsupported-platform" },
   }),
@@ -56,10 +57,21 @@ const bundles: readonly BundleSnapshot[] = [
   }),
 ];
 
-function render(translate: PstackPluginsTranslate = t): string {
+/** A profile that still has the standalone worktree bundles on, blocking forge. */
+const blockingBundles: readonly BundleSnapshot[] = [
+  bundle("@deepseek-ai/dsh-experimental-worktree", { enabled: true }),
+  bundle("@deepseek-ai/dsh-experimental-tool-worktree", { enabled: true }),
+  bundle("@deepseek-ai/dsh-experimental-forge-bundle"),
+  bundle("@deepseek-ai/dsh-experimental-session-search"),
+];
+
+function render(
+  translate: PstackPluginsTranslate = t,
+  snapshot: readonly BundleSnapshot[] = bundles,
+): string {
   return renderToStaticMarkup(
     <OptionalPluginsView
-      rows={optionalPluginRows(bundles)}
+      rows={optionalPluginRows(snapshot)}
       status="ready"
       messages={{}}
       onToggle={noop}
@@ -68,6 +80,11 @@ function render(translate: PstackPluginsTranslate = t): string {
       t={translate}
     />,
   );
+}
+
+function card(html: string, id: string): string {
+  const start = html.indexOf(`data-optional-plugin="${id}"`);
+  return html.slice(start, html.indexOf("</article>", start));
 }
 
 describe("optional plugin recommendation section", () => {
@@ -84,10 +101,10 @@ describe("optional plugin recommendation section", () => {
       expect(html).toContain('data-optional-status="missing"');
       expect(html).toContain('data-optional-status="unsupported-platform"');
       expect(html).toContain('data-optional-status="error"');
-      expect(html).toContain(copy.suggestedTag);
       expect(html).toContain(copy.recommendedTag);
       expect(html).toContain(copy.conflictWarning);
       expect(html).toContain(copy.nonBundleGuidance);
+      expect(html).toContain(copy.profileOnlyGuidance.split("&")[0]!);
       expect(html).toContain(copy.enableRecommended);
       expect(html).toContain(
         copy.recommendedHint.replace("{ids}", defaultRecommendationIds().join(copy.listSeparator)),
@@ -98,17 +115,31 @@ describe("optional plugin recommendation section", () => {
   it("offers a switch only to switchable bundle rows", () => {
     const html = render();
     const copy = pluginsCatalogs[baseLocale];
-    const card = (id: string): string =>
-      html.slice(
-        html.indexOf(`data-optional-plugin="${id}"`),
-        html.indexOf("</article>", html.indexOf(`data-optional-plugin="${id}"`)),
-      );
-    expect(card("OPT-01")).toContain(`>${copy.disablePlugin}<`);
-    expect(card("OPT-02")).toContain(`>${copy.enablePlugin}<`);
-    expect(card("OPT-03")).not.toContain(`>${copy.enablePlugin}<`);
-    expect(card("OPT-04")).not.toContain(`>${copy.enablePlugin}<`);
-    expect(card("OPT-07")).not.toContain(`>${copy.enablePlugin}<`);
-    expect(card("OPT-08")).not.toContain(`>${copy.enablePlugin}<`);
+    expect(card(html, "OPT-01")).not.toContain(`>${copy.enablePlugin}<`);
+    expect(card(html, "OPT-01")).not.toContain(`>${copy.disablePlugin}<`);
+    expect(card(html, "OPT-02")).toContain(`>${copy.disablePlugin}<`);
+    expect(card(html, "OPT-03")).not.toContain(`>${copy.enablePlugin}<`);
+    expect(card(html, "OPT-04")).not.toContain(`>${copy.enablePlugin}<`);
+    expect(card(html, "OPT-05")).toContain(`>${copy.enablePlugin}<`);
+    expect(card(html, "OPT-07")).not.toContain(`>${copy.enablePlugin}<`);
+    expect(card(html, "OPT-08")).not.toContain(`>${copy.enablePlugin}<`);
+  });
+
+  it("withholds the forge switch and shows the exclusion warning while a standalone worktree bundle is on", () => {
+    const html = render(t, blockingBundles);
+    const copy = pluginsCatalogs[baseLocale];
+    const forgeCard = card(html, "OPT-02");
+    expect(forgeCard).toContain(
+      copy.mutexWarning.replace(
+        "{bundles}",
+        [
+          "@deepseek-ai/dsh-experimental-worktree",
+          "@deepseek-ai/dsh-experimental-tool-worktree",
+        ].join(copy.listSeparator),
+      ),
+    );
+    expect(forgeCard).not.toContain(`>${copy.enablePlugin}<`);
+    expect(card(html, "OPT-01")).toContain(copy.profileOnlyGuidance.split("&")[0]!);
   });
 
   it("renders load failures with a retry control", () => {
@@ -150,5 +181,8 @@ describe("change result copy", () => {
     );
     expect(changeResultText("overridden", t)).toBe(copy.resultOverridden);
     expect(changeResultText("cancelled", t)).toBe(copy.resultCancelled);
+    expect(changeResultText("skipped", t, "a, b")).toBe(
+      copy.resultSkippedConflict.replace("{bundles}", "a, b"),
+    );
   });
 });

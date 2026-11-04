@@ -76,13 +76,27 @@ describe("optional plugin catalogue", () => {
     }
   });
 
-  it("keeps the default recommendation in documented order", () => {
+  it("recommends the unified Change requests & worktrees switch instead of the hidden standalone bundle", () => {
     expect(recommendedBundleNames()).toEqual([
-      "@deepseek-ai/dsh-experimental-tool-worktree",
+      "@deepseek-ai/dsh-experimental-forge-bundle",
       "@deepseek-ai/dsh-experimental-session-search",
     ]);
-    expect(defaultRecommendationIds()).toEqual(["OPT-01", "OPT-06"]);
-    expect(OPTIONAL_PLUGINS.find((plugin) => plugin.id === "OPT-02")?.suggested).toBe(true);
+    expect(defaultRecommendationIds()).toEqual(["OPT-02", "OPT-06"]);
+
+    const opt01 = OPTIONAL_PLUGINS.find((plugin) => plugin.id === "OPT-01");
+    expect(opt01?.recommended).toBeUndefined();
+    expect(opt01?.profileOnly).toBe(true);
+    expect(opt01?.switchable).toBe(false);
+    expect(opt01?.bundle).toBe("@deepseek-ai/dsh-experimental-tool-worktree");
+
+    const opt02 = OPTIONAL_PLUGINS.find((plugin) => plugin.id === "OPT-02");
+    expect(opt02?.recommended).toBe(true);
+    expect(opt02?.bundle).toBe("@deepseek-ai/dsh-experimental-forge-bundle");
+    expect(opt02?.exclusiveWith).toEqual([
+      "@deepseek-ai/dsh-experimental-worktree",
+      "@deepseek-ai/dsh-experimental-tool-worktree",
+    ]);
+
     expect(OPTIONAL_PLUGINS.find((plugin) => plugin.id === "OPT-08")?.switchable).toBe(false);
   });
 });
@@ -101,25 +115,49 @@ describe("optional plugin status", () => {
     ).toBe("error");
   });
 
-  it("only offers switches to bundle rows that are off or on", () => {
+  it("only offers switches to switchable, unblocked bundle rows", () => {
     const rows = optionalPluginRows([
-      bundle("@deepseek-ai/dsh-experimental-tool-worktree", { enabled: true }),
+      bundle("@deepseek-ai/dsh-experimental-tool-worktree"),
       bundle("@deepseek-ai/dsh-experimental-forge-bundle"),
       bundle("@deepseek-ai/dsh-experimental-cua-bundle", {
         error: { code: "unsupported-platform" },
       }),
     ]);
     const byId = new Map(rows.map((row) => [row.definition.id, row]));
-    expect(byId.get("OPT-01")?.canToggle).toBe(true);
+    expect(byId.get("OPT-01")?.canToggle).toBe(false);
     expect(byId.get("OPT-02")?.canToggle).toBe(true);
     expect(byId.get("OPT-03")?.canToggle).toBe(false);
     expect(byId.get("OPT-04")?.canToggle).toBe(false);
     expect(byId.get("OPT-08")?.canToggle).toBe(false);
   });
 
+  it("blocks the unified forge bundle while a standalone worktree bundle is on", () => {
+    const rows = optionalPluginRows([
+      bundle("@deepseek-ai/dsh-experimental-worktree", { enabled: true }),
+      bundle("@deepseek-ai/dsh-experimental-tool-worktree", { enabled: true }),
+      bundle("@deepseek-ai/dsh-experimental-forge-bundle"),
+    ]);
+    const byId = new Map(rows.map((row) => [row.definition.id, row]));
+    expect(byId.get("OPT-02")?.blockedBy).toEqual([
+      "@deepseek-ai/dsh-experimental-worktree",
+      "@deepseek-ai/dsh-experimental-tool-worktree",
+    ]);
+    expect(byId.get("OPT-02")?.canToggle).toBe(false);
+  });
+
+  it("still lets an enabled forge bundle be switched off even while a blocker is on", () => {
+    const rows = optionalPluginRows([
+      bundle("@deepseek-ai/dsh-experimental-tool-worktree", { enabled: true }),
+      bundle("@deepseek-ai/dsh-experimental-forge-bundle", { enabled: true }),
+    ]);
+    const opt02 = rows.find((row) => row.definition.id === "OPT-02");
+    expect(opt02?.blockedBy.length).toBeGreaterThan(0);
+    expect(opt02?.canToggle).toBe(true);
+  });
+
   it("counts the default recommendation still off for activation guidance", () => {
     const rows = optionalPluginRows([
-      bundle("@deepseek-ai/dsh-experimental-tool-worktree"),
+      bundle("@deepseek-ai/dsh-experimental-forge-bundle"),
       bundle("@deepseek-ai/dsh-experimental-session-search", { enabled: true }),
     ]);
     expect(remainingRecommendedCount(rows)).toBe(1);
@@ -128,10 +166,10 @@ describe("optional plugin status", () => {
 });
 
 describe("enable recommended plugins", () => {
-  it("enables the default set sequentially and summarizes outcomes", async () => {
+  it("enables the unified forge bundle and session search sequentially", async () => {
     const calls: string[] = [];
     const rows = optionalPluginRows([
-      bundle("@deepseek-ai/dsh-experimental-tool-worktree"),
+      bundle("@deepseek-ai/dsh-experimental-forge-bundle"),
       bundle("@deepseek-ai/dsh-experimental-session-search"),
     ]);
     const summary = await enableRecommendedPlugins(
@@ -144,24 +182,24 @@ describe("enable recommended plugins", () => {
       rows,
     );
     expect(calls).toEqual([
-      "@deepseek-ai/dsh-experimental-tool-worktree",
+      "@deepseek-ai/dsh-experimental-forge-bundle",
       "@deepseek-ai/dsh-experimental-session-search",
     ]);
     expect(summary).toMatchObject({ applied: 2, restartRequired: 0, failed: 0, skipped: 0 });
-    expect(summary.outcomes.map((outcome) => outcome.id)).toEqual(["OPT-01", "OPT-06"]);
+    expect(summary.outcomes.map((outcome) => outcome.id)).toEqual(["OPT-02", "OPT-06"]);
   });
 
   it("continues after one failure and reports it", async () => {
     const calls: string[] = [];
     const rows = optionalPluginRows([
-      bundle("@deepseek-ai/dsh-experimental-tool-worktree"),
+      bundle("@deepseek-ai/dsh-experimental-forge-bundle"),
       bundle("@deepseek-ai/dsh-experimental-session-search"),
     ]);
     const summary = await enableRecommendedPlugins(
       {
         setBundleEnabled: async (name) => {
           calls.push(name);
-          if (name.includes("tool-worktree")) throw new Error("no permission");
+          if (name.includes("forge-bundle")) throw new Error("no permission");
           return { application: "restart-required" };
         },
       },
@@ -177,7 +215,7 @@ describe("enable recommended plugins", () => {
 
   it("skips a recommended bundle the Host does not list", async () => {
     const calls: string[] = [];
-    const rows = optionalPluginRows([bundle("@deepseek-ai/dsh-experimental-tool-worktree")]);
+    const rows = optionalPluginRows([bundle("@deepseek-ai/dsh-experimental-forge-bundle")]);
     const summary = await enableRecommendedPlugins(
       {
         setBundleEnabled: async (name) => {
@@ -187,8 +225,35 @@ describe("enable recommended plugins", () => {
       },
       rows,
     );
-    expect(calls).toEqual(["@deepseek-ai/dsh-experimental-tool-worktree"]);
+    expect(calls).toEqual(["@deepseek-ai/dsh-experimental-forge-bundle"]);
     expect(summary).toMatchObject({ applied: 1, failed: 0, skipped: 1 });
+  });
+
+  it("does not enable the forge bundle while a standalone worktree bundle stays on", async () => {
+    const calls: string[] = [];
+    const rows = optionalPluginRows([
+      bundle("@deepseek-ai/dsh-experimental-worktree", { enabled: true }),
+      bundle("@deepseek-ai/dsh-experimental-tool-worktree", { enabled: true }),
+      bundle("@deepseek-ai/dsh-experimental-forge-bundle"),
+      bundle("@deepseek-ai/dsh-experimental-session-search"),
+    ]);
+    const summary = await enableRecommendedPlugins(
+      {
+        setBundleEnabled: async (name) => {
+          calls.push(name);
+          return { application: "applied" };
+        },
+      },
+      rows,
+    );
+    expect(calls).toEqual(["@deepseek-ai/dsh-experimental-session-search"]);
+    expect(summary).toMatchObject({ applied: 1, failed: 0, skipped: 1 });
+    const skipped = summary.outcomes.find((outcome) => outcome.application === "skipped");
+    expect(skipped?.id).toBe("OPT-02");
+    expect(skipped?.blockedBy).toEqual([
+      "@deepseek-ai/dsh-experimental-worktree",
+      "@deepseek-ai/dsh-experimental-tool-worktree",
+    ]);
   });
 });
 
