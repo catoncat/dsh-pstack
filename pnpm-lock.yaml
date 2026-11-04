@@ -190,6 +190,9 @@ catalogs:
       specifier: ^5.5.0
       version: 5.5.0
   types:
+    '@deepseek-ai/cordis':
+      specifier: ~4.0.6-alpha.2
+      version: 4.0.6-alpha.2
     '@deepseek-ai/dsh-agent':
       specifier: 0.2.2-alpha.3
       version: 0.2.2-alpha.3
@@ -262,9 +265,31 @@ importers:
 
   .:
     dependencies:
+      commander:
+        specifier: catalog:inlined
+        version: 14.0.0
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: catalog:types
+        version: 4.0.6-alpha.2
       '@deepseek-ai/dsh-agent':
         specifier: catalog:types
         version: 0.2.2-alpha.3(@deepseek-ai/cordis@4.0.6-alpha.2)(@deepseek-ai/dsh-llm@0.2.2-alpha.3(@deepseek-ai/cordis@4.0.6-alpha.2))(@deepseek-ai/dsh-scope@0.2.2-alpha.3(@deepseek-ai/cordis@4.0.6-alpha.2))(@deepseek-ai/dsh-session-projection@0.2.2-alpha.3(@deepseek-ai/cordis@4.0.6-alpha.2)(@deepseek-ai/dsh-session@0.2.2-alpha.3(@deepseek-ai/cordis@4.0.6-alpha.2)(@deepseek-ai/dsh-scope@0.2.2-alpha.3(@deepseek-ai/cordis@4.0.6-alpha.2))))(@deepseek-ai/dsh-session@0.2.2-alpha.3(@deepseek-ai/cordis@4.0.6-alpha.2)(@deepseek-ai/dsh-scope@0.2.2-alpha.3(@deepseek-ai/cordis@4.0.6-alpha.2)))(@deepseek-ai/dsh-system-prompt@0.2.2-alpha.3(@deepseek-ai/cordis@4.0.6-alpha.2)(@deepseek-ai/dsh-llm@0.2.2-alpha.3(@deepseek-ai/cordis@4.0.6-alpha.2))(@deepseek-ai/dsh-scope@0.2.2-alpha.3(@deepseek-ai/cordis@4.0.6-alpha.2)))(@deepseek-ai/dsh-typert-protocol@0.2.2-alpha.3(@deepseek-ai/cordis@4.0.6-alpha.2))(@deepseek-ai/dsh-util-values@0.2.2-alpha.3(@deepseek-ai/cordis@4.0.6-alpha.2))
+      '@deepseek-ai/dsh-api-gateway':
+        specifier: catalog:types
+        version: 0.2.2-alpha.3(@deepseek-ai/cordis@4.0.6-alpha.2)
+      '@deepseek-ai/dsh-client-locale':
+        specifier: catalog:types
+        version: 0.2.2-alpha.3(@deepseek-ai/cordis@4.0.6-alpha.2)
+      '@deepseek-ai/dsh-client-ui-plugin-manager':
+        specifier: catalog:types
+        version: 0.2.2-alpha.3(@deepseek-ai/cordis@4.0.6-alpha.2)
+      '@deepseek-ai/dsh-client-ui-renderer':
+        specifier: catalog:types
+        version: 0.2.2-alpha.3(@deepseek-ai/cordis@4.0.6-alpha.2)
+      '@deepseek-ai/dsh-client-ui-slots':
+        specifier: catalog:types
+        version: 0.2.2-alpha.3(@deepseek-ai/cordis@4.0.6-alpha.2)
       '@deepseek-ai/dsh-jobs':
         specifier: catalog:types
         version: 0.2.2-alpha.3(7db971f20129cf554fdadc7dfc48f5f0)
@@ -289,31 +314,12 @@ importers:
       '@deepseek-ai/dsh-typert-protocol':
         specifier: catalog:types
         version: 0.2.2-alpha.3(@deepseek-ai/cordis@4.0.6-alpha.2)
-      '@deepseek-ai/dsh-working-directory':
-        specifier: catalog:types
-        version: 0.2.2-alpha.3(d63e346e6797d055e0e90bcd0f82364b)
-      commander:
-        specifier: catalog:inlined
-        version: 14.0.0
-    devDependencies:
-      '@deepseek-ai/dsh-api-gateway':
-        specifier: catalog:types
-        version: 0.2.2-alpha.3(@deepseek-ai/cordis@4.0.6-alpha.2)
-      '@deepseek-ai/dsh-client-locale':
-        specifier: catalog:types
-        version: 0.2.2-alpha.3(@deepseek-ai/cordis@4.0.6-alpha.2)
-      '@deepseek-ai/dsh-client-ui-plugin-manager':
-        specifier: catalog:types
-        version: 0.2.2-alpha.3(@deepseek-ai/cordis@4.0.6-alpha.2)
-      '@deepseek-ai/dsh-client-ui-renderer':
-        specifier: catalog:types
-        version: 0.2.2-alpha.3(@deepseek-ai/cordis@4.0.6-alpha.2)
-      '@deepseek-ai/dsh-client-ui-slots':
-        specifier: catalog:types
-        version: 0.2.2-alpha.3(@deepseek-ai/cordis@4.0.6-alpha.2)
       '@deepseek-ai/dsh-typert-registry':
         specifier: catalog:types
         version: 0.2.2-alpha.3(@deepseek-ai/cordis@4.0.6-alpha.2)
+      '@deepseek-ai/dsh-working-directory':
+        specifier: catalog:types
+        version: 0.2.2-alpha.3(d63e346e6797d055e0e90bcd0f82364b)
       '@types/node':
         specifier: catalog:types
         version: 24.19.2

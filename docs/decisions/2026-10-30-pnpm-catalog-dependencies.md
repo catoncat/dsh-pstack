@@ -14,11 +14,13 @@ Review: 2027-04-30
 
 依赖按用途登记到 `pnpm-workspace.yaml` 的 catalog，`package.json` 只引用 `catalog:<名称>`：
 
-- `catalog:types`：DSH 运行时/类型包（`dsh-typert-protocol`、`dsh-api-gateway`、`dsh-client-*`、`dsh-typert-registry`）与 `@types/node`。
+- `catalog:types`：DSH 运行时/类型包（`dsh-typert-protocol`、`dsh-api-gateway`、`dsh-client-*`、`dsh-typert-registry`）、`@deepseek-ai/cordis`（范围条目 `~4.0.6-alpha.2`，供 peer 与 dev 双登记）与 `@types/node`。
 - `catalog:ui`：`react`、`react-dom`、`@types/react`、`@types/react-dom`。
 - 既有 `agentic`、`cli`、`testing`、`inlined` 分类保持不变。
 
 `pnpm-lock.yaml` 由 pnpm 生成并提交；`pnpm pack` 会把 `catalog:` 引用改写为实际版本。
+
+DSH 包一律登记在 `devDependencies`（运行期由宿主提供），只有实例必须与宿主共享的 `@deepseek-ai/cordis` 额外登记 `peerDependencies`；独立版本的第三方依赖留在 `dependencies`。字段与外链口径见 [2026-11-04-dsh-namespace-external.md](2026-11-04-dsh-namespace-external.md)。
 
 ## 备选方案
 

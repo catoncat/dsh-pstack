@@ -2,9 +2,11 @@
  * The slices of the DSH host this plugin binds to.
  *
  * Every import below is `import type`, which `verbatimModuleSyntax` erases at build
- * time, so the bundle carries no runtime import of `@deepseek-ai/*`. That is what keeps
- * a linked workspace install working: the profile links this checkout and resolves no
- * peer dependency at runtime.
+ * time, so this file contributes no runtime import of `@deepseek-ai/*`. The runtime
+ * imports elsewhere (`Service` and `TypertRemoteService` in `roles.ts`) stay external:
+ * the pack config never bundles the `@deepseek-ai/*` namespace, and `@deepseek-ai/cordis`
+ * is a declared peer, so a profile install and a linked checkout both resolve the host's
+ * copy instead of a second framework instance.
  *
  * Each service is a real class with private state, so a fake cannot satisfy it. The
  * `*Host` aliases are `Pick<>` slices of the published class, which keeps the exact

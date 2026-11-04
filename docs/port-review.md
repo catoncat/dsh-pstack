@@ -24,7 +24,7 @@
 1. **能力边界：PASS。** OPT-02 至 OPT-09 的包名、`cwd` 精确匹配、provider 槽、互斥、外部工具、未确认子代理 transcript 和视频缺口在 `pstack/README.md`、`dsh.md` 与双语根 README 中一致。
 2. **措辞一致：PASS。** 跳过行采用 `Skipped in DeepSeek Harness: <step>. <reason>.`，未启用能力不写成通过；默认关闭与实验性状态、随包 `agents/` 和 `LICENSE`、技能经 `pstack_skill` 加载而资源按相对路径读取的表述已核对。
 3. **归类判断：PASS。** 七个 Local replacements 条目均有 README 替代方案，且上游名字出现在随包技能、playbook 或 reference 的运行期步骤中。纯平台排除和可选插件降级没有混入该小节；`check:harness-doc` 的模板、映射和随包引用检查通过。
-4. **版本边界：PASS。** 根双语 README 保留 DSH `0.2.2-alpha.3` 与 `0.2.2-alpha.2` 的版本对照；随包 README 和 `dsh.md` 只描述当前 DSH 行为。`engines.dsh` 为 `>=0.2.2-alpha.3`，DSH catalog 与 lockfile 为 `0.2.2-alpha.3`，锁文件中的 Cordis 为 `4.0.6-alpha.2`。当前 `package.json` 无冗余 Cordis peer 依赖，删除提交为 `7f74745`。破坏性基线提交 `c1870fd` 标题为 `feat!: support dsh0.2.2-alpha.3`。
+4. **版本边界：PASS。** 根双语 README 保留 DSH `0.2.2-alpha.3` 与 `0.2.2-alpha.2` 的版本对照；随包 README 和 `dsh.md` 只描述当前 DSH 行为。`engines.dsh` 为 `>=0.2.2-alpha.3`，DSH catalog 与 lockfile 为 `0.2.2-alpha.3`，锁文件中的 Cordis 为 `4.0.6-alpha.2`。`package.json` 的 Cordis peer 曾在 `7f74745` 作为冗余删除（当时 cordis 被内联进产物）；`@deepseek-ai/*` 命名空间改为外链后，按上游 `publish.md` 恢复为 peer + devDependencies，其余 `@deepseek-ai/dsh-*` 只在 devDependencies，构建不再内联宿主模块。破坏性基线提交 `c1870fd` 标题为 `feat!: support dsh0.2.2-alpha.3`。
 
 ## 整文档审查
 
