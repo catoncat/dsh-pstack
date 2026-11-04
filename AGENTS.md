@@ -38,6 +38,10 @@ release. Add a tool name to select part of the graph. For example, run
 - 命名概念前读 `docs/glossary.md`；引入新概念时补充术语。
 - 开始任何仓库任务前读 `docs/decisions/AGENTS.md`，按其检索规则读取与任务相关的决策记录。
 
+## Commits
+
+- 破坏性变更提交使用 Conventional Commits 的 `type!:` 形式，例如 `feat!: ...`；不要使用 `!feat:`，`changelogithub` 只识别冒号前的 `!`。详见 `docs/decisions/2026-11-04-breaking-change-commit-format.md`。
+
 ## Local scratch
 
 - 本地验证的临时文件一律写仓库 `.tmp/`（已 gitignore，`vp check` 不扫描）；Bash 每次调用是独立沙箱，`/tmp` 不跨调用保留，不要用它承载后续步骤要读的文件。
