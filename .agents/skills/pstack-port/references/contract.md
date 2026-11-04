@@ -131,3 +131,16 @@ node pstack/scripts/port-fixes.mjs replay
 报告回查「需求 → 工作项 → 实现 → 验证 → 产物」。列出未覆盖、证据不足和有意跳过项；为空写「无」。报告最后按 R-09 给出参数完整的 `/pstack-port ...` 下一步命令；多个选择分别说明条件；没有下一步写「本轮结束，无下一步」。
 
 完成标准：证据覆盖当前场景的行为、状态变化与验收要求；失败不写成通过；报告包含完整下一步命令或结束语。
+
+## 6. DSH 破坏性变更与版本边界
+
+`upstream` 或 `audit` 确认 DSH 存在破坏性变更时，后续 port 按本节处理：
+
+- 下一 port 轮次按破坏性基线实现。`package.json` 的 `engines.dsh` 下限设为该破坏版本，`peerDependencies`、依赖 catalog、lockfile 和构建配置同步对齐；删除只为旧 DSH 存在的依赖或配置。
+- `pstack/README.md` 与 `pstack/harness/docs/harness/dsh.md` 只描述当前 DSH 行为。不写旧 DSH 不支持说明、旧版兼容分支或版本选择说明。`dsh.md` 仍只保留上游模板外的 `## Local replacements` 与 `## Optional plugins` 两节，不新增版本边界章节。
+- `src/**` 与 `tests/**` 只实现当前 DSH 的公共接口，不保留旧 DSH 的运行时分支、兼容 shim 或弃用路径。
+- 根 `README.md` 及其全部语言版本是唯一记录版本对照的位置：旧插件版本对应旧 DSH 范围，下一插件版本对应新的 `engines.dsh` 下限。`doc` 负责同步该表。
+- 破坏性实现提交使用 Conventional Commits 的 `type!:` 形式，例如 `feat!: ...`，不使用 `!type:`；同一 DSH 破坏版本不为版本变化新增一次性决策记录。
+- DSH 变更未影响插件行为时，按 no-impact 记录证据，不提高 `engines.dsh`。
+
+完成标准：版本对照只在根 README；随包文档、`src/**` 和 `tests/**` 没有旧 DSH 说明或兼容路径；`package.json`、依赖 catalog 与 lockfile 对齐当前 DSH；破坏性提交标题使用 `type!:`。

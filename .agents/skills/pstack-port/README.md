@@ -76,6 +76,8 @@ EXT 或 FIX 失效时按修复动作落点处理：只改扩展走 EXT 修复；
 
 `doc` 覆盖当前全部可选插件的未启用降级说明，并在 `dsh.md` 的 `## Local replacements` 补齐 README 记录的运行期替代项（R-11）；写文档前和收尾时都运行 `vp run @internal/pstack#check:harness-doc`（R-12），它按 `docs/harness-doc.yaml` 对账 README、上游模板与 `src/`。随后核对根 README 的版本、统计、入口、能力、插件和兼容性动态内容。没有差异时不修改根 README。国际化内容不限语言数量，所有语言版本同步更新。
 
+DSH 出现破坏性变更时，版本对照只写根 README，列出 DSH 版本范围与对应的 dsh-pstack 版本。`pstack/README.md`、`dsh.md`、`src/**`、`tests/**` 和 `package.json` 依赖只实现当前 DSH 的最小版本，不保留旧版说明或兼容分支；对应的破坏性提交使用 `type!:`，例如 `feat!: ...`。
+
 `doc` 收尾、以及本技能整体重构后，各按 R-13 用 `/writing-for-agents` 做一次整文档审查（S-28、S-29）。技能重构另按 [`references/refactor.md`](references/refactor.md) 清理旧脚本、运行 `vp check` 与 `vp test`，并在报告中列出审查修改点；该维护任务不开始 port 轮次。`SPEC.md` 平时只追加；定期自洁按 [`SPEC-HYGIENE.md`](SPEC-HYGIENE.md)（R-14）。
 
 通用门禁：

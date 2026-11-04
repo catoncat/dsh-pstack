@@ -26,7 +26,7 @@ port 在 `phase: review` 且存在开放 finding 时，下一步是 `/pstack-por
 
 按工作项限制范围：
 
-- **port**：实现 README 的插件内范围与 `status: active` FIX；开放 port finding 也只在此修复。忽略无效 FIX 记录，不汇报被忽略项。EXT 风险不改变 port 需求，不修改 `docs/extensions.md`。生成或修改脚本时，按能力表补齐入口、输入输出、行为测试、调用方和验收命令；脚本与测试写入架构规定的手写源（S-25）。
+- **port**：实现 README 的插件内范围与 `status: active` FIX；开放 port finding 也只在此修复。忽略无效 FIX 记录，不汇报被忽略项。EXT 风险不改变 port 需求，不修改 `docs/extensions.md`。生成或修改脚本时，按能力表补齐入口、输入输出、行为测试、调用方和验收命令；脚本与测试写入架构规定的手写源（S-25）。若本轮由 DSH 破坏性变更触发，按 `contract` 第 6 节同步 `package.json` 的 `engines.dsh`、`peerDependencies`、依赖 catalog 与 lockfile，并确保 `src/**`、`tests/**` 只实现当前 DSH 公共接口，不保留旧版兼容路径。
 - **本地 EXT 或 Issue 映射的 EXT**：只改该扩展代码、必要测试和 EXT 工作记录，不改 `pstack/runtime/`、`pstack/harness/` 或 port 能力行为。
 - **Issue 映射的 FIX**：按 Issue 工作文件实现，填写 `files`、`test`，将对应 FIX 从 `open` 改为 `active`，不改 port 行为。
 

@@ -14,7 +14,7 @@
 
 ## 2. 只读影响评估
 
-比较新旧提交与行为差异，读取 `docs/port-prepare.md`、`pstack/README.md`、`pstack/harness/`、runtime、插件实现和构建配置。`docs/port-review.md` 不作为分流依据。
+比较新旧提交与行为差异，读取 `docs/port-prepare.md`、`pstack/README.md`、`pstack/harness/`、runtime、插件实现和构建配置。`docs/port-review.md` 不作为分流依据。若 DSH 出现破坏性变更，明确下一 port 轮次按破坏性基线处理：报告需要提升的 `engines.dsh`、peer 依赖与依赖 catalog，需要删除的旧版兼容实现，以及根 README 的插件版本对照。版本边界的完整规则见 [`contract.md`](contract.md) 第 6 节。
 
 按优先级给出唯一建议：
 

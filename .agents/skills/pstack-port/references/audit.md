@@ -14,7 +14,7 @@
 
 1. 枚举并读取 `<pstack>` 全部 Markdown、模板、配置与从调用点追踪到的脚本。登记来源、入口、运行时、输入输出、退出码和关键行为；每份文档都有原子能力或「无可移植能力」标记。技能或工作流声明的脚本还要有测试与调用方；缺失、行为不完整或过时的脚本写入能力表（S-25）。
 2. 完整读取 `<pstack>/docs/harness/claude-code.md`，登记覆盖域、表格粒度与平台排除基线。
-3. 按 [`port-baseline.md`](port-baseline.md) 调查 `<dsh>` 的标准模式、可选插件、实验性状态、启用条件与互斥关系。每项第 2、3 层结论绑定可打开的源码证据。
+3. 按 [`port-baseline.md`](port-baseline.md) 调查 `<dsh>` 的标准模式、可选插件、实验性状态、启用条件与互斥关系。每项第 2、3 层结论绑定可打开的源码证据。登记当前 DSH 版本；若本轮由 DSH 破坏性变更触发，按 [`contract.md`](contract.md) 第 6 节把当前 DSH 的最小实现范围写入能力表与 README 基线。
 4. 读取 `docs/architecture.md`、适用 accepted 决策和 `docs/extensions.md`。登记并保留 `proposed`、`active`、`broken` 与 `retired` EXT，不把 EXT 混入上游能力。
 5. 逐条映射 core Issue 或 EXT 的 `required_behavior`。每项至少对应一个能力行；core Issue 确无 port 影响时，保存可复核的无影响证据，不虚构能力行。
 

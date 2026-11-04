@@ -32,7 +32,7 @@ idle 中的 Issue blocker 使用 `resume_route: idle`；port 中使用被中断�
 
 ## 3. 全量审查 port（S-08～S-12、S-23）
 
-逐项审查 README 能力、core Issue 或 EXT 的 `required_behavior`、公共 API、权限、最小性与共享影响。执行测试前按实际文件读取适用的 `AGENTS.md` 与决策约定，确认测试和真实运行验证环境符合 accepted 决策（S-30）。运行所有 `active` EXT 的验收测试，不抽查；运行全部 `active` FIX replay，不只看本次改动。适配文档门禁的 FAIL 记开放 finding（R-12）。执行并记录：
+逐项审查 README 能力、core Issue 或 EXT 的 `required_behavior`、公共 API、权限、最小性与共享影响。执行测试前按实际文件读取适用的 `AGENTS.md` 与决策约定，确认测试和真实运行验证环境符合 accepted 决策（S-30）。运行所有 `active` EXT 的验收测试，不抽查；运行全部 `active` FIX replay，不只看本次改动。适配文档门禁的 FAIL 记开放 finding（R-12）。若本轮由 DSH 破坏性变更触发，另行核对：`package.json` 的 `engines.dsh` 与 `peerDependencies`、依赖 catalog 和 lockfile 对齐当前 DSH；`src/**` 与 `tests/**` 无旧 DSH 兼容路径；`pstack/README.md` 与 `dsh.md` 无旧版不支持说明；根 README 有 DSH 与 dsh-pstack 的版本对照；对应提交标题使用 `type!:`。执行并记录：
 
 ```bash
 vp check
@@ -66,7 +66,7 @@ node pstack/scripts/port-fixes.mjs replay
 
 所有 `active` EXT 测试和 FIX replay 通过、core 需求逐项覆盖、无开放 finding 时，设 `phase: doc`。保持 core blocker，下一步 `/pstack-port doc`。
 
-完成标准（S-08～S-12、S-23、S-30、R-09）：测试与验证环境符合项目决策约定；全量 EXT 测试与 replay 有实际结果；五条门禁退出 0；每个 EXT/FIX 异常都有规定的状态、finding 或 blocker；通过时 `phase: doc` 且登记文件无意外变化，未通过时不进入 doc；报告含唯一完整下一步命令。
+完成标准（S-08～S-12、S-23、S-30、R-09）：测试与验证环境符合项目决策约定；全量 EXT 测试与 replay 有实际结果；五条门禁退出 0；每个 EXT/FIX 异常都有规定的状态、finding 或 blocker；DSH 破坏性变更轮次的版本边界与提交标记核对完成；通过时 `phase: doc` 且登记文件无意外变化，未通过时不进入 doc；报告含唯一完整下一步命令。
 
 ## 4. 审查 EXT 或 Issue 实现（S-21）
 

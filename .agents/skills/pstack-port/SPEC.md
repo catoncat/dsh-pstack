@@ -20,8 +20,8 @@
 | 内容 | 位置 |
 |---|---|
 | 模型：核心概念、状态文件、blocker、repair_target、FIX | §1 |
-| 场景 S-01～S-30 | §2 |
-| 要求 R-01～R-14 | §3 |
+| 场景 S-01～S-31 | §2 |
+| 要求 R-01～R-15 | §3 |
 | 验收证据与门禁 | §4 |
 | 重构验收清单 | §5 |
 
@@ -475,6 +475,21 @@ blocker:
 - **明确不做**：不把测试退出 0 当作符合项目约定的充分证据；不在项目约定的测试环境之外另建真实测试环境。
 - **验收证据**：测试报告列出适用的 `AGENTS.md`、accepted 决策和验证环境；测试或门禁退出 0，且执行路径符合 `docs/decisions/2026-10-30-playground-real-plugin-testing.md`。
 
+### S-31 DSH 破坏性变更按当前版本最小实现
+
+- **前置状态**：`upstream` 或 `audit` 确认 DSH 存在破坏性变更，当前 port 轮次将提升 DSH 最低版本。
+- **触发**：`/pstack-port upstream` 报告该变更后进入 `audit`，或 `/pstack-port audit` 冻结需求时发现 DSH 破坏性变更。
+- **期望行为**：
+  1. 根 `README.md` 及全部语言版本记录 DSH 版本范围与 dsh-pstack 版本的对照：旧插件版本对应旧 DSH，下一插件版本对应新的 `engines.dsh` 下限。
+  2. `pstack/README.md` 与 `pstack/harness/docs/harness/dsh.md` 只描述当前 DSH 版本的行为，不写旧 DSH 不支持说明、旧版兼容分支或版本选择说明。
+  3. `src/**` 与 `tests/**` 只实现当前 DSH 的公共接口，不保留旧 DSH 的兼容 shim、运行时分支或弃用路径。
+  4. `package.json` 的 `engines.dsh`、`peerDependencies`、依赖 catalog 与 lockfile 对齐当前 DSH 版本，删除只为旧 DSH 存在的依赖或配置。
+  5. 对应的破坏性提交使用 Conventional Commits 的 `type!:` 形式，例如 `feat!: ...`；不新增一次性版本决策记录。
+- **状态与文件变化**：根 README 增加或更新版本对照；`pstack/README.md`、`dsh.md`、`src/**`、`tests/**`、`package.json`、依赖 catalog 与 lockfile 按当前 DSH 收敛。
+- **下一步**：进入 `/pstack-port implement port`；尚未开始 port 轮次时先执行 `/pstack-port audit`。
+- **明确不做**：不在随包文档写旧 DSH 说明；不维护新旧 DSH 双实现；不新增每条 DSH 版本的单独决策记录；不使用 `!feat:` 或只在正文写 `BREAKING CHANGE:` 代替 `type!:`。
+- **验收证据**：根 README 有版本对照表；`pstack/README.md`、`dsh.md` 与 `src/**` 不出现旧 DSH 版本标识或兼容分支；`package.json` 的 `engines.dsh` 与 peer 依赖匹配当前 DSH；对应提交标题匹配 `type!:`，`changelogithub --dry` 的 Breaking Changes 包含该提交。
+
 ## 3. 技能要求
 
 ### R-01 根 README 动态内容同步（doc 最后一步）
@@ -607,8 +622,9 @@ fixes:
 | S-26～S-28 | `doc` |
 | S-29 | 技能整体重构任务 |
 | S-30 | 所有执行测试或门禁的分支，主要是 `implement`、`review`、`doc` 与 `issue` |
+| S-31 | `upstream`、`audit`、`implement`（port）、`review`（port）、`doc` |
 
-重构完成标准：S-01～S-28 每个至少映射到一个分支文件，且在对应分支的完成标准中有可执行的检查；S-29 映射到技能整体重构任务；S-30 映射到共同验证契约及执行测试或门禁的分支完成标准；没有场景落空。
+重构完成标准：S-01～S-28、S-31 每个至少映射到一个分支文件，且在对应分支的完成标准中有可执行的检查；S-29 映射到技能整体重构任务；S-30 映射到共同验证契约及执行测试或门禁的分支完成标准；没有场景落空。
 
 ### R-06 锁定与变更
 
@@ -728,6 +744,18 @@ fixes:
 
 完成标准：每条原有要求仍可定位；冲突项有用户结论；`vp check` 退出 0。
 
+### R-15 DSH 破坏性版本边界
+
+`upstream` 或 `audit` 确认 DSH 破坏性变更时，后续 port 按 S-31 执行：
+
+- 版本对照只写根 `README.md` 及全部语言版本，逐行列出 DSH 版本范围与对应的 dsh-pstack 版本。旧插件版本固定为旧 DSH 的最后支持版本，下一插件版本对应新的 `engines.dsh` 下限。
+- `pstack/README.md`、`dsh.md`、`src/**`、`tests/**` 只实现当前 DSH 版本的最小实现，不写旧版不支持说明或兼容分支。
+- `package.json` 的 `engines.dsh`、`peerDependencies`、依赖 catalog 与 lockfile 对齐当前 DSH 版本。
+- 破坏性提交使用 `type!:`，不使用 `!type:`；`changelogithub` 从提交标题识别 Breaking Changes。
+- 不新增一次性版本决策记录；通用版本边界策略由本技能与项目决策记录维护。
+
+完成标准：根 README 版本对照完整；其余随包文档与实现没有旧 DSH 说明或兼容路径；安装范围与依赖对齐当前 DSH；对应提交标题使用 `type!:`。
+
 ## 4. 验收证据规范
 
 每条场景的「验收证据」至少使用以下一种，并写明具体命令或可观察结果：
@@ -752,7 +780,7 @@ node pstack/scripts/port-fixes.mjs replay
 
 ## 5. 重构验收清单
 
-- [ ] 30 个场景全部有对应执行位置和验收证据。
+- [ ] 31 个场景全部有对应执行位置和验收证据。
 - [ ] `docs/port-state.yaml` 是唯一状态源；`docs/port-review.md` 只做轮次工作文件。
 - [ ] blocker 的 `mode: issue` 与 `mode: core` 路由与 S-05、S-09、S-10、S-15、S-17、S-18 一致。
 - [ ] `docs/port-fixes.yaml` 与 `docs/port-fixes-archive.yaml` 的 schema、状态、compact 与 R-03 一致。

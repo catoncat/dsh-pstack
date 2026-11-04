@@ -31,7 +31,7 @@ checker 通过后，按 R-11 与 S-26 写 `dsh.md` 的 `## Local replacements`�
 3. 每行写 `When not enabled` 的替代命令、工具或路径；无替代时原样使用 `Skipped in DeepSeek Harness: <step>. <reason>.`。
 4. 至少保留一个上述跳过行。未启用时不得声称对应步骤通过，也不把默认关闭的能力写成平台永久不支持。
 
-`## Optional plugins` 与 `## Local replacements` 是上游模板外仅有的两个固定追加小节。其他表格中的分散说明不能替代本节索引。README 文档状态区记录这两个产物。只编辑 `pstack/harness/` 手写源；生成树 `pstack/pstack/` 由生成器刷新。
+`## Optional plugins` 与 `## Local replacements` 是上游模板外仅有的两个固定追加小节。其他表格中的分散说明不能替代本节索引。README 文档状态区记录这两个产物。只编辑 `pstack/harness/` 手写源；生成树 `pstack/pstack/` 由生成器刷新。DSH 破坏性变更后的适配文档只描述当前 DSH 行为，不写旧 DSH 不支持说明或版本边界段落；版本对照只写在根 README。
 
 完成标准（S-20、S-26、S-27、R-07、R-11、R-12）：checker 退出 0；每个 OPT 都有启用能力、未启用 fallback/skip 与支持边界；`## Local replacements` 覆盖全部运行期替代项且没有混入排除或纯台账；`dsh.md` 保持英文模板结构；生成树没有手工编辑。
 
@@ -39,7 +39,7 @@ checker 通过后，按 R-11 与 S-26 写 `dsh.md` 的 `## Local replacements`�
 
 写 README 前直接读取 `<pstack>/skills/technical-writing/SKILL.md` 与 `<pstack>/skills/unslop/SKILL.md`，不依赖 skill catalog。`pstack/README.md` 使用简体中文与 reference mode，先给能力结论，再给证据和缺口。每个能力 ID 的状态只在分阶段状态表定义一次。
 
-只更新文档状态与最终覆盖相关字段，保留上游需求、分类、既定适配和实现记录。逐项写产物位置、实际覆盖与有意排除；部分或未实现项写具体缺口与证据。core Issue 的每项 `required_behavior` 都有最终覆盖结论。core EXT 的 `repair_target: port` 修复已在 `review port` 通过后恢复登记表 `active`，本阶段记录最终状态。
+只更新文档状态与最终覆盖相关字段，保留上游需求、分类、既定适配和实现记录。逐项写产物位置、实际覆盖与有意排除；部分或未实现项写具体缺口与证据。core Issue 的每项 `required_behavior` 都有最终覆盖结论。core EXT 的 `repair_target: port` 修复已在 `review port` 通过后恢复登记表 `active`，本阶段记录最终状态。DSH 破坏性变更后的 `pstack/README.md` 只描述当前 DSH 版本的能力与覆盖，不写旧 DSH 不支持说明或兼容分支。
 
 完成标准（R-08）：README 可从能力表定位每项状态与证据；core 输入没有漏项；没有重复状态表或为排版服务的重复段落；两个写作技能均已执行并做 unslop 扫描。
 
@@ -55,6 +55,7 @@ checker 通过后，按 R-11 与 S-26 写 `dsh.md` 的 `## Local replacements`�
 - 原生工具与随包脚本清单。
 - 可选 DSH 插件的包名、默认状态、实验性、启用条件、能力、边界与冲突，包括浏览器 provider 组合、互斥、单 provider 槽和全局工具替换。
 - 版本表、冲突与降级说明。
+- DSH 破坏性变更时，版本对照表只写根 README：逐行列出 DSH 版本范围与对应的 dsh-pstack 版本，并同步全部语言版本。
 - 仅在架构变化时检查 `实现方式`。
 
 没有差异就不修改，并在报告中写「根 README 无差异」。有差异时，安装与使用段采用 how-to mode，所有语言版本同步对应修改。
@@ -70,6 +71,7 @@ checker 通过后，按 R-11 与 S-26 写 `dsh.md` 的 `## Local replacements`�
 1. **能力边界**：README 可选插件表中每个 `OPT-*` 的支持范围与缺口，在 `dsh.md` 对应行均有准确限制。
 2. **措辞一致**：核对跳过行格式、`workspace` 与精确 `cwd`、默认值、随包清单（含 `agents/`、`LICENSE`），以及技能是加载还是直接读文件。
 3. **归类判断**：上游模板外的每个名字均同时有 README 替代方案，并出现在随包技能、playbook 或 reference 的运行期步骤中。
+4. **版本边界**（仅 DSH 破坏性变更轮次）：根 README 有 DSH 与 dsh-pstack 的版本对照；`pstack/README.md`、`dsh.md`、`src/**`、`tests/**` 无旧 DSH 说明或兼容分支；`package.json` 的 `engines.dsh`、peer 依赖与依赖 catalog 对齐当前 DSH；对应提交标题使用 `type!:`。
 
 运行并记录全部五条门禁的实际退出码：
 
