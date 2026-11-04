@@ -1,6 +1,6 @@
 # dsh.md 覆盖清单：README 的机器可读投影
 #
-# 基线：pstack `ae5650f`（0.15.36），DSH `ce7073d`（0.2.2-alpha.2）。
+# 基线：pstack `ae5650f`（0.15.36），DSH `05b1cae`（0.2.2-alpha.3）。
 # 每个 `rows` 条目把 README 记录的一条「运行期替代 / 平台排除」映射到 dsh.md 的一行。
 # `check-harness-doc.mjs` 逐条核对：cursor 字面量与替代（或跳过行）必须出现在 `target`
 # 小节里的同一行；`capability` 里的能力编号必须能在 pstack/README.md 找到。

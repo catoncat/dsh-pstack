@@ -10,14 +10,14 @@
 - 审查采用「先排除、再分层」：先读上游 `docs/harness/claude-code.md` 的 `Cursor-only features`，舍弃依赖 Cursor 平台的完整能力；剩余需求拆成原子能力，每项只归入映射、标准模式、可选插件中的一层。
 - 本文的「插件」一律指本仓 `dsh-pstack`；「可选插件」一律指 DSH 官方提供、默认未启用的插件或 bundle。
 - 「当前提交未证实」表示在固定提交与本次调查范围内找不到足够源码证据，不表示该能力在别的 DSH 版本也不存在。
-- 本轮是 `baseline` 轮次，没有 core Issue 或 EXT 输入。`docs/port-prepare.md` 确认 pstack 子树在 `4dd1d05..ae5650f` 间没有文件变化（树哈希同为 `4719e1c4b4c43bac85d4206a8b41dd2899769c1c`），因此沿用上一轮冻结的 135 项原子能力。DSH 仍为 `ce7073d`，本轮重新核对全部证据行号。差异影响见 1.8。
+- 本轮是 `baseline` 轮次，没有 core Issue 或 EXT 输入。`docs/port-prepare.md` 确认 pstack 子树在 `4dd1d05..ae5650f` 间没有文件变化（树哈希同为 `4719e1c4b4c43bac85d4206a8b41dd2899769c1c`），因此沿用上一轮冻结的 135 项原子能力。DSH 由 `ce7073d` 更新到 `05b1cae`（`0.2.2-alpha.3`），本轮按新提交重新核对全部 DSH 证据行号。差异影响见 1.8。
 
 ### 1.2 上游提交与版本
 
 | 上游 | 检出路径 | 提交 | 版本 |
 |---|---|---|---|
 | pstack | `upstream/cursor-plugins/pstack` | `ae5650febf4320793844c12c4adaa937f417f8da` | `0.15.36`（`plugin.json`） |
-| DSH | `upstream/deepseek-harness` | `ce7073d51254c26cd63b22a60835b8f948deb447` | `0.2.2-alpha.2`（根 `package.json`） |
+| DSH | `upstream/deepseek-harness` | `05b1cae8db6e674c5685101494d4eec24652424a` | `0.2.2-alpha.3`（根 `package.json`） |
 
 证据：[pstack plugin.json](../upstream/cursor-plugins/pstack/plugin.json#L1-L21) · [DSH package.json](../upstream/deepseek-harness/package.json#L1-L12)。
 
@@ -114,11 +114,11 @@
 
 | 事实 | 观察 | 对本轮影响 |
 |---|---|---|
-| pstack 子树 | `git diff --stat 4dd1d05..ae5650f -- pstack` 为空，树哈希同为 `4719e1c4b4c43bac85d4206a8b41dd2899769c1c`；上游仓库其它变化只在 `third_party/lark-base` 等 pstack 子树之外 | 135 项能力、上游证据和编号沿用上一轮，没有新增或删除能力行 |
-| DSH 提交 | 与上一轮同为 `ce7073d`，包版本仍为 `0.2.2-alpha.2` | 全部 DSH 证据按 `ce7073d` 重新核对，行号不变 |
-| DSH 调度工具 | `schedule_create`、`schedule_edit`、`schedule_list`、`schedule_view` 取代旧的 reminder API，支持 RFC 5545 重复规则和 `this_session`、`new_once`、`new` 目标 | `PB-15` 与 G-10 的支持描述更新；DSH 仍无 CI、merge 或 ref 事件订阅 |
-| DSH forge 服务 | forge provider 增加 `submitReview` 与 `fetchChecks`，forge bundle 的 GUI 可发布 review；bundle README 明确模型侧仍无变更请求工具 | `OPT-02` 补足 GUI review 与完整检查详情；G-07 的模型侧缺口不变 |
-| DSH CUA 分发 | `@deepseek-ai/dsh-cua-bundle` 从可选 bundle 列表移到 on-demand catalog，仍默认关闭、仅 macOS | `OPT-04` 的启用路径改为按需安装后启用，覆盖结论不变 |
+| pstack 子树 | 未变，仍为 `ae5650f`，树哈希 `4719e1c4b4c43bac85d4206a8b41dd2899769c1c`；原有 135 项能力、上游证据和编号沿用 | 没有新增或删除能力行 |
+| DSH 提交 | `ce7073d` → `05b1cae`（`dsh-v0.2.2-alpha.3`，111 个提交）。34 个被引用文件中 25 个未变；9 个变化，其中 8 个为等行替换（行号不变），仅 `packages/experimental/forge-bundle/README.md` 增 2 行 | 全部 DSH 证据按 `05b1cae` 重新核对；`OPT-02`、G-07 的 forge-bundle 行号后移 2 行 |
+| DSH forge/worktree bundle 合并 | `@deepseek-ai/dsh-experimental-forge-bundle` 现在同时挂载 forge 面板与 worktree 模型工具 `create_worktree`；独立 `@deepseek-ai/dsh-experimental-tool-worktree` bundle 不再有 Plugins 卡片，Web/Desktop 经 Change requests & worktrees 一并启用，其它 profile 在 `dsh.profile.bundles` 选择 | `OPT-01` 启用路径改写；`OPT-02` 能力补上模型侧 `create_worktree`；G-05、G-07 措辞更新，能力结论不变 |
+| DSH fs 观察策略 | `dsh-tool-fs` 的 read-before-write/edit 观察策略改为随 `fs-observation-policy` 行默认禁用；`apply_patch` 在 `dsh-base` 与 Web `standard` preset 启用 | 没有 pstack 能力行依赖该策略，`edit`/`write` 主路径行为不变，结论不变 |
+| DSH computer-use | macOS 权限请求 API 增加 `locale` 参数，实现细节变化 | 不影响 `OPT-04` 与 G-04 的覆盖结论 |
 
 ## 2. 完整能力表
 
@@ -334,8 +334,8 @@
 
 | 编号 | 可选插件 ID | 默认状态、实验性、启用条件 | 覆盖能力 | 支持范围与缺口 | 证据 |
 |---|---|---|---|---|---|
-| OPT-01 | `@deepseek-ai/dsh-experimental-tool-worktree`，配套 `@deepseek-ai/dsh-experimental-worktree` | 默认关闭；实验性；在 Plugins 的 Git worktrees 打开，或显式挂载两行 | `SUB-05`、`SUB-07`、`SKL-11`、`SKL-12`、`SKL-13`、`PB-07`、`PB-16` 至 `PB-18` 的本地隔离部分 | 支持创建新分支和检出目录，`from` 指定本地 ref，改变当前 Session 目录。缺口是无云 VM，不自动为每个子代理开工作树，`from` 不 fetch，多个候选要自己用 shell 建树 | [packages/experimental/tool-worktree/README.md#L5-L34](../upstream/deepseek-harness/packages/experimental/tool-worktree/README.md#L5-L34) · [E13](../upstream/deepseek-harness/docs/tool-catalog.md#L2608-L2634) |
-| OPT-02 | `@deepseek-ai/dsh-experimental-forge-bundle` | 默认关闭；实验性；在 Plugins 启用 Change requests and worktrees；需要宿主 `gh` 登录 | `PB-13`、`PB-14`、`PB-17`、`PB-18`、`PB-23` 的 GitHub 状态展示 | 支持 PR 状态轮询、按需读取完整 checks、面板侧行内评论与 review 提交、mark ready、merge、Session 绑定和工作树选项。缺口是模型侧没有变更请求工具，只有面板；没有 pstack 的 stack 或 queued-stack verdict；没有 `origin` CLI | [packages/experimental/forge-bundle/README.md#L10-L65](../upstream/deepseek-harness/packages/experimental/forge-bundle/README.md#L10-L65) · [packages/experimental/client-ui-forge/README.md#L28-L40](../upstream/deepseek-harness/packages/experimental/client-ui-forge/README.md#L28-L40) · [E14](../upstream/deepseek-harness/docs/subsystems/forge.md#L5-L18) |
+| OPT-01 | `@deepseek-ai/dsh-experimental-tool-worktree`，配套 `@deepseek-ai/dsh-experimental-worktree` | 默认关闭；实验性；Web/Desktop 通过 Change requests & worktrees（`OPT-02`）一并启用；独立 bundle 无 Plugins 卡片，其它 profile 在 `dsh.profile.bundles` 选择，或显式挂载两行 | `SUB-05`、`SUB-07`、`SKL-11`、`SKL-12`、`SKL-13`、`PB-07`、`PB-16` 至 `PB-18` 的本地隔离部分 | 支持创建新分支和检出目录，`from` 指定本地 ref，改变当前 Session 目录。缺口是无云 VM，不自动为每个子代理开工作树，`from` 不 fetch，多个候选要自己用 shell 建树 | [packages/experimental/tool-worktree/README.md#L5-L34](../upstream/deepseek-harness/packages/experimental/tool-worktree/README.md#L5-L34) · [E13](../upstream/deepseek-harness/docs/tool-catalog.md#L2608-L2634) |
+| OPT-02 | `@deepseek-ai/dsh-experimental-forge-bundle` | 默认关闭；实验性；在 Plugins 启用 Change requests & worktrees；GitHub 状态需宿主 `gh` 登录，本地工作树创建不需要 | `PB-13`、`PB-14`、`PB-17`、`PB-18`、`PB-23` 的 GitHub 状态展示，以及本地 `create_worktree` | 支持 PR 状态轮询、按需读取完整 checks、面板侧行内评论与 review 提交、mark ready、merge、Session 绑定、工作树选项，以及模型侧 `create_worktree` 工具。缺口是模型侧没有变更请求工具，只有面板；没有 pstack 的 stack 或 queued-stack verdict；没有 `origin` CLI | [packages/experimental/forge-bundle/README.md#L10-L67](../upstream/deepseek-harness/packages/experimental/forge-bundle/README.md#L10-L67) · [packages/experimental/client-ui-forge/README.md#L28-L40](../upstream/deepseek-harness/packages/experimental/client-ui-forge/README.md#L28-L40) · [E14](../upstream/deepseek-harness/docs/subsystems/forge.md#L5-L18) |
 | OPT-03 | `@deepseek-ai/dsh-browser-use` 加 `@deepseek-ai/dsh-experimental-browser-use-stagehand-native`、`@deepseek-ai/dsh-experimental-browser-use-playwright-mcp` 或 `@deepseek-ai/dsh-experimental-browser-use-chrome-devtools-mcp` | 默认关闭；provider 实验性；显式挂载 `dsh-browser-use` 加一个 provider | `SKL-18`、`SKL-19`、`PB-02`、`PB-03`、`PB-05`、`PB-09`、`PB-10` 的浏览器驱动 | 支持导航、点击、输入、截图、ARIA snapshot。缺口是没有视频录制；Stagehand 原生 provider 需要 Chromium 和独立模型；不同 provider 的 selector 与工具不同；单 provider 槽互斥 | [E15](../upstream/deepseek-harness/docs/subsystems/browser-use.md#L9-L15) · [packages/experimental/browser-use-stagehand-native/README.md#L9-L20](../upstream/deepseek-harness/packages/experimental/browser-use-stagehand-native/README.md#L9-L20) |
 | OPT-04 | `@deepseek-ai/dsh-cua-bundle` | 按需安装、默认关闭；实验性；仅 macOS PTC；在 Plugins 安装并启用 bundle | `SKL-18`、`SKL-19`、`PB-02`、`PB-05`、`PB-09`、`PB-10` 的桌面应用驱动 | 支持 macOS 应用点击、输入、截图，权限页和会话级授权。缺口是仅 macOS，Windows 未完成；没有视频录制；只在 PTC session；单 provider 槽互斥 | [packages/experimental/cua-bundle/README.md#L10-L20](../upstream/deepseek-harness/packages/experimental/cua-bundle/README.md#L10-L20) · [E16](../upstream/deepseek-harness/docs/subsystems/computer-use.md#L9-L27) |
 | OPT-05 | `@deepseek-ai/dsh-experimental-terminal-bundle` | 默认关闭；实验性；显式挂载终端 bundle | `SKL-18`、`SKL-19` 的 CLI 或 TUI 驱动部分 | 支持六个持久终端工具，跨调用保持 shell 与 REPL 状态，支持后台 send 和 owner 隔离。缺口是只覆盖终端，不覆盖 GUI，不提供视频 | [packages/experimental/terminal-bundle/README.md#L8-L20](../upstream/deepseek-harness/packages/experimental/terminal-bundle/README.md#L8-L20) · [E17](../upstream/deepseek-harness/packages/experimental/tool-terminal/README.md#L10-L30) |
@@ -385,7 +385,7 @@
 - **支持什么**：`create_worktree` 从本地 commit、branch 或 tag 创建新分支和目录，改变当前 Session 目录；子代理接受 `cwd`；标准 shell 可以用 `git worktree add`。[E13](../upstream/deepseek-harness/docs/tool-catalog.md#L2608-L2634)
 - **不支持什么**：没有云 VM；没有自动为每个并行子代理分配独立工作树；`create_worktree` 的 `from` 只用本地 ref，不 fetch；调用后父 Session 目录改变，连续创建多个候选会以新目录为源。
 - **场景示例**：`/arena this, 5 candidates` 期望每个候选在独立工作树或目录（`SKL-12`）；DSH 默认所有子代理继承父级目录，必须由技能先 `git worktree add` 或逐个 `create_worktree` 加 `cwd`，否则会互相覆盖。
-- **建议**：在 `arena`、`swarm`、`autopilot` 技能文本里用标准 shell 建树并给每个子代理 `cwd`；`OPT-01` 只作为单树替代；`environment:"cloud"` 的云能力按 `EXCL-03` 排除。
+- **建议**：在 `arena`、`swarm`、`autopilot` 技能文本里用标准 shell 建树并给每个子代理 `cwd`；`OPT-01`（独立工作树 bundle）或 `OPT-02`（Change requests & worktrees，含模型侧 `create_worktree`）只作为单树替代；`environment:"cloud"` 的云能力按 `EXCL-03` 排除。
 - **涉及能力**：`SUB-05`、`SUB-07`、`SKL-11`、`SKL-12`、`SKL-13`、`SKL-14`、`PB-07`、`PB-16` 至 `PB-18`。
 
 #### G-06 MCP 类别发现
@@ -398,8 +398,8 @@
 
 #### G-07 GitHub 与 forge 工具链
 
-- **支持什么**：标准 `bash` 可以运行 `gh`；可选 forge bundle 提供 PR 状态轮询、完整 checks 详情、面板侧行内评论与 review 提交、mark ready、merge、Session 绑定和工作树选项；`gh` 是默认路径。[E12](../upstream/deepseek-harness/docs/tool-catalog.md#L695-L735) · [E14](../upstream/deepseek-harness/docs/subsystems/forge.md#L5-L18) · [packages/experimental/forge-bundle/README.md#L51-L65](../upstream/deepseek-harness/packages/experimental/forge-bundle/README.md#L51-L65)
-- **不支持什么**：没有模型侧 PR 或变更请求工具；没有 `origin` CLI；forge bundle 默认关闭且实验性；没有 pstack 的 `watch-pr` stack 或 queued-stack 判定。面板能发 review，不等于模型能在技能步骤中调用 review。
+- **支持什么**：标准 `bash` 可以运行 `gh`；可选 forge bundle 提供 PR 状态轮询、完整 checks 详情、面板侧行内评论与 review 提交、mark ready、merge、Session 绑定、工作树选项，以及模型侧 `create_worktree` 工具；`gh` 是默认路径。[E12](../upstream/deepseek-harness/docs/tool-catalog.md#L695-L735) · [E14](../upstream/deepseek-harness/docs/subsystems/forge.md#L5-L18) · [packages/experimental/forge-bundle/README.md#L53-L67](../upstream/deepseek-harness/packages/experimental/forge-bundle/README.md#L53-L67)
+- **不支持什么**：没有模型侧 PR 或变更请求工具（forge bundle 现在附带 `create_worktree` 工作树工具，但仍无模型侧变更请求工具）；没有 `origin` CLI；forge bundle 默认关闭且实验性；没有 pstack 的 `watch-pr` stack 或 queued-stack 判定。面板能发 review，不等于模型能在技能步骤中调用 review。
 - **场景示例**：`/babysit this pr. get it green.`（`PB-13`）在宿主没有 `gh` 时无法读 PR；有 `gh` 但没启用 forge bundle 时只能靠 shell 输出；`origin pr ...` 分支不存在。
 - **建议**：把 `gh` 作为 pstack profile 的运行前提；在技能里把 `origin` 分支统一改写为 `gh`；需要面板或轮询时启用 `OPT-02`；`watch-pr` 的具体判定由 `PI-05` 保证。
 - **涉及能力**：`PB-13`、`PB-14`、`PB-17`、`PB-18`、`PB-23`。
