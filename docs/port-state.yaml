@@ -4,10 +4,5 @@ port:
   round: baseline
   phase: review
   started_at: "2026-11-04T10:46:34+08:00"
-  updated_at: "2026-11-04T11:44:00+08:00"
-blocker:
-  active_item: "#4"
-  mode: issue
-  allowed_routes: ["issue #4"]
-  resume_route: review port
-  reason: "EXT-004 复核通过（DSH 05b1cae forge/worktree 合并）；待 Issue #4 复核验收。"
+  updated_at: "2026-11-04T12:18:25+08:00"
+blocker: null
