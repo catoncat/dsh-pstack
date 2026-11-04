@@ -195,6 +195,50 @@ EXT-003 的验收历史记录在 `docs/extensions.md`（Issue #2、#8、#14）�
 - 未抽查代替全量 EXT：全部三个登记 EXT 的既有自动化验收均执行；真实安装历史不代替当前 DSH 的兼容复核。
 - 除上述两项外，没有新增证据不足或未覆盖项。
 
+## 再次复审记录（2026-11-04，`review port`，EXT-004 修复后）
+
+- 受审提交：`e6124ba771c0845cb6729dcf047b37358ba3aea4`（`docs(issue-4): 复核验收通过并恢复 port review`）；审查开始时 `git status --porcelain` 无输出。
+- 上游基线：pstack `ae5650febf4320793844c12c4adaa937f417f8da`（`0.15.36`）；DSH `05b1cae8db6e674c5685101494d4eec24652424a`（`0.2.2-alpha.3`）。两个子模块工作树无改动。
+- 审查范围：DOC-01 的 `required_behavior`、EXT-004 修复对全部 active EXT 与共享实现的影响、`pstack/README.md` 的 135 个能力行、PI-01～PI-09 现有实现、公共 API、权限与最小性、全部 active FIX。
+- 工作项：没有 core Issue 或 core EXT；EXT-003、EXT-004、EXT-005 均为 active，EXT-004 的 `repair_target: extension` 修复与 Issue #4 验收已完成，工作文件按契约删除；没有 active 或退役 FIX。
+- 适用 `AGENTS.md`：根 `AGENTS.md`、`playground/AGENTS.md`、`docs/decisions/AGENTS.md`；只读 DSH 证据另读其根、`packages/`、`packages/experimental/` 与 `docs/` 的适用约定。
+- 适用 accepted 决策：`2026-10-28-pstack-plugin-tools.md`（工具面与权限）、`2026-10-29-pstack-harness-tree-port.md`（适配树）、`2026-10-28-skills-directory-scope.md`（补充技能）、`2026-10-30-playground-real-plugin-testing.md`（真实验证环境）、`2026-10-30-script-commands-in-vite-config.md`（命令）、`2026-10-30-pstack-config-page-i18n.md`（Client locale）。本轮没有决策记录变更。
+- 验证环境：仓库根 `/home/leihaohao/workspace/dsh-pstack`；Vite+ Node `24.22.1`、vite-plus `1.4.0`、Vitest `5.0.5`；直接 Node `26.13.0`；DSH CLI `0.2.2-alpha.3`。真实运行检查仅使用 `playground/.dsh` 的 `pstack-playground` profile 做 `--dump-config`，不新建 home/profile，不启动服务或调用用户所选模型。
+
+### 再次复审门禁与行为验证
+
+| 检查 | 命令或范围 | 退出码 | 结果 |
+|---|---|---:|---|
+| 静态检查 | `vp check` | 0 | 95 个文件格式正确；0 errors；既有 `pstack/scripts/generate-pstack-harness-tree.mjs:204` warning 保留 |
+| 显式类型 | `vp run typecheck` | 0 | `tsc --noEmit` 通过（缓存重放） |
+| 构建 | `vp run build` | 0 | 5/5 任务成功；3 组技能脚本替换，5 个脚本 id 解析，22 个 Host 产物与 Client 产物生成 |
+| 插件测试 | `vp test` | 0 | 18 个文件、122 个测试通过，包含全部 active EXT 验收用例 |
+| 运行时测试 | `vp run @internal/pstack#test` | 0 | 12 个 suite、76 个测试通过（缓存重放） |
+| 适配文档对账 | `vp run @internal/pstack#check:harness-doc` | 0 | 结构、OPT id 与包名等既有检查通过；仍不检查 OPT-01/02 的启用与组合语义 |
+| 生成树漂移 | `node pstack/scripts/generate-pstack-harness-tree.mjs --check` | 0 | `pstack/pstack is up to date.` |
+| FIX replay | `node pstack/scripts/port-fixes.mjs replay` | 0 | 没有 active FIX；`No active FIX records; replay passed.` |
+| 能力编号与链接 | `node .tmp/review-port-check.mjs` | 0 | 135 个状态编号、无重复；324 个相对文件链接存在且行号均在范围内 |
+| playground 合成 | `DSH_HOME=$PWD/playground/.dsh dsh --profile pstack-playground --dump-config` | 0 | 6 条 pstack 行、2 个 preset 与 `maxDepth: 2` 存在；未启用冲突可选 bundle |
+
+active EXT 验收均包含在上述 `vp test` 中：EXT-003 的 45 个用例（`role-page` 8、`role-editor` 22、`role-state` 6、`roles-remote` 5、`roles-service` 4）、EXT-004 的 20 个用例（`optional-plugins-page` 6、`optional-plugins` 14）、EXT-005 的 4 个用例（`bundle-config-dialog` 2、`client-plugin` 2）全部通过。EXT-004 新增用例覆盖默认推荐 OPT-02/OPT-06、OPT-01 不提供页面开关、独立 worktree 阻断 forge 单项启用与一键启用、已启用 forge 仍可关闭，以及冲突结果文案。
+
+### 再次复审发现与分诊
+
+1. **DOC-01 保持 open。** `pstack/harness/docs/harness/dsh.md:88-89` 的 OPT-01 仍缺 Web/Desktop 统一入口与独立 bundle 无卡片约束，OPT-02 仍漏模型侧 `create_worktree`；根 `README.md:139-140` 与 `README.zh.md:139-140` 仍写两个 bundle 可共存，兼容版本仍停在 `0.2.2-alpha.2`。DSH 升级指南明确同时选择会插入重复 `worktree` 与 `tool-worktree` id，必须移除独立选择。`check:harness-doc` 退出 0 不是语义通过证据。保持开放 finding，`port.phase` 置为 `implement`，不建立 blocker。
+2. **EXT-004 修复有效且保持 active。** 实现目录与页面状态一致：默认推荐统一 forge 入口，独立 worktree 只作非 Web profile 说明；单项与一键启用都依据 `blockedBy` 拒绝冲突，关闭操作不被冲突阻止。全部 active EXT 验收通过，不需重新标 broken 或建立 blocker。
+3. **公共接口与权限未见新增阻断。** 本轮 EXT 修复只改 Client 展示和状态决策，没有新增模型可见工具、Host 入口、文件写入或进程执行；五个工具及权限边界与既有审查一致。`cordis.patch.yml` 的六条行与两个 preset 经 playground 合成确认。
+4. **范围与最小性。** EXT 修复涉及四个 `src/**` 文件与两个 `tests/**` 文件，没有新增运行时依赖；port 基线脚本、运行时、上游、生成树手写源和 FIX 台账无变化。本轮审查只更新 `docs/port-review.md`、`docs/port-state.yaml` 与 `pstack/README.md`；`git diff --check` 通过。
+
+### 再次复审结论
+
+不通过。EXT-004 与全部五条必需门禁通过，但 DOC-01 的适配文档与双语 README 仍未同步当前 DSH 行为。`docs/port-state.yaml` 设 `active/implement`、`blocker: null`，不进入 `doc`。下一步：`/pstack-port implement port`。
+
+### 有意跳过与证据不足
+
+- 未启动 playground Web 服务或重复操作真实 UI；EXT-004 的当前真实安装与 UI 证据已由 Issue #4 复核验收记录，本轮用全量自动化和 profile 合成复核共享回归。未运行涉及用户所选模型的会话。
+- 未运行 `playground/cases-run.mjs`、真实 TLC、视频或外部 forge 流程；其外部前提与证据限制保留在 §9.3，与 DOC-01 无新增关系。
+- 除 DOC-01 外，没有新增证据不足或未覆盖项。
+
 ## 未解决限制
 
 无新增未解决限制。`pstack/README.md` §9.3 的 `U-01` 至 `U-06` 保持原样：视频录制工具链、headless `ask_user_question` 回答者、子代理 transcript 覆盖、浏览器截图证据、连续工作树创建、宿主外部命令可用性仍按「当前提交未证实」处理，不在本轮实现范围内。真实会话层未在本轮执行：按 playground 决策，涉及用户所选模型的会话由用户操作并确认；本机 `playground/config.json` 仍以旧 provider `cpa` 记录模型，而当前同步部署为 `magpie`，`vp run cases:check` 因该 gitignored 本地配置退出 2，不影响上述插件实现与门禁结论。
