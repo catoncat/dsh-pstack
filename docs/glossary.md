@@ -26,3 +26,8 @@
 
 `playground/`：开发期唯一的真实运行测试环境。提交的 `playground/profile/` 是从随附 `web` 模板复制后加入 `dsh-pstack` 的可移植 profile；运行期 DSH home 固定为 `playground/.dsh`（gitignore，不提交），启动端口固定 `17353`。`playground/` 是 vite-plus 子包 `@internal/playground`；`start.mjs` 每次启动前同步 profile、宿主凭据与模型配置并安装本仓插件，由根 `vite.config.ts` 的 `playground` task（`vp run playground`）启动。能力自动化 runner 由 `cases-run.mjs` 经 Vite `runnerImport` 加载 `run-cases.mjs`（使 `import.meta.glob` 生效），用例为 `cases/*.case.mjs` 动态注册；读 `playground/config.json` 的 provider apiKey 与“模型→思考等级”，用 `dsh headless --json` 跑能力用例（`vp run cases`），只断言能力级可观察事实。
 反例：不是 `tests/` 的 vitest（mock 宿主的单元测试）；也不是宿主 `~/.dsh` 或 `.tmp` 下的一次性测试环境。
+
+## Web profile 基准（Web profile baseline）
+
+本仓文档、可选插件目录（`src/internal/optional-plugins.ts`）与测试的唯一基准 profile：随附 `web` 模板加 `dsh-pstack`，即提交的 `playground/profile/` 形态，有 Plugins 页与 web app。只在其它 profile 形态存在的行为——手写 `dsh.profile.bundles` 选独立 worktree bundle、headless 的 `ask_user_question` 回答者与 `agentPresets` 服务——不登记为能力行、可选插件行或未决证据；取舍见 `docs/decisions/2026-11-04-web-profile-baseline.md`。
+反例：`playground/run-cases.mjs` 用的 `pstack-headless` 只是开发期自动化测试的运行形态，不是被支持的基准 profile；不要把它写成插件支持的 profile，也不要据此往随包文档补非 Web 路径。

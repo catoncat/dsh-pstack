@@ -9,7 +9,6 @@
 
 /** The optional-plugin ids documented by the pstack harness adapter. */
 export type OptionalPluginId =
-  | "OPT-01"
   | "OPT-02"
   | "OPT-03"
   | "OPT-04"
@@ -34,12 +33,6 @@ export interface OptionalPluginDefinition {
   readonly bundle?: string;
   /** Included in the default recommendation and in “enable recommended plugins”. */
   readonly recommended?: boolean;
-  /**
-   * Documentation-only row for a standalone bundle a non-Web profile selects in
-   * `dsh.profile.bundles`; Web/Desktop shows no Plugins card, so this page never
-   * switches it.
-   */
-  readonly profileOnly?: boolean;
   /** Entry that only warns about a conflict and cannot be switched here. */
   readonly conflict?: boolean;
   /** Whether this page may offer a switch for the bundle. */
@@ -57,18 +50,6 @@ export const OPTIONAL_PLUGIN_GROUPS: readonly OptionalPluginGroup[] = [
 
 /** The complete optional-plugin catalogue in documentation order. */
 export const OPTIONAL_PLUGINS: readonly OptionalPluginDefinition[] = [
-  {
-    id: "OPT-01",
-    group: "sessions",
-    packages: [
-      "@deepseek-ai/dsh-experimental-worktree",
-      "@deepseek-ai/dsh-experimental-tool-worktree",
-    ],
-    bundle: "@deepseek-ai/dsh-experimental-tool-worktree",
-    profileOnly: true,
-    switchable: false,
-    exclusiveWith: ["@deepseek-ai/dsh-experimental-forge-bundle"],
-  },
   {
     id: "OPT-02",
     group: "sessions",

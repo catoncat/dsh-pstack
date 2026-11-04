@@ -50,15 +50,10 @@ const base = {
     "Do not enable Agent Teams and pstack_subagent in one profile: Agent Teams disables subagent and subagent_fork and replaces the child controls.",
   nonBundleGuidance:
     "Not a bundle: configure it in the DSH documentation; this page cannot switch it.",
-  profileOnlyGuidance:
-    "No Plugins card: non-Web profiles select this standalone bundle in dsh.profile.bundles. In Web or Desktop, enable Change requests & worktrees instead, and remove this standalone selection first.",
   mutexWarning: "This conflicts with {bundles}; turn it off first.",
   guidanceTitle: "{count} recommended plugins are still off",
   guidanceOpen: "Review recommended plugins",
   guidanceDismiss: "Dismiss",
-  opt01Title: "Worktree isolation",
-  opt01Detail:
-    "Standalone worktree bundles for non-Web profiles: create_worktree for /arena, /swarm, and /architect. On Web or Desktop, Change requests & worktrees covers this.",
   opt02Title: "Change requests & worktrees",
   opt02Detail:
     "One switch for PR panels, checks, reviews, ready state, merge, worktree Sessions, and the model's create_worktree tool for /babysit, /shipping, and /autopilot-*; needs a logged-in gh for GitHub status.",
@@ -133,15 +128,10 @@ export const catalogs = {
     conflictWarning:
       "不要在同一 profile 中同时启用 Agent Teams 与 pstack_subagent：Agent Teams 会禁用 subagent 和 subagent_fork，并替换子代理控制。",
     nonBundleGuidance: "非 bundle 项：请按 DSH 文档配置，本页不提供开关。",
-    profileOnlyGuidance:
-      "无 Plugins 卡片：非 Web profile 在 dsh.profile.bundles 中选择该独立 bundle。Web/Desktop 请改用 Change requests & worktrees，并先移除这里的独立选择。",
     mutexWarning: "此项与 {bundles} 冲突；请先关闭它。",
     guidanceTitle: "还有 {count} 个推荐插件未开启",
     guidanceOpen: "查看推荐插件",
     guidanceDismiss: "忽略",
-    opt01Title: "工作树隔离",
-    opt01Detail:
-      "非 Web profile 使用的独立工作树 bundle：为 /arena、/swarm 和 /architect 创建 create_worktree。Web/Desktop 由 Change requests & worktrees 覆盖。",
     opt02Title: "Change requests & worktrees",
     opt02Detail:
       "同一开关提供 PR 面板、checks、review、mark ready、merge、工作树 Session 与模型侧 create_worktree 工具，服务 /babysit、/shipping 和 /autopilot-*；GitHub 状态需要已登录的 gh。",

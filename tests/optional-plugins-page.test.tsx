@@ -44,7 +44,6 @@ function bundle(name: string, overrides: Partial<BundleSnapshot> = {}): BundleSn
 
 /** The default fixture: the unified forge bundle enabled, every other state represented. */
 const bundles: readonly BundleSnapshot[] = [
-  bundle("@deepseek-ai/dsh-experimental-tool-worktree"),
   bundle("@deepseek-ai/dsh-experimental-forge-bundle", { enabled: true }),
   bundle("@deepseek-ai/dsh-cua-bundle", {
     error: { code: "unsupported-platform" },
@@ -96,7 +95,7 @@ describe("optional plugin recommendation section", () => {
       expect(html).toContain(copy.groupSessions);
       expect(html).toContain(copy.groupVerification);
       expect(html).toContain(copy.groupMultiAgent);
-      expect(html).toContain('data-optional-plugin="OPT-01"');
+      expect(html).toContain('data-optional-plugin="OPT-02"');
       expect(html).toContain('data-optional-status="enabled"');
       expect(html).toContain('data-optional-status="missing"');
       expect(html).toContain('data-optional-status="unsupported-platform"');
@@ -104,7 +103,6 @@ describe("optional plugin recommendation section", () => {
       expect(html).toContain(copy.recommendedTag);
       expect(html).toContain(copy.conflictWarning);
       expect(html).toContain(copy.nonBundleGuidance);
-      expect(html).toContain(copy.profileOnlyGuidance.split("&")[0]!);
       expect(html).toContain(copy.enableRecommended);
       expect(html).toContain(
         copy.recommendedHint.replace("{ids}", defaultRecommendationIds().join(copy.listSeparator)),
@@ -115,8 +113,6 @@ describe("optional plugin recommendation section", () => {
   it("offers a switch only to switchable bundle rows", () => {
     const html = render();
     const copy = pluginsCatalogs[baseLocale];
-    expect(card(html, "OPT-01")).not.toContain(`>${copy.enablePlugin}<`);
-    expect(card(html, "OPT-01")).not.toContain(`>${copy.disablePlugin}<`);
     expect(card(html, "OPT-02")).toContain(`>${copy.disablePlugin}<`);
     expect(card(html, "OPT-03")).not.toContain(`>${copy.enablePlugin}<`);
     expect(card(html, "OPT-04")).not.toContain(`>${copy.enablePlugin}<`);
@@ -139,7 +135,6 @@ describe("optional plugin recommendation section", () => {
       ),
     );
     expect(forgeCard).not.toContain(`>${copy.enablePlugin}<`);
-    expect(card(html, "OPT-01")).toContain(copy.profileOnlyGuidance.split("&")[0]!);
   });
 
   it("renders load failures with a retry control", () => {

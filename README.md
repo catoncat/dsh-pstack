@@ -131,7 +131,6 @@ To enable a plugin, open **Plugins → Add plugin**, select the package, and res
 
 | Use case | Plugin | Limits and conflicts |
 |---|---|---|
-| Worktrees (non-Web profiles) | `@deepseek-ai/dsh-experimental-worktree` and `@deepseek-ai/dsh-experimental-tool-worktree` | No Plugins card. Select the standalone bundle in `dsh.profile.bundles`. Web and Desktop use the unified bundle below instead. Never enable both. |
 | Worktrees and GitHub PRs | `@deepseek-ai/dsh-experimental-forge-bundle` | Provides the **Change requests & worktrees** switch and `create_worktree`. GitHub status needs a logged-in `gh`. |
 | Session history | `@deepseek-ai/dsh-experimental-session-search` | Read-only. Requires exact `cwd` equality. Subagent transcript coverage is unconfirmed. |
 | Browser verification | `@deepseek-ai/dsh-browser-use` and one provider | One provider per Session. Screenshots need an image-capable model. No video recording. |
@@ -158,7 +157,7 @@ The configuration page recommends Change requests & worktrees and session search
 > [!WARNING]
 > Use either Agent Teams or `pstack_subagent`, not both. Agent Teams disables DSH's native subagent tools.
 
-When a plugin is disabled, dependent steps report skipped or blocked. They never report passed. Use `gh` through `bash` without the forge bundle, and `git worktree add` without a worktree bundle. See the [DSH adaptation guide](./pstack/harness/docs/harness/dsh.md#optional-plugins) for setup details and fallbacks.
+When a plugin is disabled, dependent steps report skipped or blocked. They never report passed. Without the forge bundle, use `gh` and `git worktree add` through `bash`. See the [DSH adaptation guide](./pstack/harness/docs/harness/dsh.md#optional-plugins) for setup details and fallbacks.
 
 ## ⚠️ Remaining gaps
 

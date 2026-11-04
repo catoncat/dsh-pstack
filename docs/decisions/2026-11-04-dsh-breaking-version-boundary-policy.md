@@ -19,7 +19,7 @@ DSH 处于预发布阶段，允许出现破坏性更新。本次例子是 DSH `0
 1. 把当前已发布、匹配旧 DSH 的插件版本固定为该旧 DSH 的最后支持版本。本次是 dsh-pstack `v0.2.1` 对应 DSH `0.2.2-alpha.2` 及更早版本。
 2. 下一插件版本作为破坏性版本发布，`engines.dsh` 下限提升到该破坏版本，只实现新行为，不维护旧组合分支或兼容层。
 3. 版本对照只写在根 `README.md` 与 `README.zh.md` 的 Compatibility 区，逐行列出 DSH 版本范围与对应的 dsh-pstack 版本。
-4. 随包适配文档 `pstack/harness/docs/harness/dsh.md` 与 `pstack/README.md` 不写旧 DSH 不支持说明。它们只描述当前版本支持的行为，避免旧版说明随下个版本发布后过时。
+4. 随包适配文档 `pstack/harness/docs/harness/dsh.md` 与 `pstack/README.md` 不写旧 DSH 不支持说明。它们只描述当前版本支持的行为，避免旧版说明随下个版本发布后过时。同样不写只在非 Web profile 存在的启用路径，基准见 [2026-11-04-web-profile-baseline.md](2026-11-04-web-profile-baseline.md)。
 5. release 的 changelog 使用破坏性提交标记，提交标题采用 Conventional Commits 的 `type!:` 形式，例如 `feat!:`；具体规则见 [2026-11-04-breaking-change-commit-format.md](2026-11-04-breaking-change-commit-format.md)。
 
 本政策对未来每次 DSH 破坏性更新重复适用，不为单次版本变化新增决策记录；每次只需更新 README 的版本对照并提升安装范围。

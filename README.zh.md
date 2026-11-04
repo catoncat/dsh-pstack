@@ -131,7 +131,6 @@ vendored 技能的来源与哈希记录在 [`skills/skills-lock.json`](./skills/
 
 | 使用场景 | 插件 | 限制与冲突 |
 |---|---|---|
-| 工作树（非 Web profile） | `@deepseek-ai/dsh-experimental-worktree` 和 `@deepseek-ai/dsh-experimental-tool-worktree` | 无 Plugins 卡片，在 `dsh.profile.bundles` 中选择独立 bundle。Web 和 Desktop 改用下一行的统一 bundle，不得同时启用。 |
 | worktree 与 GitHub PR | `@deepseek-ai/dsh-experimental-forge-bundle` | 提供 **Change requests & worktrees** 开关和 `create_worktree`，GitHub 状态需要已登录的 `gh`。 |
 | 历史会话 | `@deepseek-ai/dsh-experimental-session-search` | 只读，要求 `cwd` 完全相同；子代理 transcript 覆盖范围未证实。 |
 | 浏览器验证 | `@deepseek-ai/dsh-browser-use` 与一个 provider | 每个 Session 使用一个 provider，截图需要支持图像的模型，不支持录屏。 |
@@ -158,7 +157,7 @@ vendored 技能的来源与哈希记录在 [`skills/skills-lock.json`](./skills/
 > [!WARNING]
 > Agent Teams 与 `pstack_subagent` 只能二选一。Agent Teams 会禁用 DSH 原生子代理工具。
 
-未启用可选插件时，依赖它的步骤会标记为 skipped 或 blocked，不会标记为通过。没有 forge bundle 时通过 `bash` 使用 `gh`；没有 worktree bundle 时使用 `git worktree add`。安装与降级方案见 [DSH 适配文档](./pstack/harness/docs/harness/dsh.md#optional-plugins)。
+未启用可选插件时，依赖它的步骤会标记为 skipped 或 blocked，不会标记为通过。没有 forge bundle 时通过 `bash` 使用 `gh` 与 `git worktree add`。安装与降级方案见 [DSH 适配文档](./pstack/harness/docs/harness/dsh.md#optional-plugins)。
 
 ## ⚠️ 仍存在的缺口
 

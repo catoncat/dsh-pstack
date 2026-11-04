@@ -65,7 +65,6 @@ const COPY: Record<
   OptionalPluginId,
   { readonly title: PstackPluginsLocaleKey; readonly detail: PstackPluginsLocaleKey }
 > = {
-  "OPT-01": { title: "opt01Title", detail: "opt01Detail" },
   "OPT-02": { title: "opt02Title", detail: "opt02Detail" },
   "OPT-03": { title: "opt03Title", detail: "opt03Detail" },
   "OPT-04": { title: "opt04Title", detail: "opt04Detail" },
@@ -301,12 +300,7 @@ function OptionalPluginCard(props: {
           {t("conflictWarning")}
         </p>
       ) : null}
-      {definition.profileOnly === true ? (
-        <p style={{ margin: 0, color: COLOR_CAPTION, fontSize: 12, lineHeight: 1.5 }}>
-          {t("profileOnlyGuidance")}
-        </p>
-      ) : null}
-      {definition.profileOnly !== true && row.blockedBy.length > 0 ? (
+      {row.blockedBy.length > 0 ? (
         <p role="alert" style={{ margin: 0, color: COLOR_ERROR, fontSize: 12, lineHeight: 1.5 }}>
           {t("mutexWarning", { bundles: row.blockedBy.join(t("listSeparator")) })}
         </p>

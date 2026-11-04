@@ -11,7 +11,7 @@
 
 ## 先决条件
 
-- `dsh` 在 `PATH` 上（当前基线 `0.2.2-alpha.2`），`pnpm` 可用。
+- `dsh` 在 `PATH` 上，`pnpm` 可用。
 - 仓库已构建：`vp install` 且 `vp run build`（`dsh-pstack` 的 exports 指向 `dist/`）。
 - （可选）宿主 `~/.dsh/.credentials.yaml` 有模型登录，`~/.dsh/profiles/web/cordis.patch.yml` 有模型 provider。
 
@@ -80,7 +80,7 @@ console → screenshot 放在同一进程树（daemon 会随沙箱 shell 结束�
    角色分区显示路径与状态、17 个角色；provider/model/effort 下拉可用；保存/重置后对应行更新或消失。
 3. **中英文本**（agent 切换截图，用户确认视觉）：切换 en/zh，按钮、模态框与两区文案完整（含推理强度会浮动的说明）。
 4. **推荐插件区**（静态状态 agent 截图；开关/一键启用 agent 驱动并回读 profile；用户确认视觉）：
-   `OPT-01`..`OPT-09` 分组与 `enabled`/`off`/`missing` 状态正确；首次启用后的一次性 activation 提示出现。
+   `OPT-02`..`OPT-09` 分组与 `enabled`/`off`/`missing` 状态正确；首次启用后的一次性 activation 提示出现。
 5. **真实会话派发子代理**（user 操作并确认；agent 读会话日志佐证）：用户在 17353 的会话里发一个触发
    `pstack_skill` / `pstack_subagent` 的任务，确认隐藏技能加载、子代理按角色/preset 路由、effort 生效、子会话返回。
 
@@ -118,8 +118,7 @@ vp run cases --case CASE-PANEL-01
 - runner 按部署的 `apiKeyEnv` 自动把 apiKey 注入子进程；缺哪个 provider 的 key 会直接列出并退出。
 - 新增用例：在 `playground/cases/` 新建 `<topic>.case.mjs`，默认导出 `{ id, title, build, verify }`
   （参考 `_template.mjs`）；`import.meta.glob` 会自动注册，无需改 runner。
-- 限制：`CASE-PRESET-01` 需在 17353 web 会话跑（headless profile 缺 `agentPresets` 服务）；runner 会
-  临时改写 `pstack-models.mdc` 并在结束后恢复，**不要与手动会话并发跑**。
+- 限制：runner 会临时改写 `pstack-models.mdc` 并在结束后恢复，**不要与手动会话并发跑**。
 
 ## 说明
 

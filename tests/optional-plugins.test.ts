@@ -68,8 +68,7 @@ describe("optional plugin catalogue", () => {
   it("names every user-facing catalogue package in both READMEs", () => {
     const english = readFileSync(new URL("../README.md", import.meta.url), "utf8");
     const chinese = readFileSync(new URL("../README.zh.md", import.meta.url), "utf8");
-    // OPT-01 is retained only for legacy profile handling; the README recommends forge instead.
-    for (const plugin of OPTIONAL_PLUGINS.filter((plugin) => plugin.id !== "OPT-01")) {
+    for (const plugin of OPTIONAL_PLUGINS) {
       for (const packageName of plugin.packages) {
         expect(english, `${plugin.id} ${packageName}`).toContain(packageName);
         expect(chinese, `${plugin.id} ${packageName}`).toContain(packageName);
@@ -99,18 +98,12 @@ describe("optional plugin catalogue", () => {
     expect(coverage).not.toContain("0.2.2-alpha.2");
   });
 
-  it("recommends the unified Change requests & worktrees switch instead of the hidden standalone bundle", () => {
+  it("recommends the unified Change requests & worktrees switch", () => {
     expect(recommendedBundleNames()).toEqual([
       "@deepseek-ai/dsh-experimental-forge-bundle",
       "@deepseek-ai/dsh-experimental-session-search",
     ]);
     expect(defaultRecommendationIds()).toEqual(["OPT-02", "OPT-06"]);
-
-    const opt01 = OPTIONAL_PLUGINS.find((plugin) => plugin.id === "OPT-01");
-    expect(opt01?.recommended).toBeUndefined();
-    expect(opt01?.profileOnly).toBe(true);
-    expect(opt01?.switchable).toBe(false);
-    expect(opt01?.bundle).toBe("@deepseek-ai/dsh-experimental-tool-worktree");
 
     const opt02 = OPTIONAL_PLUGINS.find((plugin) => plugin.id === "OPT-02");
     expect(opt02?.recommended).toBe(true);
@@ -140,14 +133,12 @@ describe("optional plugin status", () => {
 
   it("only offers switches to switchable, unblocked bundle rows", () => {
     const rows = optionalPluginRows([
-      bundle("@deepseek-ai/dsh-experimental-tool-worktree"),
       bundle("@deepseek-ai/dsh-experimental-forge-bundle"),
       bundle("@deepseek-ai/dsh-experimental-cua-bundle", {
         error: { code: "unsupported-platform" },
       }),
     ]);
     const byId = new Map(rows.map((row) => [row.definition.id, row]));
-    expect(byId.get("OPT-01")?.canToggle).toBe(false);
     expect(byId.get("OPT-02")?.canToggle).toBe(true);
     expect(byId.get("OPT-03")?.canToggle).toBe(false);
     expect(byId.get("OPT-04")?.canToggle).toBe(false);

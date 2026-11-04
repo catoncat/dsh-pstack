@@ -9,6 +9,7 @@
 - 审查对象是 `upstream/cursor-plugins/pstack` 在固定提交下的完整可移植需求，不是本仓现有实现的功能清单。现有生成树、旧 README、测试和构建产物只证明各自直接表达的事实，不作为产品能力依据。
 - 审查采用「先排除、再分层」：先读上游 `docs/harness/claude-code.md` 的 `Cursor-only features`，舍弃依赖 Cursor 平台的完整能力；剩余需求拆成原子能力，每项只归入映射、标准模式、可选插件中的一层。
 - 本文的「插件」一律指本仓 `dsh-pstack`；「可选插件」一律指 DSH 官方提供、默认未启用的插件或 bundle。
+- 审查与随包适配文档以 DSH Web profile 为基准：随附 `web` 模板加本仓插件，即 `playground/profile/` 提交的形态，只登记该 profile 下可观察的行为。只在其它 profile 形态存在的路径——手写 `dsh.profile.bundles` 选择独立 worktree bundle、headless 的 `ask_user_question` 回答者与 `agentPresets` 服务——不计入能力行、可选插件行或未决证据；取舍见 [docs/decisions/2026-11-04-web-profile-baseline.md](../docs/decisions/2026-11-04-web-profile-baseline.md)。playground 的能力自动化 runner 是开发期验证手段，按同一决策保留 headless 形态。
 - 「当前提交未证实」表示在固定提交与本次调查范围内找不到足够源码证据，不表示该能力在别的 DSH 版本也不存在。
 - 本轮是 `baseline` 轮次，没有 core Issue 或 EXT 输入。`docs/port-prepare.md` 确认 pstack 子树在 `4dd1d05..ae5650f` 间没有文件变化（树哈希同为 `4719e1c4b4c43bac85d4206a8b41dd2899769c1c`），因此沿用上一轮冻结的 135 项原子能力。DSH 与上一轮同为 `05b1cae`（`0.2.2-alpha.3`），本轮按该提交重新核对全部 DSH 证据与 34 个被引用文件，没有需求变化。差异影响见 1.8。
 
@@ -117,7 +118,7 @@
 | pstack 子树 | 仍为 `ae5650f`，树哈希 `4719e1c4b4c43bac85d4206a8b41dd2899769c1c`；与 `4dd1d05` 相比没有文件变化 | 136 个文档与 135 项能力的上游证据沿用，没有新增或删除能力行 |
 | DSH 提交 | 仍为 `05b1cae`（`0.2.2-alpha.3`），与上一轮相同；34 个被引用文件在本次审查中全部按该提交复核 | 证据行号与结论不变，没有能力改判 |
 | DSH 默认工具配置 | `dsh-base` 与 Web `standard` 的 `tool-fs` 行均为 `applyPatch: false`，`fs-observation-policy` 行 `disabled: true`；[docs/tool-catalog.md#L1178](../upstream/deepseek-harness/docs/tool-catalog.md#L1178) 仍写 `dsh-base` 与 `standard` 启用 `apply_patch`，与配置不一致 | pstack 不依赖 `apply_patch` 或 read-before-edit 策略，`read`、`write`、`edit` 的主路径与能力结论不变；配置证据见 [base cordis.patch.yml#L292-L301](../upstream/deepseek-harness/packages/bundle/base/cordis.patch.yml#L292-L301) 与 [standard.patch.yml#L27-L31](../upstream/deepseek-harness/packages/bundle/web-app/presets/standard.patch.yml#L27-L31) |
-| 上一轮已记录的 DSH 变化 | forge/worktree bundle 合并、`OPT-01`/`OPT-02` 启用路径与 `G-05`/`G-07` 措辞已在上轮按 `05b1cae` 冻结 | 当前提交仍成立，本轮沿用 |
+| 上一轮已记录的 DSH 变化 | forge/worktree bundle 合并、`OPT-02` 启用路径与 `G-05`/`G-07` 措辞已在上轮按 `05b1cae` 冻结 | 当前提交仍成立，本轮沿用 |
 
 ## 2. 完整能力表
 
@@ -142,7 +143,7 @@
 | SUB-02 | `subagent_type: poteto-agent`、`comment-sicko` 使用 pstack 自带命名代理 | DSH 没有 `subagent_type` 字段；`subagent` 只有可选的 `agent_preset`，且需要 `allowedAgentPresets` 或默认 preset 配置 | 标准 · 部分（G-12）。Agent 预设能表达 persona 和工具限制，但标准预设不带这两个 id；进入 `PI-08` | [claude-code L20](../upstream/cursor-plugins/pstack/docs/harness/claude-code.md#L20) · [E04](../upstream/deepseek-harness/docs/tool-catalog.md#L2062-L2092) · [E22](../upstream/deepseek-harness/packages/preset/agent-preset/README.md#L28-L48) |
 | SUB-03 | `readonly: true` 使用只读代理；保留 Bash，但要求不编辑文件并在事后检查 `git status` | DSH 没有 per-call `readonly` 字段；可以用 agent preset 去掉 `write`/`edit` 工具，保留 `bash`，再加提示和 `git status` 检查 | 标准 · 部分（G-12）。工具限制是组合级配置，不是单次调用字段；进入 `PI-08` | [claude-code L21](../upstream/cursor-plugins/pstack/docs/harness/claude-code.md#L21) · [E04](../upstream/deepseek-harness/docs/tool-catalog.md#L2062-L2092) · [E22](../upstream/deepseek-harness/packages/preset/agent-preset/README.md#L28-L48) |
 | SUB-04 | `readonly: false` 使用普通代理并保留会话的 MCP 服务器 | 本地子代理加入父级当前 preset，继承工具注册与 MCP 工具 | 映射 · 完整 | [claude-code L22](../upstream/cursor-plugins/pstack/docs/harness/claude-code.md#L22) · [E05](../upstream/deepseek-harness/docs/subsystems/subagent.md#L70-L130) |
-| SUB-05 | `environment: "cloud"` 使用隔离的工作树或云代理，并指定分支或提交 | DSH 没有云代理；可选 Git worktree bundle 能创建本地分支和检出目录，但不会自动给每个子代理分配独立 VM | 可选 · 部分（G-05）。云能力按 `EXCL-03` 排除；本地替代见 `OPT-01` | [claude-code L23](../upstream/cursor-plugins/pstack/docs/harness/claude-code.md#L23) · [E13](../upstream/deepseek-harness/docs/tool-catalog.md#L2608-L2634) |
+| SUB-05 | `environment: "cloud"` 使用隔离的工作树或云代理，并指定分支或提交 | DSH 没有云代理；`OPT-02` 的 `create_worktree` 能创建本地分支和检出目录，但不会自动给每个子代理分配独立 VM | 可选 · 部分（G-05）。云能力按 `EXCL-03` 排除；本地替代见 `OPT-02` | [claude-code L23](../upstream/cursor-plugins/pstack/docs/harness/claude-code.md#L23) · [E13](../upstream/deepseek-harness/docs/tool-catalog.md#L2608-L2634) |
 | SUB-06 | `environment: "local"` 省略隔离参数 | `subagent` 省略 `cwd` 时继承父级当前目录 | 映射 · 完整 | [claude-code L24](../upstream/cursor-plugins/pstack/docs/harness/claude-code.md#L24) · [E04](../upstream/deepseek-harness/docs/tool-catalog.md#L2062-L2092) |
 | SUB-07 | `cloud_base_branch: <b>` 要求 worker 先检出 `<b>` | `create_worktree({ from })` 从本地分支创建新工作树；子代理用 `cwd` 指向该路径 | 可选 · 部分（G-05）。`from` 只解析本地 ref，不 fetch；不会自动把多个子代理隔离到不同工作树 | [claude-code L25](../upstream/cursor-plugins/pstack/docs/harness/claude-code.md#L25) · [E13](../upstream/deepseek-harness/docs/tool-catalog.md#L2608-L2634) · [packages/experimental/tool-worktree/README.md#L26-L34](../upstream/deepseek-harness/packages/experimental/tool-worktree/README.md#L26-L34) |
 | SUB-08 | `run_in_background: true` 省略，因为子代理默认后台运行 | `subagent` 启动后立即返回，完成通知另行到达 | 映射 · 完整 | [claude-code L26](../upstream/cursor-plugins/pstack/docs/harness/claude-code.md#L26) · [E04](../upstream/deepseek-harness/docs/tool-catalog.md#L2062-L2092) |
@@ -217,7 +218,7 @@
 | SKL-09 | `ketchup`：用平实语言和小图汇报本次聊天变化，并列出等待用户决定的事项 | [skills/ketchup/SKILL.md#L1-L43](../upstream/cursor-plugins/pstack/skills/ketchup/SKILL.md#L1-L43) | 纯指令；截图与图片依赖宿主渲染，文字部分完整 | 完整 |
 | SKL-10 | `blast-radius`：找出一处改动在别处可能破坏什么，并用运行代码证明那个安全事实 | [skills/blast-radius/SKILL.md#L1-L50](../upstream/cursor-plugins/pstack/skills/blast-radius/SKILL.md#L1-L50) | 纯指令加标准 shell 与 read | 完整 |
 | SKL-11 | `architect`：先 `how` 与 `why` 接地，再用 `arena` 产出多个设计候选，综合后实现 | [skills/architect/SKILL.md#L1-L79](../upstream/cursor-plugins/pstack/skills/architect/SKILL.md#L1-L79) | 依赖 G-01 的角色模型、G-05 的隔离工作树 | 部分（G-01、G-05） |
-| SKL-12 | `arena`：N 个并行候选，每个独立工作树，跨评审选 base 后嫁接 | [skills/arena/SKILL.md#L1-L48](../upstream/cursor-plugins/pstack/skills/arena/SKILL.md#L1-L48) | 子代理可用；每候选独立工作树依赖可选 worktree 或 shell，角色模型依赖 G-01 | 部分（G-01、G-05） |
+| SKL-12 | `arena`：N 个并行候选，每个独立工作树，跨评审选 base 后嫁接 | [skills/arena/SKILL.md#L1-L48](../upstream/cursor-plugins/pstack/skills/arena/SKILL.md#L1-L48) | 子代理可用；每候选独立工作树依赖 `OPT-02` 或 shell，角色模型依赖 G-01 | 部分（G-01、G-05） |
 | SKL-13 | `swarm`：把独立切片或 race 分给 N 个 worker，父级汇总一个 PASS、ISSUES、BLOCKED 报告 | [skills/swarm/SKILL.md#L1-L41](../upstream/cursor-plugins/pstack/skills/swarm/SKILL.md#L1-L41) | 本地 worker 可用；上游默认云 worker 被排除，容量默认 8 需配置 | 部分（G-01、G-05、G-09） |
 | SKL-14 | `interrogate`：不同模型对同一 diff 做对抗评审，只保留运行证明的 finding | [skills/interrogate/SKILL.md#L1-L31](../upstream/cursor-plugins/pstack/skills/interrogate/SKILL.md#L1-L31) | 多模型评审需要 G-01 的角色路由；每个 adversary 的独立工作树依赖 G-05；单模型仍可运行但失去多样性 | 部分（G-01、G-05） |
 | SKL-15 | `figure-it-out`：没有合适 playbook 时设计一套可审计的工作流 | [skills/figure-it-out/SKILL.md#L1-L52](../upstream/cursor-plugins/pstack/skills/figure-it-out/SKILL.md#L1-L52) | 纯指令，无额外运行时依赖 | 完整 |
@@ -333,7 +334,6 @@
 
 | 编号 | 可选插件 ID | 默认状态、实验性、启用条件 | 覆盖能力 | 支持范围与缺口 | 证据 |
 |---|---|---|---|---|---|
-| OPT-01 | `@deepseek-ai/dsh-experimental-tool-worktree`，配套 `@deepseek-ai/dsh-experimental-worktree` | 默认关闭；实验性；Web/Desktop 默认通过 Change requests & worktrees（`OPT-02`）一并启用；独立 bundle 无 Plugins 卡片，其它 profile 在 `dsh.profile.bundles` 选择，或显式挂载两行；Web/Desktop 中既有独立选择保持隐藏并由 profile 文件管理，且不得与 `OPT-02` 同时选择 | `SUB-05`、`SUB-07`、`SKL-11`、`SKL-12`、`SKL-13`、`PB-07`、`PB-16` 至 `PB-18` 的本地隔离部分 | 支持创建新分支和检出目录，`from` 指定本地 ref，改变当前 Session 目录。缺口是无云 VM，不自动为每个子代理开工作树，`from` 不 fetch，多个候选要自己用 shell 建树 | [packages/experimental/tool-worktree/README.md#L5-L34](../upstream/deepseek-harness/packages/experimental/tool-worktree/README.md#L5-L34) · [E13](../upstream/deepseek-harness/docs/tool-catalog.md#L2608-L2634) |
 | OPT-02 | `@deepseek-ai/dsh-experimental-forge-bundle` | 默认关闭；实验性；在 Plugins 启用 Change requests & worktrees；GitHub 状态需宿主 `gh` 登录，本地工作树创建不需要 | `PB-13`、`PB-14`、`PB-17`、`PB-18`、`PB-23` 的 GitHub 状态展示，以及本地 `create_worktree` | 支持 PR 状态轮询、按需读取完整 checks、面板侧行内评论与 review 提交、mark ready、merge、Session 绑定、工作树选项，以及模型侧 `create_worktree` 工具。缺口是模型侧没有变更请求工具，只有面板；没有 pstack 的 stack 或 queued-stack verdict；没有 `origin` CLI | [packages/experimental/forge-bundle/README.md#L10-L67](../upstream/deepseek-harness/packages/experimental/forge-bundle/README.md#L10-L67) · [packages/experimental/client-ui-forge/README.md#L28-L40](../upstream/deepseek-harness/packages/experimental/client-ui-forge/README.md#L28-L40) · [E14](../upstream/deepseek-harness/docs/subsystems/forge.md#L5-L18) |
 | OPT-03 | `@deepseek-ai/dsh-browser-use` 加 `@deepseek-ai/dsh-experimental-browser-use-stagehand-native`、`@deepseek-ai/dsh-experimental-browser-use-playwright-mcp` 或 `@deepseek-ai/dsh-experimental-browser-use-chrome-devtools-mcp` | 默认关闭；provider 实验性；显式挂载 `dsh-browser-use` 加一个 provider | `SKL-18`、`SKL-19`、`PB-02`、`PB-03`、`PB-05`、`PB-09`、`PB-10` 的浏览器驱动 | 支持导航、点击、输入、截图、ARIA snapshot。缺口是没有视频录制；Stagehand 原生 provider 需要 Chromium 和独立模型；不同 provider 的 selector 与工具不同；单 provider 槽互斥 | [E15](../upstream/deepseek-harness/docs/subsystems/browser-use.md#L9-L15) · [packages/experimental/browser-use-stagehand-native/README.md#L9-L20](../upstream/deepseek-harness/packages/experimental/browser-use-stagehand-native/README.md#L9-L20) |
 | OPT-04 | `@deepseek-ai/dsh-cua-bundle` | 按需安装、默认关闭；实验性；仅 macOS PTC；在 Plugins 安装并启用 bundle | `SKL-18`、`SKL-19`、`PB-02`、`PB-05`、`PB-09`、`PB-10` 的桌面应用驱动 | 支持 macOS 应用点击、输入、截图，权限页和会话级授权。缺口是仅 macOS，Windows 未完成；没有视频录制；只在 PTC session；单 provider 槽互斥 | [packages/experimental/cua-bundle/README.md#L10-L20](../upstream/deepseek-harness/packages/experimental/cua-bundle/README.md#L10-L20) · [E16](../upstream/deepseek-harness/docs/subsystems/computer-use.md#L9-L27) |
@@ -384,7 +384,7 @@
 - **支持什么**：`create_worktree` 从本地 commit、branch 或 tag 创建新分支和目录，改变当前 Session 目录；子代理接受 `cwd`；标准 shell 可以用 `git worktree add`。[E13](../upstream/deepseek-harness/docs/tool-catalog.md#L2608-L2634)
 - **不支持什么**：没有云 VM；没有自动为每个并行子代理分配独立工作树；`create_worktree` 的 `from` 只用本地 ref，不 fetch；调用后父 Session 目录改变，连续创建多个候选会以新目录为源。
 - **场景示例**：`/arena this, 5 candidates` 期望每个候选在独立工作树或目录（`SKL-12`）；DSH 默认所有子代理继承父级目录，必须由技能先 `git worktree add` 或逐个 `create_worktree` 加 `cwd`，否则会互相覆盖。
-- **建议**：在 `arena`、`swarm`、`autopilot` 技能文本里用标准 shell 建树并给每个子代理 `cwd`；`OPT-01`（独立工作树 bundle）或 `OPT-02`（Change requests & worktrees，含模型侧 `create_worktree`）只作为单树替代；`environment:"cloud"` 的云能力按 `EXCL-03` 排除。
+- **建议**：在 `arena`、`swarm`、`autopilot` 技能文本里用标准 shell 建树并给每个子代理 `cwd`；`OPT-02`（Change requests & worktrees，含模型侧 `create_worktree`）只作为单树替代；`environment:"cloud"` 的云能力按 `EXCL-03` 排除。
 - **涉及能力**：`SUB-05`、`SUB-07`、`SKL-11`、`SKL-12`、`SKL-13`、`SKL-14`、`PB-07`、`PB-16` 至 `PB-18`。
 
 #### G-06 MCP 类别发现
@@ -601,14 +601,14 @@ B 的关键行为对照清单（`pstack/runtime/skills/statechart/scripts/statec
 
 ## 8. 分阶段状态
 
-下表逐项记录实现、审查、文档与最终覆盖状态。`审查` 列采用 2026-11-04 的 `review port` 全量复核结果：135 项均无开放 finding，EXT-003、EXT-004、EXT-005 保持 `active`。本轮 `doc` 复核了主适配文档与双语根 README，并同步独立 worktree 的选择路径、互斥关系与可选插件限制。`实现` 列的 `已实现` 表示该能力按第 2～4 节分类的映射、标准模式、可选插件或插件内路径已落地并核验；`不适用（平台排除）` 表示按上游排除基线不实现。`文档` 列定位实际适配产物；`最终覆盖` 区分完整、已覆盖（有适配语义差异）、条件覆盖、部分覆盖和平台排除，括号内列出外部条件、剩余差异或对应缺口。
+下表逐项记录实现、审查、文档与最终覆盖状态。`审查` 列采用 2026-11-04 的 `review port` 全量复核结果：135 项均无开放 finding，EXT-003、EXT-004、EXT-005 保持 `active`。本轮 `doc` 复核了主适配文档与双语根 README，并同步互斥关系与可选插件限制。`实现` 列的 `已实现` 表示该能力按第 2～4 节分类的映射、标准模式、可选插件或插件内路径已落地并核验；`不适用（平台排除）` 表示按上游排除基线不实现。`文档` 列定位实际适配产物；`最终覆盖` 区分完整、已覆盖（有适配语义差异）、条件覆盖、部分覆盖和平台排除，括号内列出外部条件、剩余差异或对应缺口。
 
 ### 8.1 模板、脚本与路径
 
 | 能力 ID | 实现 | 审查 | 文档 | 最终覆盖 |
 |---|---|---|---|---|
 | TOOL-01 | 已实现 | 通过 | 已记录（§2.1；dsh.md Tools） | 完整（pstack_subagent） |
-| TOOL-02 | 已实现 | 通过 | 已记录（§2.1；dsh.md Tools） | 完整（live root；无 answerer 时纯文本提问） |
+| TOOL-02 | 已实现 | 通过 | 已记录（§2.1；dsh.md Tools） | 完整（live root） |
 | TOOL-03 | 已实现 | 通过 | 已记录（§2.1；dsh.md Tools） | 已覆盖（skip 用 completed 加原因前缀；G-11） |
 | TOOL-04a | 已实现 | 通过 | 已记录（§2.1；dsh.md Tools） | 完整（用户 /name 入口） |
 | TOOL-04b | 已实现 | 通过 | 已记录（§2.1；dsh.md Tools） | 完整（PI-01） |
@@ -617,9 +617,9 @@ B 的关键行为对照清单（`pstack/runtime/skills/statechart/scripts/statec
 | SUB-02 | 已实现 | 通过 | 已记录（§2.2；dsh.md Subagent fields） | 完整（PI-08） |
 | SUB-03 | 已实现 | 通过 | 已记录（§2.2；dsh.md Subagent fields） | 已覆盖（comment-sicko 静态只读；其他 brief 靠约束与 git status） |
 | SUB-04 | 已实现 | 通过 | 已记录（§2.2；dsh.md Subagent fields） | 完整 |
-| SUB-05 | 已实现 | 通过 | 已记录（§2.2；dsh.md Subagent fields、OPT-01） | 条件覆盖（OPT-01 或 git worktree；云能力按 EXCL-03 排除） |
+| SUB-05 | 已实现 | 通过 | 已记录（§2.2；dsh.md Subagent fields、OPT-02） | 条件覆盖（OPT-02 或 git worktree；云能力按 EXCL-03 排除） |
 | SUB-06 | 已实现 | 通过 | 已记录（§2.2；dsh.md Subagent fields） | 完整 |
-| SUB-07 | 已实现 | 通过 | 已记录（§2.2；dsh.md Subagent fields、OPT-01） | 条件覆盖（本地 ref；不 fetch；OPT-01 或 bash） |
+| SUB-07 | 已实现 | 通过 | 已记录（§2.2；dsh.md Subagent fields、OPT-02） | 条件覆盖（本地 ref；不 fetch；OPT-02 或 bash） |
 | SUB-08 | 已实现 | 通过 | 已记录（§2.2；dsh.md Subagent fields） | 完整 |
 | SUB-09 | 已实现 | 通过 | 已记录（§2.2；dsh.md Subagent fields） | 完整（send_message） |
 | SUB-10 | 已实现 | 通过 | 已记录（§2.2；dsh.md Subagent fields） | 已覆盖（prompt 中的路径，不传附件块） |
@@ -665,10 +665,10 @@ B 的关键行为对照清单（`pstack/runtime/skills/statechart/scripts/statec
 | SKL-08 | 已实现 | 通过 | 已记录（§2.7；dsh.md Paths、OPT-06） | 条件覆盖（PI-02；历史读取需 OPT-06，G-03） |
 | SKL-09 | 已实现 | 通过 | 已记录（§2.7；dsh.md Local replacements、技能原文） | 完整（图像显示取决于宿主渲染） |
 | SKL-10 | 已实现 | 通过 | 已记录（§2.7；技能原文） | 完整 |
-| SKL-11 | 已实现 | 通过 | 已记录（§2.7；dsh.md OPT-01） | 条件覆盖（PI-02；隔离需 OPT-01 或 bash，G-05） |
-| SKL-12 | 已实现 | 通过 | 已记录（§2.7；dsh.md OPT-01） | 条件覆盖（PI-02；每候选工作树需 OPT-01 或 bash，G-05） |
-| SKL-13 | 已实现 | 通过 | 已记录（§2.7；dsh.md OPT-01、OPT-08） | 条件覆盖（PI-02；本地 worker、工作树与容量配置，G-05、G-09） |
-| SKL-14 | 已实现 | 通过 | 已记录（§2.7；dsh.md OPT-01） | 条件覆盖（PI-02；独立工作树需 OPT-01 或 bash，G-05） |
+| SKL-11 | 已实现 | 通过 | 已记录（§2.7；dsh.md OPT-02） | 条件覆盖（PI-02；隔离需 OPT-02 或 bash，G-05） |
+| SKL-12 | 已实现 | 通过 | 已记录（§2.7；dsh.md OPT-02） | 条件覆盖（PI-02；每候选工作树需 OPT-02 或 bash，G-05） |
+| SKL-13 | 已实现 | 通过 | 已记录（§2.7；dsh.md OPT-02、OPT-08） | 条件覆盖（PI-02；本地 worker、工作树与容量配置，G-05、G-09） |
+| SKL-14 | 已实现 | 通过 | 已记录（§2.7；dsh.md OPT-02） | 条件覆盖（PI-02；独立工作树需 OPT-02 或 bash，G-05） |
 | SKL-15 | 已实现 | 通过 | 已记录（§2.7；技能原文） | 完整 |
 | SKL-16 | 已实现 | 通过 | 已记录（§2.7；技能原文） | 完整 |
 | SKL-17 | 已实现 | 通过 | 已记录（§2.7；技能原文） | 完整 |
@@ -699,7 +699,7 @@ B 的关键行为对照清单（`pstack/runtime/skills/statechart/scripts/statec
 | PB-04 | 已实现 | 通过 | 已记录（§2.8；对应技能与适配映射） | 条件覆盖（PI-02；历史审计需 OPT-06，G-03） |
 | PB-05 | 已实现 | 通过 | 已记录（§2.8；对应技能与适配映射） | 条件覆盖（运行界面控制需 OPT-03～OPT-05，G-04） |
 | PB-06 | 已实现 | 通过 | 已记录（§2.8；对应技能与适配映射） | 完整 |
-| PB-07 | 已实现 | 通过 | 已记录（§2.8；对应技能与适配映射） | 条件覆盖（PI-02；工作树需 OPT-01 或 bash，G-05） |
+| PB-07 | 已实现 | 通过 | 已记录（§2.8；对应技能与适配映射） | 条件覆盖（PI-02；工作树需 OPT-02 或 bash，G-05） |
 | PB-08 | 已实现 | 通过 | 已记录（§2.8；对应技能与适配映射） | 完整 |
 | PB-09 | 已实现 | 通过 | 已记录（§2.8；对应技能与适配映射） | 条件覆盖（截图需 OPT-03～OPT-05，G-04） |
 | PB-10 | 已实现 | 通过 | 已记录（§2.8；对应技能与适配映射） | 条件覆盖（真实截图需 OPT-03～OPT-05，G-04） |
@@ -760,9 +760,9 @@ B 的关键行为对照清单（`pstack/runtime/skills/statechart/scripts/statec
 
 ### 8.5 文档产物与覆盖口径
 
-文档状态：本轮 `doc` 阶段于 2026-11-04 完成。主适配文档是 [pstack/harness/docs/harness/dsh.md](harness/docs/harness/dsh.md)，生成副本是 [pstack/pstack/docs/harness/dsh.md](pstack/docs/harness/dsh.md)。它保留上游模板的六个章节，并增加 [Local replacements](harness/docs/harness/dsh.md#local-replacements) 与 [Optional plugins](harness/docs/harness/dsh.md#optional-plugins) 两个固定追加小节，分别覆盖运行期替代与 OPT-01 至 OPT-09 的包名、启用能力、未启用 fallback 和支持边界。双语根 README 记录相同的独立 worktree 选择路径、互斥关系和可选插件限制。技能、playbook、reference 与 principle 正文保持上游原文，由生成器在需要 Cursor 名称映射的技能中加入适配文档指针。
+文档状态：本轮 `doc` 阶段于 2026-11-04 完成。主适配文档是 [pstack/harness/docs/harness/dsh.md](harness/docs/harness/dsh.md)，生成副本是 [pstack/pstack/docs/harness/dsh.md](pstack/docs/harness/dsh.md)。它保留上游模板的六个章节，并增加 [Local replacements](harness/docs/harness/dsh.md#local-replacements) 与 [Optional plugins](harness/docs/harness/dsh.md#optional-plugins) 两个固定追加小节，分别覆盖运行期替代与 OPT-02 至 OPT-09 的包名、启用能力、未启用 fallback 和支持边界。双语根 README 记录相同的互斥关系和可选插件限制。技能、playbook、reference 与 principle 正文保持上游原文，由生成器在需要 Cursor 名称映射的技能中加入适配文档指针。
 
-最终覆盖以固定上游提交和本轮测试为限。完整覆盖不排除技能本身声明的通用外部前提；条件覆盖必须启用括号中的插件或安装外部工具；部分覆盖仍有明确语义差异；平台排除按上游规则输出跳过行并继续，不计为通过。六项未决证据保留在 9.3，不因文档完成而核销。
+最终覆盖以固定上游提交和本轮测试为限。完整覆盖不排除技能本身声明的通用外部前提；条件覆盖必须启用括号中的插件或安装外部工具；部分覆盖仍有明确语义差异；平台排除按上游规则输出跳过行并继续，不计为通过。五项未决证据保留在 9.3，不因文档完成而核销。
 
 ## 9. 文档追踪与未决证据
 
@@ -832,11 +832,10 @@ B 的关键行为对照清单（`pstack/runtime/skills/statechart/scripts/statec
 | 编号 | 未决问题 | 当前证据与影响 |
 |---|---|---|
 | U-01 | DSH 是否有稳定的屏幕视频录制工具链 | 当前工具目录只有 `read_image`（PNG、JPEG、WebP、GIF）和 browser 或 CUA 截图能力，没有视频录制或视频渲染工具。pstack 的 benny control-adapter 要求 recording；非 benny 的 verification skill 多数只需要截图。若必须视频，需要外部 ffmpeg 或系统录制，标为未证实。[docs/tool-catalog.md#L1131-L1148](../upstream/deepseek-harness/docs/tool-catalog.md#L1131-L1148) |
-| U-02 | DSH `ask_user_question` 在 headless 或非交互 profile 的实际回答者 | `user-questions` 服务只在 live root 有 answerer；无 answerer 时 `ask` 会失败或阻塞。pstack 的 Claude Code 适配在 `-p` 模式改成纯文本提问；DSH headless 的命令行行为当前提交未证实。[docs/subsystems/user-questions.md#L280-L293](../upstream/deepseek-harness/docs/subsystems/user-questions.md#L280-L293) |
-| U-03 | `@deepseek-ai/dsh-experimental-session-search` 对子代理 transcript 的覆盖深度 | `session_trace` 能追踪子代理，但 Cursor 的 `subagents/*.jsonl` 文件路径不存在；跨会话要求精确 `cwd`。`reflect` 的自审和 `show-me-your-work` 的 transcript audit 可能只能读到父会话事件。[E18](../upstream/deepseek-harness/packages/experimental/session-search/README.md#L8-L20) |
-| U-04 | DSH browser provider 的截图与 ARIA 输出是否足够 pstack 的视频或截图证据 | Stagehand、Playwright、Chrome DevTools 的 screenshot 可用，但不同 provider 的工具名、页面身份标记和清理语义未在本审查全部实测；`create-verification-skill` 里的二实例并行也依赖具体 provider。标为待实现时验证。[E15](../upstream/deepseek-harness/docs/subsystems/browser-use.md#L9-L15) |
-| U-05 | DSH `worktree` 服务能否安全支持同一 Session 连续创建多个候选工作树 | `create_worktree` 会改变当前 Session 目录；连续调用时的源仓库选择与 `from` 解析在文档中未给出多候选示例；`arena` 的每候选独立工作树需用 shell `git worktree add` 或逐次显式 `cwd` 验证。[E13](../upstream/deepseek-harness/docs/tool-catalog.md#L2608-L2634) |
-| U-06 | `gh`、`git`、`node`、`java`、`mise`、`ffmpeg` 在 DSH 桌面和 headless 宿主上的可用性 | DSH 的 `bash` 工具执行 `bash -c`，但目标机器是否安装这些命令、`gh` 是否登录、Java 与 TLC 与 mise 版本是否满足 `statechart` 要求不在本仓库控制内；脚本 Node 重写只解决运行时语言，不解决外部命令。[E12](../upstream/deepseek-harness/docs/tool-catalog.md#L695-L735) |
+| U-02 | `@deepseek-ai/dsh-experimental-session-search` 对子代理 transcript 的覆盖深度 | `session_trace` 能追踪子代理，但 Cursor 的 `subagents/*.jsonl` 文件路径不存在；跨会话要求精确 `cwd`。`reflect` 的自审和 `show-me-your-work` 的 transcript audit 可能只能读到父会话事件。[E18](../upstream/deepseek-harness/packages/experimental/session-search/README.md#L8-L20) |
+| U-03 | DSH browser provider 的截图与 ARIA 输出是否足够 pstack 的视频或截图证据 | Stagehand、Playwright、Chrome DevTools 的 screenshot 可用，但不同 provider 的工具名、页面身份标记和清理语义未在本审查全部实测；`create-verification-skill` 里的二实例并行也依赖具体 provider。标为待实现时验证。[E15](../upstream/deepseek-harness/docs/subsystems/browser-use.md#L9-L15) |
+| U-04 | DSH `worktree` 服务能否安全支持同一 Session 连续创建多个候选工作树 | `create_worktree` 会改变当前 Session 目录；连续调用时的源仓库选择与 `from` 解析在文档中未给出多候选示例；`arena` 的每候选独立工作树需用 shell `git worktree add` 或逐次显式 `cwd` 验证。[E13](../upstream/deepseek-harness/docs/tool-catalog.md#L2608-L2634) |
+| U-05 | `gh`、`git`、`node`、`java`、`mise`、`ffmpeg` 在 DSH 宿主上的可用性 | DSH 的 `bash` 工具执行 `bash -c`，但目标机器是否安装这些命令、`gh` 是否登录、Java 与 TLC 与 mise 版本是否满足 `statechart` 要求不在本仓库控制内；脚本 Node 重写只解决运行时语言，不解决外部命令。[E12](../upstream/deepseek-harness/docs/tool-catalog.md#L695-L735) |
 
 已核销的未决项：
 
@@ -868,6 +867,6 @@ B 的关键行为对照清单（`pstack/runtime/skills/statechart/scripts/statec
 | 已选择实现项 | 4（`PI-01`、`PI-02`、`PI-08`、`PI-09`；见 6.1、7.1） |
 | 证据唯一实现项 | 4（`PI-03`、`PI-05`、`PI-06`、`PI-07`；见 7.2） |
 | 待选择实现项 | 0 |
-| 未决证据 | 6（`U-01` 至 `U-06`） |
+| 未决证据 | 5（`U-01` 至 `U-05`） |
 
 最终覆盖结论：135 项中 79 项完整、6 项已覆盖但有适配语义差异、35 项需要所列插件或外部条件、2 项仍有部分覆盖缺口、13 项按上游平台排除。`SKL-25` 的技能 `paths` 不自动挂载，`SKL-32` 的 mp4 与逐帧核验需要外部工具；13 个平台排除项不计为通过。3 个本地扩展均为 `active`，不混入这 135 项。8 个插件内实现项均已实现并通过本轮审查；验证记录与未覆盖证据见 [docs/port-review.md](../docs/port-review.md)。

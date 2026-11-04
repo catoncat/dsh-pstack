@@ -4,7 +4,7 @@
  * 读取 playground/config.json（每个 provider 一层：apiKey + 模型 -> 思考等级），
  * 逐条能力用例：先校验路由属于本机部署，再按用例自动写 playground/.dsh/pstack-models.mdc，
  * 用 `dsh headless --json` 跑一次真实会话，解析事件流里的 tool_call / tool_result 做
- * 「能力级」断言（child 数量、route 互异、preset、脚本输出等），最后输出 pass/fail 报告。
+ * 「能力级」断言（child 数量、route 互异、脚本输出等），最后输出 pass/fail 报告。
  *
  * 它只断言工具契约的可观察事实，不写死插件文案或 UI 内容；真实会话证据仍在
  * playground/.dsh/sessions 下（可用 zstdcat 复核）。

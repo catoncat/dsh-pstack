@@ -637,7 +637,7 @@ fixes:
 
 `doc` 写本地主适配器 `dsh.md` 时，必须同时写清可选插件默认未启用时的行为，不能只写启用后的能力。
 
-- **覆盖范围**：`pstack/README.md` 当前可选插件条目中的全部 `OPT-*`，当前为 `OPT-01`～`OPT-09`。不得只挑与当前技能相关的几项。
+- **覆盖范围**：`pstack/README.md` 当前可选插件条目中的全部 `OPT-*`，当前为 `OPT-02`～`OPT-09`。不得只挑与当前技能相关的几项。
 - **位置**：在 `dsh.md` 增加 `## Optional plugins` 英文小节，按 `OPT-*` 编号逐行说明。如果同时在 Tools、Subagent fields、Paths 等表格里分散说明，仍要在该节保留索引，保证可逐项检查。
 - **每行至少包含**：
   - `OPT-*` 编号与插件包名；
@@ -646,7 +646,7 @@ fixes:
   - 未启用时不得声称该步骤通过。
 - **与平台排除的区别**：平台排除是 DSH 没有对应能力；可选插件是 DSH 有能力但默认关闭。可选插件行先写「启用 `<package>` 可获得 `<capability>`」，再写未启用时的 fallback 或 skip。不要把可选插件写成永久不支持。
 - **写法参照 `## Cursor-only features`**：跳过行原样使用，不停止、不重试、不把跳过写成通过。有替代路径时写清替代命令或工具。
-- **示例**：`OPT-02` forge bundle 未启用时用 `gh`，`gh` 不可用时报 blocked；`OPT-01` worktree bundle 未启用时用 `bash` 执行 `git worktree add` 并传 `cwd`；`OPT-06` session search 未启用时只处理当前会话，跨会话读取标记为不可用。
+- **示例**：`OPT-02` forge bundle 未启用时用 `gh`，`gh` 不可用时报 blocked；需要本地工作树时用 `bash` 执行 `git worktree add` 并传 `cwd`；`OPT-06` session search 未启用时只处理当前会话，跨会话读取标记为不可用。
 
 完成标准：`dsh.md` 的 `OPT-*` 编号集合与 `pstack/README.md` 当前可选插件条目一致；每个编号都有非空的「未启用」说明；存在 `Skipped in DeepSeek Harness` 行；没有「未启用但写成通过」的表述。
 
