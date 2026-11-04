@@ -18,12 +18,12 @@
 
 ## EXT-004：pstack 推荐可选插件启用页
 
-- 状态：broken
+- 状态：active
 - 用户场景：安装 dsh-pstack 后，在 DSH Web/Desktop 的 Plugins 页集中看到 pstack 推荐的可选插件、用途、当前状态与平台/冲突限制，并可直接开关；不必从 README 抄包名再到 Plugins 页逐个搜索。
 - 范围：dsh-pstack bundle 详情页的“推荐插件”区；默认推荐 OPT-02（Change requests & worktrees）与 OPT-06；OPT-01 仅作为非 Web profile 适配说明、本页不提供开关；OPT-03/04/05/07/09 按任务分组，OPT-08 仅冲突警告；读取 pluginManager 的 bundle 状态；单项开关与“一键启用推荐项”，且不得让独立 worktree 与 forge 同时选择；首次启用 dsh-pstack 后的 plugins.bundle.activation 引导；不自动启用、不复制官方可选插件组合。
 - 验收：Issue #4 验收通过（2026-10-30）；验收行为、自动化测试与真实安装证据见 [Issue #4](https://github.com/l246804/dsh-pstack/issues/4) 的验收评论。
 - DSH 公共接口与兼容版本：0.2.2-alpha.2；`plugins.bundle.activation`、`pluginManager.listBundles`、`pluginManager.setBundleEnabled`（通过插件管理器 Remote）；推荐分区经 EXT-005 的 `plugins.detail.actions` 模态框承载。
-- 实现与验证：Issue #4 验收通过（2026-10-30）；推荐插件页使用独立的 `pstackPlugins` locale 命名空间与按语言组织的完整词典，角色模型配置页保留 `pstackRoles`；2026-11-04 按 DSH `05b1cae` 的 forge/worktree 合并修复默认推荐与互斥行为，实现待复核（见 `docs/extensions/EXT-004/review.md`）。
+- 实现与验证：Issue #4 验收通过（2026-10-30）；推荐插件页使用独立的 `pstackPlugins` locale 命名空间与按语言组织的完整词典，角色模型配置页保留 `pstackRoles`；2026-11-04 按 DSH `05b1cae` 的 forge/worktree 合并修复默认推荐与互斥行为，复核通过（见 `docs/extensions/EXT-004/review.md`），待 Issue #4 复核验收。
 - Issue：[#4](https://github.com/l246804/dsh-pstack/issues/4)
 
 ## EXT-005：bundle 配置模态框

@@ -4,10 +4,10 @@ port:
   round: baseline
   phase: review
   started_at: "2026-11-04T10:46:34+08:00"
-  updated_at: "2026-11-04T11:21:53+08:00"
+  updated_at: "2026-11-04T11:44:00+08:00"
 blocker:
-  active_item: EXT-004
+  active_item: "#4"
   mode: issue
-  allowed_routes: [implement EXT-004, review EXT-004]
+  allowed_routes: ["issue #4"]
   resume_route: review port
-  reason: "DSH 05b1cae 合并 forge 与工作树入口后，EXT-004 仍默认推荐隐藏的独立 worktree bundle，且未阻止与 forge 重复挂载。"
+  reason: "EXT-004 复核通过（DSH 05b1cae forge/worktree 合并）；待 Issue #4 复核验收。"
