@@ -1,10 +1,11 @@
 # 决定：DSH 兼容版本要求改用 >= 下限范围，以最低兼容版本为门槛
 
-Status: proposed
+Status: superseded
 Date: 2026-10-30
 Scope: package.json, README.md, README.zh.md
 Implemented-by: -
 Review: 2027-04-30
+Superseded-by: docs/decisions/2026-11-04-dsh-breaking-version-boundary-policy.md — 改为按 DSH 上游破坏性更新维护插件版本分界，不再统一使用旧下限。
 
 ## 背景
 
