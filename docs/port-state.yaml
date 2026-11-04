@@ -1,8 +1,8 @@
 schema: 1
 port:
-  state: idle
+  state: active
   round: baseline
-  phase: done
-  started_at: "2026-11-04T10:46:34+08:00"
-  updated_at: "2026-11-04T13:51:29+08:00"
+  phase: implement
+  started_at: "2026-11-04T15:03:32+08:00"
+  updated_at: "2026-11-04T15:03:32+08:00"
 blocker: null

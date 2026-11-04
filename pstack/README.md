@@ -10,7 +10,7 @@
 - 审查采用「先排除、再分层」：先读上游 `docs/harness/claude-code.md` 的 `Cursor-only features`，舍弃依赖 Cursor 平台的完整能力；剩余需求拆成原子能力，每项只归入映射、标准模式、可选插件中的一层。
 - 本文的「插件」一律指本仓 `dsh-pstack`；「可选插件」一律指 DSH 官方提供、默认未启用的插件或 bundle。
 - 「当前提交未证实」表示在固定提交与本次调查范围内找不到足够源码证据，不表示该能力在别的 DSH 版本也不存在。
-- 本轮是 `baseline` 轮次，没有 core Issue 或 EXT 输入。`docs/port-prepare.md` 确认 pstack 子树在 `4dd1d05..ae5650f` 间没有文件变化（树哈希同为 `4719e1c4b4c43bac85d4206a8b41dd2899769c1c`），因此沿用上一轮冻结的 135 项原子能力。DSH 由 `ce7073d` 更新到 `05b1cae`（`0.2.2-alpha.3`），本轮按新提交重新核对全部 DSH 证据行号。差异影响见 1.8。
+- 本轮是 `baseline` 轮次，没有 core Issue 或 EXT 输入。`docs/port-prepare.md` 确认 pstack 子树在 `4dd1d05..ae5650f` 间没有文件变化（树哈希同为 `4719e1c4b4c43bac85d4206a8b41dd2899769c1c`），因此沿用上一轮冻结的 135 项原子能力。DSH 与上一轮同为 `05b1cae`（`0.2.2-alpha.3`），本轮按该提交重新核对全部 DSH 证据与 34 个被引用文件，没有需求变化。差异影响见 1.8。
 
 ### 1.2 上游提交与版本
 
@@ -43,7 +43,7 @@
 
 ### 1.4 独立保留范围
 
-`docs/extensions.md` 中 `proposed` 与 `active` 的条目是 DSH 版本地扩展，不是上游 pstack 能力，不混入本表的原子能力编号。本轮登记 EXT-003 pstack 角色模型配置页、EXT-004 pstack 推荐可选插件启用页、EXT-005 bundle 配置模态框，三项均为 `active`，没有 `proposed`、`broken` 或 `retired` 条目。EXT-004 已按 DSH `05b1cae` 的 forge/worktree 合并修复默认推荐与互斥行为，2026-11-04 经 `review EXT-004` 与 Issue #4 复核验收通过；其余两项保持 `active`。这些扩展的验收证据保留在对应 Issue，不改变第 2 至 4 节的能力计数。
+`docs/extensions.md` 中 `proposed` 与 `active` 的条目是 DSH 版本地扩展，不是上游 pstack 能力，不混入本表的原子能力编号。当前登记 EXT-003 pstack 角色模型配置页、EXT-004 pstack 推荐可选插件启用页、EXT-005 bundle 配置模态框，三项均为 `active`，没有 `proposed`、`broken` 或 `retired` 条目。EXT-004 已按 DSH `05b1cae` 的 forge/worktree 合并修复默认推荐与互斥行为，2026-11-04 经 `review EXT-004` 与 Issue #4 复核验收通过；其余两项保持 `active`。这些扩展的验收证据保留在对应 Issue，不改变第 2 至 4 节的能力计数。
 
 ### 1.5 分类口径
 
@@ -110,15 +110,14 @@
 
 ### 1.8 本轮输入与差异影响
 
-本轮没有 core `required_behavior`。输入是 `docs/port-prepare.md` 的结构基线与两个固定提交；差异只来自 DSH 参考实现，pstack 上游需求不变。
+本轮没有 core `required_behavior`。输入是 `docs/port-prepare.md` 的结构基线与两个固定提交。
 
 | 事实 | 观察 | 对本轮影响 |
 |---|---|---|
-| pstack 子树 | 未变，仍为 `ae5650f`，树哈希 `4719e1c4b4c43bac85d4206a8b41dd2899769c1c`；原有 135 项能力、上游证据和编号沿用 | 没有新增或删除能力行 |
-| DSH 提交 | `ce7073d` → `05b1cae`（`dsh-v0.2.2-alpha.3`，111 个提交）。34 个被引用文件中 25 个未变；9 个变化，其中 8 个为等行替换（行号不变），仅 `packages/experimental/forge-bundle/README.md` 增 2 行 | 全部 DSH 证据按 `05b1cae` 重新核对；`OPT-02`、G-07 的 forge-bundle 行号后移 2 行 |
-| DSH forge/worktree bundle 合并 | `@deepseek-ai/dsh-experimental-forge-bundle` 同时挂载 forge 面板与 worktree 模型工具 `create_worktree`；独立 `@deepseek-ai/dsh-experimental-tool-worktree` bundle 没有 Plugins 卡片，Web/Desktop 默认经 Change requests & worktrees 一并启用，其它 profile 在 `dsh.profile.bundles` 选择。Web/Desktop 中既有独立选择保持隐藏并由 profile 文件管理；同时选择独立 bundle 与 forge bundle 会插入重复 id | `OPT-01` 启用路径改写；`OPT-02` 能力补上模型侧 `create_worktree`；G-05、G-07 措辞更新，能力结论不变 |
-| DSH fs 观察策略 | `dsh-tool-fs` 的 read-before-write/edit 观察策略改为随 `fs-observation-policy` 行默认禁用；`apply_patch` 在 `dsh-base` 与 Web `standard` preset 启用 | 没有 pstack 能力行依赖该策略，`edit`/`write` 主路径行为不变，结论不变 |
-| DSH computer-use | macOS 权限请求 API 增加 `locale` 参数，实现细节变化 | 不影响 `OPT-04` 与 G-04 的覆盖结论 |
+| pstack 子树 | 仍为 `ae5650f`，树哈希 `4719e1c4b4c43bac85d4206a8b41dd2899769c1c`；与 `4dd1d05` 相比没有文件变化 | 136 个文档与 135 项能力的上游证据沿用，没有新增或删除能力行 |
+| DSH 提交 | 仍为 `05b1cae`（`0.2.2-alpha.3`），与上一轮相同；34 个被引用文件在本次审查中全部按该提交复核 | 证据行号与结论不变，没有能力改判 |
+| DSH 默认工具配置 | `dsh-base` 与 Web `standard` 的 `tool-fs` 行均为 `applyPatch: false`，`fs-observation-policy` 行 `disabled: true`；[docs/tool-catalog.md#L1178](../upstream/deepseek-harness/docs/tool-catalog.md#L1178) 仍写 `dsh-base` 与 `standard` 启用 `apply_patch`，与配置不一致 | pstack 不依赖 `apply_patch` 或 read-before-edit 策略，`read`、`write`、`edit` 的主路径与能力结论不变；配置证据见 [base cordis.patch.yml#L292-L301](../upstream/deepseek-harness/packages/bundle/base/cordis.patch.yml#L292-L301) 与 [standard.patch.yml#L27-L31](../upstream/deepseek-harness/packages/bundle/web-app/presets/standard.patch.yml#L27-L31) |
+| 上一轮已记录的 DSH 变化 | forge/worktree bundle 合并、`OPT-01`/`OPT-02` 启用路径与 `G-05`/`G-07` 措辞已在上轮按 `05b1cae` 冻结 | 当前提交仍成立，本轮沿用 |
 
 ## 2. 完整能力表
 
@@ -199,7 +198,7 @@
 | SCR-06 | `skills/poteto-mode/scripts/orch/{orch,store}.ts` | 上游在 `1ba91fc` 已删除；本地旧镜像随之删除 | 无调用点 | 无 | `无调用点（已删除）`；[prepare §3](../docs/port-prepare.md#L34-L39) |
 | SCR-07 | `skills/poteto-mode/scripts/bootstrap.ts`、`package.json`、`bun.lock`、`check-plan.test.ts`、`watch-pr/*.test.ts`、`statechart/scripts/test/**` | Bun 或 pnpm 安装与测试资产；`bootstrap.ts` 只服务 watch-pr 自装依赖 | 不对外暴露入口 | 不单独移植；构建由本仓 pnpm 与 profile 负责；测试用例作为行为验收参考 | `资产，不单独成项`；[prepare §4](../docs/port-prepare.md#L45-L60) |
 
-`docs/port-prepare.md` 已确认 pstack 子树在 `1ba91fc..4dd1d05` 间无文件差异，树哈希一致。第 2.6 节的 SCR 行为继续以上游 `4dd1d05` 为准；`SCR-06` 与 `SCR-07` 只作脚本去向记录，不进入 135 个原子能力编号和分阶段状态表。
+`docs/port-prepare.md` 已确认 pstack 子树在 `4dd1d05..ae5650f` 间无文件差异，树哈希一致。第 2.6 节的 SCR 行为继续以上游 `ae5650f` 为准；`SCR-06` 与 `SCR-07` 只作脚本去向记录，不进入 135 个原子能力编号和分阶段状态表。
 
 ### 2.7 技能（33 项；`setup-pstack` 见 2.4）
 
@@ -513,7 +512,7 @@
 
 `PI-04 orch CLI` 已随上游 `1ba91fc` 删除 `orch.ts` 与 `store.ts` 而退役，本轮不再进入插件实现范围；本地旧镜像由 `prepare` 删除。
 
-本轮 `implement port` 复核结论（DSH `05b1cae`）：上表 8 项均保留现有实现，没有新增、修改或删除的代码；本轮没有 `status: active` 的 FIX。各项实现位置、公共接口依据与验证用例记录在 `docs/port-review.md` 的「实现记录」。
+上一轮 `implement port` 复核结论（DSH `05b1cae`）：上表 8 项均保留现有实现，没有新增、修改或删除的代码；当时没有 `status: active` 的 FIX。本轮 audit 只冻结需求基线，实现复核留给下一步 `implement port`。
 
 不属于插件内实现：
 
@@ -537,16 +536,16 @@
 
 ### 6.2 AD-02 脚本 Node 运行时与随包替换
 
-- **来源**：[docs/architecture.md#L15-L16](../docs/architecture.md#L15-L16) 的运行时模块、[docs/architecture.md#L46](../docs/architecture.md#L46) 的新增脚本规则，以及 [references/contract.md#L98-L98](../.agents/skills/pstack-port/references/contract.md#L98-L98) 的手写位置约束。
+- **来源**：[docs/architecture.md#L20](../docs/architecture.md#L20) 的运行时模块、[docs/architecture.md#L52](../docs/architecture.md#L52) 的新增或修改脚本规则，以及 [references/contract.md#L109-L109](../.agents/skills/pstack-port/references/contract.md#L109-L109) 的手写位置约束。
 - **内容**：`pstack/runtime/skills/<技能>/scripts/**` 是可执行脚本的 TypeScript 源码；构建编译为 mjs，经 `replace:scripts` 整目录替换随包树里上游附带的脚本；只修改 Node 运行必需的部分及会造成错误行为或误报的少量逻辑，保持上游输入、输出、文件格式、外部命令、退出码与关键算法。
 - **能力范围**：`SCR-01` 至 `SCR-05`，以及 `PI-03`、`PI-05`、`PI-06`、`PI-07`、`PI-09`。
 - **验收行为**：行为测试、真实脚本调用和与上游关键行为对照；确有行为差异时登记到本 README 的能力状态，并在对应上游适配文档的本地 DSH 产物中说明；脚本 `id` 经 `pstack_script` 暴露，不直接拼路径。
-- **源码核验位置**：`pstack/runtime/skills/<技能>/scripts/**`、`pstack/scripts/replace-scripts.mjs`、`src/internal/script-registry.ts`（见 [docs/architecture.md#L15-L16](../docs/architecture.md#L15-L16) 与 [docs/architecture.md#L46](../docs/architecture.md#L46)）。
+- **源码核验位置**：`pstack/runtime/skills/<技能>/scripts/**`、`pstack/scripts/replace-scripts.mjs`、`src/internal/script-registry.ts`（见 [docs/architecture.md#L20](../docs/architecture.md#L20) 与 [docs/architecture.md#L52](../docs/architecture.md#L52)）。
 - **决策链接**：本轮没有独立的 accepted 决策记录；`docs/decisions/2026-10-28-pstack-generated-tree-port.md` 已 `superseded`，其 Node 脚本运行时部分继续由架构与契约约束。
 
 ### 6.3 AD-03 生成树与本地适配树
 
-- **来源**：[docs/architecture.md#L14-L17](../docs/architecture.md#L14-L17) 的本地适配树、生成器、生成树三行，[docs/architecture.md#L44](../docs/architecture.md#L44) 的扩展点，以及 [docs/port-prepare.md#L14-L25](../docs/port-prepare.md#L14-L25) 的结构追踪表。
+- **来源**：[docs/architecture.md#L16-L18](../docs/architecture.md#L16-L18) 的生成器、生成树、本地适配树三行，[docs/architecture.md#L47-L54](../docs/architecture.md#L47-L54) 的扩展点，以及 [docs/port-prepare.md#L14-L25](../docs/port-prepare.md#L14-L25) 的结构追踪表。
 - **内容**：生成树由 `upstream/cursor-plugins/pstack` 加本地 `pstack/harness/` 渲染；主适配器 `pstack/harness/docs/harness/dsh.md` 替换上游 `docs/harness/claude-code.md`；其他上游 harness 附件保持上游相对路径与文件名；生成结果提交进 git，`generate --check` 逐字节比对漂移。
 - **能力范围**：`PATH-02`、`PATH-06`、全部 `SKL` 与 `PB` 的资源相对路径，以及 `doc` 阶段的主适配器产物。
 - **验收行为**：生成树只能由生成器改变，手写内容只进 `pstack/harness/` 与 `pstack/runtime/`；主适配器按生成树相对路径镜像替换；技能引用、检查名称映射与相对链接在生成时校验；`generate --check` 通过。
@@ -559,7 +558,7 @@
 - **内容**：`skills/authored/` 与 `skills/.agents/skills/`（构建时以 `vendored/` 发布）只补充 pstack 缺失的能力；收录须同时满足 cursor pstack 中没有提供类似作用的技能，以及在真实项目开发中作用明显。pstack 技能对 `skills/` 下技能的依赖只是使用关系，不改变收录判据。
 - **能力范围**：`PB-11`、`SKL-27`、`SKL-29` 中 `create-skill` 的替代路径；`writing-for-agents` 是本仓提供的技能创作技能，不替代 pstack 上游能力。
 - **验收行为**：`vendored/` 逐字保留上游内容并在 `skills/skills-lock.json` 记 `source`、`ref`、`skillPath`、`computedHash`；`authored/` 只收本仓自建技能；不得因 pstack 已提供同类能力而拒绝收录，也不得把 `skills/` 当作 pstack 的配套件。
-- **源码核验位置**：`skills/authored/**`、`skills/.agents/skills/**`、`skills/skills-lock.json`、`skills/package.json`（见 [docs/architecture.md#L18-L18](../docs/architecture.md#L18-L18)）。
+- **源码核验位置**：`skills/authored/**`、`skills/.agents/skills/**`、`skills/skills-lock.json`、`skills/package.json`（见 [docs/architecture.md#L21](../docs/architecture.md#L21)）。
 
 ### 6.5 AD-05 非 pstack 上游的已接受决策
 
@@ -602,7 +601,7 @@ B 的关键行为对照清单（`pstack/runtime/skills/statechart/scripts/statec
 
 ## 8. 分阶段状态
 
-下表逐项记录实现、审查、文档与最终覆盖状态。实现审查通过，EXT-004 已修复默认推荐与互斥行为并恢复 `active`。documentation-only 的 DOC-01 已在 `doc` 阶段完成：主适配文档与双语根 README 已同步 forge/worktree 统一入口、隐藏卡片、互斥、模型侧 `create_worktree` 和 DSH `0.2.2-alpha.3` 已验证基线。`实现` 列的 `已实现` 表示该能力按第 2～4 节分类的映射、标准模式、可选插件或插件内路径已落地并核验；`不适用（平台排除）` 表示按上游排除基线不实现。`文档` 列定位实际适配产物；`最终覆盖` 区分完整、已覆盖（有适配语义差异）、条件覆盖、部分覆盖和平台排除，括号内列出外部条件、剩余差异或对应缺口。
+下表逐项记录实现、审查、文档与最终覆盖状态。状态沿用上一轮完成结果；本轮 audit 只重建需求基线，不改变实现与审查状态。实现审查通过，EXT-004 已修复默认推荐与互斥行为并恢复 `active`。documentation-only 的 DOC-01 已在上一轮 `doc` 阶段完成：主适配文档与双语根 README 已同步 forge/worktree 统一入口、隐藏卡片、互斥、模型侧 `create_worktree` 和 DSH `0.2.2-alpha.3` 已验证基线。`实现` 列的 `已实现` 表示该能力按第 2～4 节分类的映射、标准模式、可选插件或插件内路径已落地并核验；`不适用（平台排除）` 表示按上游排除基线不实现。`文档` 列定位实际适配产物；`最终覆盖` 区分完整、已覆盖（有适配语义差异）、条件覆盖、部分覆盖和平台排除，括号内列出外部条件、剩余差异或对应缺口。
 
 ### 8.1 模板、脚本与路径
 
@@ -761,7 +760,7 @@ B 的关键行为对照清单（`pstack/runtime/skills/statechart/scripts/statec
 
 ### 8.5 文档产物与覆盖口径
 
-文档状态：2026-11-04 `doc` 阶段完成。DOC-01 已解决：`dsh.md` 的 OPT-01/OPT-02 与双语根 README 已同步 Web/Desktop 默认统一入口、独立 bundle 无 Plugins 卡片、其它 profile 的选择路径、Web/Desktop 既有独立选择由 profile 文件管理、互斥、模型侧 `create_worktree` 和 DSH `0.2.2-alpha.3` 已验证基线。主适配文档是 [pstack/harness/docs/harness/dsh.md](harness/docs/harness/dsh.md)，生成副本是 [pstack/pstack/docs/harness/dsh.md](pstack/docs/harness/dsh.md)。它保留上游模板的六个章节，并增加 [Local replacements](harness/docs/harness/dsh.md#local-replacements) 与 [Optional plugins](harness/docs/harness/dsh.md#optional-plugins) 两个固定追加小节，分别覆盖运行期替代与 OPT-01 至 OPT-09 的包名、启用能力、未启用 fallback 和支持边界。技能、playbook、reference 与 principle 正文保持上游原文，由生成器在需要 Cursor 名称映射的技能中加入适配文档指针。
+文档状态：上一轮 `doc` 阶段于 2026-11-04 完成。DOC-01 已解决：`dsh.md` 的 OPT-01/OPT-02 与双语根 README 已同步 Web/Desktop 默认统一入口、独立 bundle 无 Plugins 卡片、其它 profile 的选择路径、Web/Desktop 既有独立选择由 profile 文件管理、互斥、模型侧 `create_worktree` 和 DSH `0.2.2-alpha.3` 已验证基线。主适配文档是 [pstack/harness/docs/harness/dsh.md](harness/docs/harness/dsh.md)，生成副本是 [pstack/pstack/docs/harness/dsh.md](pstack/docs/harness/dsh.md)。它保留上游模板的六个章节，并增加 [Local replacements](harness/docs/harness/dsh.md#local-replacements) 与 [Optional plugins](harness/docs/harness/dsh.md#optional-plugins) 两个固定追加小节，分别覆盖运行期替代与 OPT-01 至 OPT-09 的包名、启用能力、未启用 fallback 和支持边界。技能、playbook、reference 与 principle 正文保持上游原文，由生成器在需要 Cursor 名称映射的技能中加入适配文档指针。
 
 最终覆盖以固定上游提交和本轮测试为限。完整覆盖不排除技能本身声明的通用外部前提；条件覆盖必须启用括号中的插件或安装外部工具；部分覆盖仍有明确语义差异；平台排除按上游规则输出跳过行并继续，不计为通过。六项未决证据保留在 9.3，不因文档完成而核销。
 
