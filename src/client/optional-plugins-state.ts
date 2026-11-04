@@ -41,6 +41,26 @@ export interface OptionalPluginRow {
   readonly enabled: boolean;
   /** Whether the page offers a switch for this row. */
   readonly canToggle: boolean;
+  /** Bundles already enabled that must be turned off before this row can be switched on. */
+  readonly blockedBy: readonly string[];
+}
+
+/** Bundle names the Host currently reports as enabled. */
+function enabledBundleNames(bundles: readonly BundleSnapshot[] | undefined): ReadonlySet<string> {
+  return new Set((bundles ?? []).filter((bundle) => bundle.enabled).map((bundle) => bundle.name));
+}
+
+/**
+ * Mutual-exclusion bundles of one row that are already enabled. The page must
+ * not switch this row on while any of them stays on (for example the standalone
+ * worktree bundle next to the unified forge bundle).
+ */
+export function conflictingEnabledBundles(
+  definition: OptionalPluginDefinition,
+  bundles: readonly BundleSnapshot[] | undefined,
+): readonly string[] {
+  const enabled = enabledBundleNames(bundles);
+  return (definition.exclusiveWith ?? []).filter((name) => enabled.has(name));
 }
 
 /** Read one bundle's display status, including platform and file failures. */
@@ -60,6 +80,7 @@ export function optionalPluginRows(
   return OPTIONAL_PLUGINS.map((definition) => {
     const bundle = definition.bundle === undefined ? undefined : byName.get(definition.bundle);
     const status = definition.bundle === undefined ? "missing" : optionalPluginStatus(bundle);
+    const blockedBy = conflictingEnabledBundles(definition, bundles);
     return {
       definition,
       status,
@@ -67,7 +88,8 @@ export function optionalPluginRows(
       canToggle:
         definition.bundle !== undefined &&
         definition.switchable !== false &&
-        (status === "off" || status === "enabled"),
+        (status === "enabled" || (status === "off" && blockedBy.length === 0)),
+      blockedBy,
     };
   });
 }
@@ -78,11 +100,13 @@ export function remainingRecommendedCount(rows: readonly OptionalPluginRow[]): n
     .length;
 }
 
-/** One row's attempted outcome; `error` is a rejected Remote call. */
+/** One row's attempted outcome; `error` is a rejected Remote call, `skipped` is a mutual-exclusion block. */
 export interface RecommendedOutcome {
   readonly id: OptionalPluginId;
   readonly bundle: string;
-  readonly application: BundleChange["application"] | "error";
+  readonly application: BundleChange["application"] | "error" | "skipped";
+  /** For `skipped`: the still-enabled bundles that block this row. */
+  readonly blockedBy?: readonly string[];
 }
 
 /** Aggregate result of “enable recommended plugins”. */
@@ -117,6 +141,16 @@ export async function enableRecommendedPlugins(
     if (row.definition.recommended !== true || row.definition.bundle === undefined) continue;
     if (row.status === "enabled") continue;
     if (row.status !== "off") {
+      skipped += 1;
+      continue;
+    }
+    if (row.blockedBy.length > 0) {
+      outcomes.push({
+        id: row.definition.id,
+        bundle: row.definition.bundle,
+        application: "skipped",
+        blockedBy: row.blockedBy,
+      });
       skipped += 1;
       continue;
     }

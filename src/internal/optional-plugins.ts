@@ -34,12 +34,18 @@ export interface OptionalPluginDefinition {
   readonly bundle?: string;
   /** Included in the default recommendation and in “enable recommended plugins”. */
   readonly recommended?: boolean;
-  /** User-suggested entry, shown with its own tag and never in the default set. */
-  readonly suggested?: boolean;
+  /**
+   * Documentation-only row for a standalone bundle a non-Web profile selects in
+   * `dsh.profile.bundles`; Web/Desktop shows no Plugins card, so this page never
+   * switches it.
+   */
+  readonly profileOnly?: boolean;
   /** Entry that only warns about a conflict and cannot be switched here. */
   readonly conflict?: boolean;
   /** Whether this page may offer a switch for the bundle. */
   readonly switchable?: boolean;
+  /** Bundle names that must not be enabled together with this row's bundle. */
+  readonly exclusiveWith?: readonly string[];
 }
 
 /** Group order shared by the page and its tests. */
@@ -59,14 +65,20 @@ export const OPTIONAL_PLUGINS: readonly OptionalPluginDefinition[] = [
       "@deepseek-ai/dsh-experimental-tool-worktree",
     ],
     bundle: "@deepseek-ai/dsh-experimental-tool-worktree",
-    recommended: true,
+    profileOnly: true,
+    switchable: false,
+    exclusiveWith: ["@deepseek-ai/dsh-experimental-forge-bundle"],
   },
   {
     id: "OPT-02",
     group: "sessions",
     packages: ["@deepseek-ai/dsh-experimental-forge-bundle"],
     bundle: "@deepseek-ai/dsh-experimental-forge-bundle",
-    suggested: true,
+    recommended: true,
+    exclusiveWith: [
+      "@deepseek-ai/dsh-experimental-worktree",
+      "@deepseek-ai/dsh-experimental-tool-worktree",
+    ],
   },
   {
     id: "OPT-03",

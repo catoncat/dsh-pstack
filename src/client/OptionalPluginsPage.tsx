@@ -113,12 +113,13 @@ export function isNonBundleRow(row: OptionalPluginRow): boolean {
 
 /** Text for one change result. */
 export function changeResultText(
-  application: BundleChange["application"] | "error",
+  application: BundleChange["application"] | "error" | "skipped",
   t: PstackPluginsTranslate,
   reason?: string,
 ): string {
   if (application === "applied") return t("resultApplied");
   if (application === "restart-required") return t("resultRestartRequired");
+  if (application === "skipped") return t("resultSkippedConflict", { bundles: reason ?? "" });
   if (application === "failed" || application === "error")
     return t("resultFailed", { reason: reason ?? application });
   if (application === "overridden") return t("resultOverridden");
@@ -278,9 +279,6 @@ function OptionalPluginCard(props: {
         {definition.recommended === true ? (
           <span style={tagStyle(COLOR_SUCCESS)}>{t("recommendedTag")}</span>
         ) : null}
-        {definition.suggested === true ? (
-          <span style={tagStyle(COLOR_SECONDARY)}>{t("suggestedTag")}</span>
-        ) : null}
         {definition.conflict === true ? (
           <span style={tagStyle(COLOR_ERROR)}>{t("conflictTag")}</span>
         ) : null}
@@ -301,6 +299,16 @@ function OptionalPluginCard(props: {
       {definition.conflict === true ? (
         <p role="alert" style={{ margin: 0, color: COLOR_ERROR, fontSize: 12, lineHeight: 1.5 }}>
           {t("conflictWarning")}
+        </p>
+      ) : null}
+      {definition.profileOnly === true ? (
+        <p style={{ margin: 0, color: COLOR_CAPTION, fontSize: 12, lineHeight: 1.5 }}>
+          {t("profileOnlyGuidance")}
+        </p>
+      ) : null}
+      {definition.profileOnly !== true && row.blockedBy.length > 0 ? (
+        <p role="alert" style={{ margin: 0, color: COLOR_ERROR, fontSize: 12, lineHeight: 1.5 }}>
+          {t("mutexWarning", { bundles: row.blockedBy.join(t("listSeparator")) })}
         </p>
       ) : null}
       {nonBundle ? (
@@ -376,7 +384,17 @@ export function OptionalPluginsSection(
   const toggle = (id: OptionalPluginId, enabled: boolean): void => {
     const row = rows.find((candidate) => candidate.definition.id === id);
     const bundle = row?.definition.bundle;
-    if (bundle === undefined) return;
+    if (row === undefined || bundle === undefined) return;
+    if (enabled && row.blockedBy.length > 0) {
+      setMessages((current) => ({
+        ...current,
+        [id]: {
+          tone: "error",
+          text: t("resultSkippedConflict", { bundles: row.blockedBy.join(t("listSeparator")) }),
+        },
+      }));
+      return;
+    }
     setBusyId(id);
     setMessages((current) => {
       const { [id]: _ignored, ...rest } = current;
@@ -416,10 +434,17 @@ export function OptionalPluginsSection(
     void enableRecommendedPlugins(api, rows).then((result) => {
       const next: Record<string, { tone: "ok" | "error"; text: string }> = {};
       for (const outcome of result.outcomes) {
+        const blocked = outcome.application === "skipped";
         next[outcome.id] = {
           tone:
-            outcome.application === "failed" || outcome.application === "error" ? "error" : "ok",
-          text: changeResultText(outcome.application, t),
+            outcome.application === "failed" || outcome.application === "error" || blocked
+              ? "error"
+              : "ok",
+          text: changeResultText(
+            outcome.application,
+            t,
+            blocked ? (outcome.blockedBy ?? []).join(t("listSeparator")) : undefined,
+          ),
         };
       }
       setMessages(next);

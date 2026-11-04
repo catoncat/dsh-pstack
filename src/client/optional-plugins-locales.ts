@@ -21,7 +21,6 @@ const base = {
   groupVerification: "Verification and evidence",
   groupMultiAgent: "Multi-agent",
   recommendedTag: "Recommended",
-  suggestedTag: "GitHub PR suggestion",
   conflictTag: "Conflict",
   optionalLoading: "Loading optional plugin status…",
   optionalLoadFailed: "Could not read optional plugin status: {message}",
@@ -46,19 +45,23 @@ const base = {
   resultFailed: "Failed: {reason}",
   resultOverridden: "Overridden by a higher layer",
   resultCancelled: "Cancelled",
+  resultSkippedConflict: "Skipped: turn off {bundles} first",
   conflictWarning:
     "Do not enable Agent Teams and pstack_subagent in one profile: Agent Teams disables subagent and subagent_fork and replaces the child controls.",
   nonBundleGuidance:
     "Not a bundle: configure it in the DSH documentation; this page cannot switch it.",
+  profileOnlyGuidance:
+    "No Plugins card: non-Web profiles select this standalone bundle in dsh.profile.bundles. In Web or Desktop, enable Change requests & worktrees instead, and remove this standalone selection first.",
+  mutexWarning: "This conflicts with {bundles}; turn it off first.",
   guidanceTitle: "{count} recommended plugins are still off",
   guidanceOpen: "Review recommended plugins",
   guidanceDismiss: "Dismiss",
   opt01Title: "Worktree isolation",
   opt01Detail:
-    "Creates local worktrees for /arena, /swarm, and /architect; the worktree tool changes the Session directory.",
-  opt02Title: "GitHub PR workspace",
+    "Standalone worktree bundles for non-Web profiles: create_worktree for /arena, /swarm, and /architect. On Web or Desktop, Change requests & worktrees covers this.",
+  opt02Title: "Change requests & worktrees",
   opt02Detail:
-    "PR panels, checks, reviews, ready state, and merge for /babysit, /shipping, and /autopilot-*; needs a logged-in gh.",
+    "One switch for PR panels, checks, reviews, ready state, merge, worktree Sessions, and the model's create_worktree tool for /babysit, /shipping, and /autopilot-*; needs a logged-in gh for GitHub status.",
   opt03Title: "Browser verification",
   opt03Detail:
     "Browser navigation, input, screenshots, and ARIA snapshots; pick one provider and a supported model.",
@@ -102,7 +105,6 @@ export const catalogs = {
     groupVerification: "验证与证据",
     groupMultiAgent: "多代理",
     recommendedTag: "推荐",
-    suggestedTag: "GitHub PR 用户建议",
     conflictTag: "冲突",
     optionalLoading: "正在读取可选插件状态…",
     optionalLoadFailed: "无法读取可选插件状态：{message}",
@@ -127,18 +129,22 @@ export const catalogs = {
     resultFailed: "失败：{reason}",
     resultOverridden: "被更高层覆盖",
     resultCancelled: "已取消",
+    resultSkippedConflict: "已跳过：请先关闭 {bundles}",
     conflictWarning:
       "不要在同一 profile 中同时启用 Agent Teams 与 pstack_subagent：Agent Teams 会禁用 subagent 和 subagent_fork，并替换子代理控制。",
     nonBundleGuidance: "非 bundle 项：请按 DSH 文档配置，本页不提供开关。",
+    profileOnlyGuidance:
+      "无 Plugins 卡片：非 Web profile 在 dsh.profile.bundles 中选择该独立 bundle。Web/Desktop 请改用 Change requests & worktrees，并先移除这里的独立选择。",
+    mutexWarning: "此项与 {bundles} 冲突；请先关闭它。",
     guidanceTitle: "还有 {count} 个推荐插件未开启",
     guidanceOpen: "查看推荐插件",
     guidanceDismiss: "忽略",
     opt01Title: "工作树隔离",
     opt01Detail:
-      "为 /arena、/swarm 和 /architect 创建本地工作树；worktree 工具会切换 Session 目录。",
-    opt02Title: "GitHub PR 工作区",
+      "非 Web profile 使用的独立工作树 bundle：为 /arena、/swarm 和 /architect 创建 create_worktree。Web/Desktop 由 Change requests & worktrees 覆盖。",
+    opt02Title: "Change requests & worktrees",
     opt02Detail:
-      "提供 PR 面板、checks、review、mark ready 与 merge，服务 /babysit、/shipping 和 /autopilot-*；需要已登录的 gh。",
+      "同一开关提供 PR 面板、checks、review、mark ready、merge、工作树 Session 与模型侧 create_worktree 工具，服务 /babysit、/shipping 和 /autopilot-*；GitHub 状态需要已登录的 gh。",
     opt03Title: "浏览器验证",
     opt03Detail: "提供浏览器导航、输入、截图和 ARIA 快照；需选择一个提供方和受支持的模型。",
     opt04Title: "桌面操作",
