@@ -76,6 +76,31 @@ describe("optional plugin catalogue", () => {
     }
   });
 
+  it("keeps the DSH version mapping in the root READMEs only", () => {
+    const manifest = JSON.parse(
+      readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+    ) as {
+      version: string;
+      engines: { dsh: string };
+      peerDependencies: Record<string, string>;
+    };
+    expect(manifest.version).toBe("0.2.1");
+    expect(manifest.engines.dsh).toBe(">=0.2.2-alpha.3");
+    expect(manifest.peerDependencies["@deepseek-ai/cordis"]).toBe("~4.0.6-alpha.2");
+    for (const file of ["../README.md", "../README.zh.md"]) {
+      const text = readFileSync(new URL(file, import.meta.url), "utf8");
+      expect(text).toContain(">=0.2.2-alpha.3");
+      expect(text).toContain("0.2.2-alpha.2");
+      expect(text).toContain("v0.2.1");
+      expect(text).toContain("~4.0.6-alpha.2");
+      expect(text).not.toContain(">=0.2.1-rc.5");
+    }
+    const adapter = readFileSync(docUrl, "utf8");
+    expect(adapter).not.toContain("0.2.2-alpha.2");
+    const coverage = readFileSync(new URL("../pstack/README.md", import.meta.url), "utf8");
+    expect(coverage).not.toContain("0.2.2-alpha.2");
+  });
+
   it("recommends the unified Change requests & worktrees switch instead of the hidden standalone bundle", () => {
     expect(recommendedBundleNames()).toEqual([
       "@deepseek-ai/dsh-experimental-forge-bundle",

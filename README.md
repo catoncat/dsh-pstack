@@ -15,7 +15,7 @@
 <p align="center">
   <a href="https://npmx.dev/package/dsh-pstack"><img src="https://img.shields.io/npm/v/dsh-pstack?style=flat-square&colorA=080f12&colorB=1fa669" alt="npm version" /></a>
   <a href="https://npmx.dev/package/dsh-pstack"><img src="https://img.shields.io/npm/dm/dsh-pstack?style=flat-square&colorA=080f12&colorB=1fa669" alt="npm downloads" /></a>
-  <a href="https://github.com/deepseek-ai/deepseek-harness"><img src="https://img.shields.io/badge/dsh-%3E%3D0.2.1--rc.5-1f6feb?style=flat-square" alt="dsh >=0.2.1-rc.5" /></a>
+  <a href="https://github.com/deepseek-ai/deepseek-harness"><img src="https://img.shields.io/badge/dsh-%3E%3D0.2.2--alpha.3-1f6feb?style=flat-square" alt="dsh >=0.2.2-alpha.3" /></a>
   <a href="https://github.com/cursor/plugins/tree/main/pstack"><img src="https://img.shields.io/badge/pstack-0.15.36-d97706?style=flat-square" alt="pstack 0.15.36" /></a>
 </p>
 
@@ -53,7 +53,7 @@ Most upstream pstack skills declare `disable-model-invocation: true`. `poteto-mo
 See [`pstack/README.md`](./pstack/README.md) for the full capability map, gaps, and acceptance status.
 
 > [!IMPORTANT]
-> Requires DSH `>=0.2.1-rc.5` and Node.js `>=24.21.1`. Newer DSH versions remain supported by default; only confirmed incompatibilities are listed in [Compatibility](#compatibility).
+> Requires DSH `>=0.2.2-alpha.3` and Node.js `>=24.21.1`. For older DSH versions, see the version mapping in [Compatibility](#compatibility).
 
 ## Quick start
 
@@ -164,15 +164,19 @@ Choose one of three browser providers: `@deepseek-ai/dsh-experimental-browser-us
 
 | Item | Version | Notes |
 |---|---|---|
-| DSH | `>=0.2.1-rc.5` | Minimum supported version; verified through the `0.2.2-alpha.3` baseline |
+| DSH | `>=0.2.2-alpha.3` | Minimum supported version; verified through the `0.2.2-alpha.3` baseline |
 | pstack | `0.15.36` | Upstream baseline commit `ae5650f` |
 | Node.js | `>=24.21.1` | Runtime requirement |
-| Cordis | `~4.0.6-alpha.1` | Peer dependency |
+| Cordis | `~4.0.6-alpha.2` | Peer dependency required by DSH `0.2.2-alpha.3` |
 
-> [!NOTE]
-> **DSH version support:** `engines.dsh` accepts every version `>=0.2.1-rc.5`, including newer prereleases. Routine DSH upgrades require no changes here. Add an entry only when a specific version is confirmed unsupported; raise the minimum only when a port fix requires it.
->
-> **Known incompatible DSH versions:** None.
+### DSH version mapping
+
+| DSH version | dsh-pstack version |
+|---|---|
+| `0.2.2-alpha.2` and earlier | `v0.2.1`, the last release for the pre-unified forge/worktree layout |
+| `0.2.2-alpha.3` and later | The next release from this source tree |
+
+Only this table records the version boundary. The shipped adapter document describes the current DSH behavior.
 
 Before upgrading DSH, verify experimental plugin package names, tool names, and configuration in a test profile. Upgrading upstream pstack requires regenerating the tree and rechecking the adaptation table.
 

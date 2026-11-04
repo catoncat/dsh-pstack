@@ -86,7 +86,7 @@
     "vite-plus": "catalog:cli"
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis": "~4.0.6-alpha.1"
+    "@deepseek-ai/cordis": "~4.0.6-alpha.2"
   },
   "icon": "./assets/logo.png",
   "devEngines": {
@@ -102,7 +102,7 @@
     }
   },
   "engines": {
-    "dsh": ">=0.2.1-rc.5",
+    "dsh": ">=0.2.2-alpha.3",
     "node": ">=24.21.1"
   },
   "dsh": {

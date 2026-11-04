@@ -15,7 +15,7 @@
 <p align="center">
   <a href="https://npmx.dev/package/dsh-pstack"><img src="https://img.shields.io/npm/v/dsh-pstack?style=flat-square&colorA=080f12&colorB=1fa669" alt="npm version" /></a>
   <a href="https://npmx.dev/package/dsh-pstack"><img src="https://img.shields.io/npm/dm/dsh-pstack?style=flat-square&colorA=080f12&colorB=1fa669" alt="npm downloads" /></a>
-  <a href="https://github.com/deepseek-ai/deepseek-harness"><img src="https://img.shields.io/badge/dsh-%3E%3D0.2.1--rc.5-1f6feb?style=flat-square" alt="dsh >=0.2.1-rc.5" /></a>
+  <a href="https://github.com/deepseek-ai/deepseek-harness"><img src="https://img.shields.io/badge/dsh-%3E%3D0.2.2--alpha.3-1f6feb?style=flat-square" alt="dsh >=0.2.2-alpha.3" /></a>
   <a href="https://github.com/cursor/plugins/tree/main/pstack"><img src="https://img.shields.io/badge/pstack-0.15.36-d97706?style=flat-square" alt="pstack 0.15.36" /></a>
 </p>
 
@@ -53,7 +53,7 @@
 完整能力映射、缺口和验收状态见 [`pstack/README.md`](./pstack/README.md)。
 
 > [!IMPORTANT]
-> 要求 DSH `>=0.2.1-rc.5`、Node.js `>=24.21.1`。默认支持更高版本的 DSH；只有确认不兼容的版本才会列入 [兼容性](#兼容性)。
+> 要求 DSH `>=0.2.2-alpha.3`、Node.js `>=24.21.1`。旧版 DSH 的版本对照见 [兼容性](#兼容性)。
 
 ## 快速开始
 
@@ -164,15 +164,19 @@ DSH 提供以下可选插件，默认关闭。多数随 DSH 提供，`@deepseek-
 
 | 项目 | 版本 | 说明 |
 |---|---|---|
-| DSH | `>=0.2.1-rc.5` | 最低支持版本；已验证至 `0.2.2-alpha.3` 基线 |
+| DSH | `>=0.2.2-alpha.3` | 最低支持版本；已验证至 `0.2.2-alpha.3` 基线 |
 | pstack | `0.15.36` | 上游基线提交 `ae5650f` |
 | Node.js | `>=24.21.1` | 运行时要求 |
-| Cordis | `~4.0.6-alpha.1` | peer dependency |
+| Cordis | `~4.0.6-alpha.2` | DSH `0.2.2-alpha.3` 要求的 peer dependency |
 
-> [!NOTE]
-> **DSH 版本支持：** `engines.dsh` 接受所有 `>=0.2.1-rc.5` 的版本，包括更高的预发布版。DSH 正常升级时无需修改此处；只有确认某个版本不受支持时才添加条目，只有移植修复需要时才提高最低版本。
->
-> **已知不兼容的 DSH 版本：** 暂无。
+### DSH 版本对照
+
+| DSH 版本 | dsh-pstack 版本 |
+|---|---|
+| `0.2.2-alpha.2` 及更早版本 | `v0.2.1`，旧 forge/worktree 组合的最后一个发布版本 |
+| `0.2.2-alpha.3` 及更新版本 | 当前源码树的下一个发布版本 |
+
+只有此表记录版本分界；随包适配文档只描述当前 DSH 行为。
 
 升级 DSH 前，先在测试 profile 中验证实验性插件的包名、工具名和配置。升级上游 pstack 需要重新生成树并复核适配表。
 

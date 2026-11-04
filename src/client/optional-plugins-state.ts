@@ -4,7 +4,7 @@
  * browser tests cover every decision without mounting the Plugins page.
  *
  * The two wire shapes below mirror the public `BundleInfo` and `ChangeResult`
- * fields this page reads from `pluginManager` (DSH 0.2.2-alpha.2), the same way
+ * fields this page reads from `pluginManager` (DSH 0.2.2-alpha.3), the same way
  * `remote.ts` hand-writes the role Remote contract.
  */
 
