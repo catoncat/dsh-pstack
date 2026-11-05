@@ -39,7 +39,7 @@ pstack skills use Cursor names. In DeepSeek Harness, read this file once per ses
 
 ## setup-pstack
 
-`setup-pstack` writes `$DSH_HOME/pstack-models.mdc`, the role file `pstack_subagent` reads on every delegation. Run `pstack_models` first. It reports the live providers, models, and reasoning-effort tokens instead of inferring routes from Cursor slugs.
+`setup-pstack` writes `$DSH_HOME/pstack-models.mdc`, the role file `pstack_subagent` reads on every delegation. Run `pstack_models` first. It reports the live providers, models, and reasoning-effort tokens instead of inferring routes from Cursor slugs. The pstack tab on the Web Plugins settings page edits the same file; the last write wins, and the next delegation uses it without a restart.
 
 - Detect. Enumerate the routes `pstack_models` returns. Write each real route as `<provider>/<model> [effort]`. The effort must be one that route advertises. If nothing is detectable, ask the user to paste the routes. Never write an unconfirmed one. `inherit-parent` and `auto` are always valid.
 - Defaults. Map each default Cursor slug with the Models rows. Apply the budget to the effort token: `unlimited`, `large`, `medium`, and `small` target `max`, `xhigh`, `high`, and `medium`. If a model has no such token, choose the highest advertised effort at or below the target and say so. If every advertised effort is above the target, ask the user to choose a route. If it advertises no effort at all, keep the route without a bracketed effort and say so.

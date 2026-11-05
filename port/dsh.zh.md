@@ -39,7 +39,7 @@ pstack 技能沿用 Cursor 名称。在 DeepSeek Harness 中，每个会话先�
 
 ## setup-pstack
 
-`setup-pstack` 写 `$DSH_HOME/pstack-models.mdc`，`pstack_subagent` 每次委派都会读它。先运行 `pstack_models`，它报告本部署真实 provider、model 和 reasoning-effort token，不根据 Cursor slug 猜测路由。
+`setup-pstack` 写 `$DSH_HOME/pstack-models.mdc`，`pstack_subagent` 每次委派都会读它。先运行 `pstack_models`，它报告本部署真实 provider、model 和 reasoning-effort token，不根据 Cursor slug 猜测路由。Web 插件设置页的 pstack 标签编辑同一文件；后写覆盖先写，下一次委派直接生效，无需重启。
 
 - 探测。枚举 `pstack_models` 返回的路由，写成 `<provider>/<model> [effort]`。effort 必须是该路由声明的 token。探测不到时让用户粘贴路由，不要写未确认的路由。`inherit-parent` 与 `auto` 始终有效。
 - 默认值。按模型表把默认 Cursor slug 换成 `pstack_models` 返回的真实路由。按预算调整 effort：`unlimited`、`large`、`medium`、`small` 对应 `max`、`xhigh`、`high`、`medium`。模型没有该 token 时选不高于目标的最高可用 effort 并说明；所有 effort 都高于目标时让用户选择；没有 effort 时保留不带方括号的路由并说明。
