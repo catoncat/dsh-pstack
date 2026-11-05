@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // 上游 pstack 能力扫描。逐项列出 Cursor 能力在源树中的出现位置，并校验 port/audit.md 的引用是否仍然成立。
 
+import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -138,6 +139,49 @@ for (const path of scanned) {
 }
 
 const argv = process.argv.slice(2);
+
+function digestFor(key) {
+  const lines = rows
+    .filter((row) => row.split("\t")[0] === key)
+    .map((row) => {
+      const [, rel, , text] = row.split("\t");
+      return `${rel}\t${text}`;
+    })
+    .sort((a, b) => a.localeCompare(b));
+  return `sha256:${createHash("sha256").update(lines.join("\n")).digest("hex")}`;
+}
+
+if (argv.includes("--check-lock")) {
+  const lockPath = join(ROOT, "port/audit.lock.json");
+  if (!existsSync(lockPath)) {
+    console.error("usage: node port/scan.mjs --check-lock（缺少 port/audit.lock.json）");
+    process.exit(2);
+  }
+  const lock = JSON.parse(readFileSync(lockPath, "utf8"));
+  const problems = [];
+  const lockKeys = new Set(Object.values(lock.items).map((item) => item.key));
+  const currentKeys = new Set(TERMS.map(([key]) => key));
+  for (const [id, item] of Object.entries(lock.items)) {
+    if (!currentKeys.has(item.key)) {
+      problems.push(`MISSING ${id} ${item.key}`);
+      continue;
+    }
+    if (item.sourceDigest !== digestFor(item.key)) problems.push(`CHANGED ${id} ${item.key}`);
+  }
+  for (const key of currentKeys) {
+    if (!lockKeys.has(key)) problems.push(`NEW ${key}`);
+  }
+  if (problems.length) {
+    for (const problem of problems) console.log(problem);
+    console.log(
+      `${problems.length} 项需要重新审核，其余 ${Object.keys(lock.items).length} 项沿用。`,
+    );
+    process.exit(1);
+  }
+  console.log(`LOCK OK ${Object.keys(lock.items).length} 项，全部沿用。`);
+  process.exit(0);
+}
+
 if (argv.includes("--check")) {
   const doc = argv[argv.indexOf("--check") + 1];
   if (!doc) {

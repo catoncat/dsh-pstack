@@ -5,7 +5,7 @@
 ## 固定边界
 
 - 根 `pstack/` 只放生成的插件树。生成器可以整体替换该目录，不允许把手工文件放在其中。
-- 根 `port/` 保存生成器、扫描器、审核记录、本文件、`dsh.md` 和仅供审核的 `dsh.zh.md`。英文适配文档进入生成树，中文版本不被生成树引用。
+- 根 `port/` 保存生成器、扫描器、审核记录、`audit.lock.json`、本文件、`dsh.md` 和仅供审核的 `dsh.zh.md`。英文适配文档进入生成树，中文版本不被生成树引用。
 - 插件源码、测试、扩展登记和回归记录都在生成树之外。生成器不会修改这些内容。
 - `upstream/cursor-plugins` 提供 pstack 源文件。DSH 的基线来自目标运行时及其随附文档和 API。
 - DSH 适配以 Web profile 的标准模式为基线。headless 只用于 playground 自动化。
@@ -50,6 +50,20 @@
 在文档开头记录本轮 DSH 版本、pstack 提交和审核日期。每轮都按所选基线取证，不沿用未经复核的满足性判断。
 
 审核记录写入 `port/audit.md`。文档开头的审核清单是填写入口，编号链接到详细小节。每项能力同时给出推荐方案，推荐可以整批采纳，`处置` 仍由用户确认，只接受 `直接映射`、`官方插件`、`插件实现`、`舍弃` 四种结论。没有处置结论的能力不进入实现。
+
+## 审核继承
+
+`port/audit.md` 是可重建的审核视图，`port/audit.lock.json` 是当前基线的决策记录。lock 只保存当前基线存在的能力，不保存历史项。
+
+- `baseline.id` 由 DSH 版本和 pstack 提交组成，`baseline.previous` 指向上一个基线，`baseline.transition` 取 `initial`、`normal` 或 `breaking`。
+- `transition` 写入后不变。普通更新生成新 lock 时用 `normal`，破坏性更新用 `breaking` 并整份替换旧 lock。
+- `origin: accepted` 表示当时直接接受推荐，破坏性更新后按新基线重新计算推荐。
+- `origin: override` 表示人工调整过推荐或处置，破坏性更新后标为待审核，不继承旧选择。
+- 普通更新按能力 key 和 `sourceDigest` 比较，源未变直接沿用，源变化标为待复核，新增标为待审核。
+- 上游能力在普通更新中消失时，当前审核轮标为已移除；确认后从活动 lock 删除，历史只留在 Git 提交里。
+- 破坏性更新删除旧 lock，按新基线新建；旧的已移除项和 override 不迁移。
+
+`node port/scan.mjs --check-lock` 比较当前扫描结果和 lock。只有变化或新增的项需要重新审核。
 
 `node port/scan.mjs` 扫描上游源树，把每项能力在 Markdown、脚本和配置中的出现位置写入 `.audit/scan/capability-scan.tsv`。`node port/scan.mjs --check port/audit.md` 校验审核记录里的引用行号仍然成立。上游变更后先重跑扫描，再重做审核。
 
