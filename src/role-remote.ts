@@ -125,23 +125,38 @@ const saveMethod = directMethod<Record<string, unknown>, unknown>({
     (remote as unknown as PstackRolesNamespace).pstackRoles.save(input, signal),
 });
 
+const saveBudgetMethod = directMethod<Record<string, unknown>, unknown>({
+  method: "saveBudget",
+  parameters: [parameter("request", "PstackSaveBudgetRequest")],
+  result: codec("PstackSaveBudgetResult"),
+  invoke: (remote, input) =>
+    (remote as unknown as PstackRolesNamespace).pstackRoles.saveBudget(input),
+});
+
 /** Typed Client face installed by `$mount()`. */
 export interface PstackRolesNamespace {
   readonly pstackRoles: {
     status(): Promise<RemoteResult<unknown>>;
     catalogue(signal?: AbortSignal): Promise<RemoteResult<unknown>>;
     save(request: unknown, signal?: AbortSignal): Promise<RemoteResult<unknown>>;
+    saveBudget(request: unknown): Promise<RemoteResult<unknown>>;
   };
 }
 
 /** Mountable contribution shared by Host registration and Client `$mount`. */
 export const pstackRolesRemote: TypertRemoteInfo = {
   package: REMOTE_PACKAGE,
-  descriptors: [statusMethod, catalogueMethod, saveMethod] as InvocationDescriptor[],
+  descriptors: [
+    statusMethod,
+    catalogueMethod,
+    saveMethod,
+    saveBudgetMethod,
+  ] as InvocationDescriptor[],
   methods: {
     [`${ROLES_SERVICE}/status`]: statusMethod,
     [`${ROLES_SERVICE}/catalogue`]: catalogueMethod,
     [`${ROLES_SERVICE}/save`]: saveMethod,
+    [`${ROLES_SERVICE}/saveBudget`]: saveBudgetMethod,
   } as TypertRemoteInfo["methods"],
 };
 

@@ -29,7 +29,7 @@ function generatedExports(exports: Record<string, unknown>): Record<string, unkn
       };
     }
   }
-  exports["./client"] = { import: "./dist/client.mjs" };
+  exports["./client"] = "./dist/client.mjs";
   exports["./roles"] = {
     types: "./dist/role-catalog.d.mts",
     import: "./dist/role-catalog.mjs",

@@ -45,3 +45,11 @@ export interface SaveRoleRequest {
 export type SaveRoleResult =
   | { readonly ok: true; readonly snapshot: RoleFileSnapshot }
   | { readonly ok: false; readonly reason: string };
+
+export interface SaveBudgetRequest {
+  readonly budget: string;
+}
+
+export type SaveBudgetResult =
+  | { readonly ok: true; readonly snapshot: RoleFileSnapshot }
+  | { readonly ok: false; readonly reason: string };

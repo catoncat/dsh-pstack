@@ -5,8 +5,10 @@ import { afterEach, describe, expect, it } from "vite-plus/test";
 
 import { parseRoleConfiguration } from "../src/role-config.ts";
 import {
+  saveBudgetConfiguration,
   saveRoleConfiguration,
   snapshotFromConfiguration,
+  updateBudgetText,
   updateRoleText,
   validateSaveRequest,
 } from "../src/role-editor.ts";
@@ -84,6 +86,22 @@ describe("role editor", () => {
         catalogue,
       ),
     ).toMatchObject({ ok: false });
+  });
+
+  it("replaces or removes the budget comment without touching role lines", () => {
+    const text = "# header\n# budget: large (xhigh)\nbug-fix: cpa/model-a [low]\n";
+    expect(updateBudgetText(text, "small (medium)")).toBe(
+      "# header\n# budget: small (medium)\nbug-fix: cpa/model-a [low]\n",
+    );
+    expect(updateBudgetText(text, "")).toBe("# header\nbug-fix: cpa/model-a [low]\n");
+  });
+
+  it("saves the budget line", () => {
+    const home = tempHome("# header\nbug-fix: cpa/model-a [low]\n");
+    const path = join(home, "pstack-models.mdc");
+    const result = saveBudgetConfiguration(path, { budget: "large (xhigh)" });
+    expect(result.ok).toBe(true);
+    expect(readFileSync(path, "utf8")).toContain("# budget: large (xhigh)");
   });
 
   it("saves one role and leaves the rest of the file intact", async () => {

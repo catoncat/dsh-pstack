@@ -23,6 +23,8 @@ import type {
   RoleFileSnapshot,
   RoleView,
   RouteView,
+  SaveBudgetRequest,
+  SaveBudgetResult,
   SaveRoleRequest,
   SaveRoleResult,
 } from "./role-wire.ts";
@@ -190,6 +192,20 @@ export function updateRoleText(text: string, key: string, value: string): string
   return `${lines.join("\n")}\n`;
 }
 
+/** Replace, append, or remove the budget comment line, leaving every other line unchanged. */
+export function updateBudgetText(text: string, budget: string): string {
+  const normalized = budget.trim();
+  const lines = text === "" ? [] : text.replace(/\n$/, "").split(/\r?\n/);
+  const index = lines.findIndex((line) => /^#\s*budget\s*:/i.test(line.trim()));
+  if (index >= 0) {
+    if (normalized === "") lines.splice(index, 1);
+    else lines[index] = `# budget: ${normalized}`;
+  } else if (normalized !== "") {
+    lines.unshift(`# budget: ${normalized}`);
+  }
+  return lines.length === 0 ? "" : `${lines.join("\n")}\n`;
+}
+
 /** Save one role and return the reloaded snapshot. */
 export async function saveRoleConfiguration(
   path: string,
@@ -215,6 +231,32 @@ export async function saveRoleConfiguration(
     }
   }
   const next = updateRoleText(text, validation.key, renderRoleValue(validation.routes));
+  try {
+    writeAtomically(path, next);
+  } catch (error) {
+    return { ok: false, reason: `the role file could not be written: ${describeError(error)}` };
+  }
+  return { ok: true, snapshot: snapshotFromConfiguration(parseRoleConfiguration(next, path)) };
+}
+
+/** Save the budget line and return the reloaded snapshot. */
+export function saveBudgetConfiguration(
+  path: string,
+  request: SaveBudgetRequest,
+): SaveBudgetResult {
+  const current = readRoleConfiguration(path);
+  if (current.status === "unreadable") {
+    return { ok: false, reason: `the role file is unreadable: ${current.reason}` };
+  }
+  let text = "";
+  if (current.status === "loaded") {
+    try {
+      text = readFileSync(path, "utf8");
+    } catch (error) {
+      return { ok: false, reason: `the role file could not be read: ${describeError(error)}` };
+    }
+  }
+  const next = updateBudgetText(text, request.budget);
   try {
     writeAtomically(path, next);
   } catch (error) {
