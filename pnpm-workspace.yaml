@@ -6,7 +6,6 @@ trustPolicy: no-downgrade
 shellEmulator: true
 
 packages:
-  - pstack
   - skills
   - playground
 
@@ -26,32 +25,8 @@ catalogs:
     vite-plus: 1.4.0
   types:
     "@types/node": ^24.1.0
-    "@deepseek-ai/cordis": "~4.0.6-alpha.2"
-    "@deepseek-ai/dsh-agent": "0.2.2-alpha.3"
-    "@deepseek-ai/dsh-api-gateway": "0.2.2-alpha.3"
-    "@deepseek-ai/dsh-client-locale": "0.2.2-alpha.3"
-    "@deepseek-ai/dsh-client-ui-plugin-manager": "0.2.2-alpha.3"
-    "@deepseek-ai/dsh-client-ui-renderer": "0.2.2-alpha.3"
-    "@deepseek-ai/dsh-client-ui-slots": "0.2.2-alpha.3"
-    "@deepseek-ai/dsh-jobs": "0.2.2-alpha.3"
-    "@deepseek-ai/dsh-llm": "0.2.2-alpha.3"
-    "@deepseek-ai/dsh-session": "0.2.2-alpha.3"
-    "@deepseek-ai/dsh-skill": "0.2.2-alpha.3"
-    "@deepseek-ai/dsh-subagent": "0.2.2-alpha.3"
-    "@deepseek-ai/dsh-system-prompt": "0.2.2-alpha.3"
-    "@deepseek-ai/dsh-tools": "0.2.2-alpha.3"
-    "@deepseek-ai/dsh-typert-protocol": "0.2.2-alpha.3"
-    "@deepseek-ai/dsh-typert-registry": "0.2.2-alpha.3"
-    "@deepseek-ai/dsh-working-directory": "0.2.2-alpha.3"
-  ui:
-    react: ^18.3.1
-    react-dom: ^18.3.1
-    "@types/react": ~18.3.1
-    "@types/react-dom": ~18.3.0
   testing:
     js-yaml: ^5.5.0
-  inlined:
-    commander: 14.0.0
 
 overrides:
   vite@*: "catalog:cli"
@@ -61,37 +36,3 @@ peerDependencyRules:
     - vite
   allowedVersions:
     vite: "*"
-minimumReleaseAgeExclude:
-  - "@deepseek-ai/cordis@4.0.6-alpha.2"
-  - "@deepseek-ai/cosmokit@1.8.7-alpha.2"
-  - "@deepseek-ai/dsh-agent@0.2.2-alpha.3"
-  - "@deepseek-ai/dsh-attachment@0.2.2-alpha.3"
-  - "@deepseek-ai/dsh-brand@0.2.2-alpha.3"
-  - "@deepseek-ai/dsh-chunked-list@0.2.2-alpha.3"
-  - "@deepseek-ai/dsh-fs@0.2.2-alpha.3"
-  - "@deepseek-ai/dsh-jobs@0.2.2-alpha.3"
-  - "@deepseek-ai/dsh-llm@0.2.2-alpha.3"
-  - "@deepseek-ai/dsh-sandbox@0.2.2-alpha.3"
-  - "@deepseek-ai/dsh-scope@0.2.2-alpha.3"
-  - "@deepseek-ai/dsh-session-projection@0.2.2-alpha.3"
-  - "@deepseek-ai/dsh-session@0.2.2-alpha.3"
-  - "@deepseek-ai/dsh-skill@0.2.2-alpha.3"
-  - "@deepseek-ai/dsh-subagent@0.2.2-alpha.3"
-  - "@deepseek-ai/dsh-system-prompt@0.2.2-alpha.3"
-  - "@deepseek-ai/dsh-timeout@0.2.2-alpha.3"
-  - "@deepseek-ai/dsh-tools@0.2.2-alpha.3"
-  - "@deepseek-ai/dsh-typert-protocol@0.2.2-alpha.3"
-  - "@deepseek-ai/dsh-user-approval@0.2.2-alpha.3"
-  - "@deepseek-ai/dsh-util-crypto@0.2.2-alpha.3"
-  - "@deepseek-ai/dsh-util-time@0.2.2-alpha.3"
-  - "@deepseek-ai/dsh-util-values@0.2.2-alpha.3"
-  - "@deepseek-ai/dsh-working-directory@0.2.2-alpha.3"
-  - "@deepseek-ai/schemastery@3.18.6-alpha.2"
-  - "@deepseek-ai/dsh-api-gateway@0.2.2-alpha.3"
-  - "@deepseek-ai/dsh-client-locale@0.2.2-alpha.3"
-  - "@deepseek-ai/dsh-client-ui-plugin-manager@0.2.2-alpha.3"
-  - "@deepseek-ai/dsh-client-ui-renderer@0.2.2-alpha.3"
-  - "@deepseek-ai/dsh-client-ui-slots@0.2.2-alpha.3"
-  - "@deepseek-ai/dsh-deque@0.2.2-alpha.3"
-  - "@deepseek-ai/dsh-fs-patch@0.2.2-alpha.3"
-  - "@deepseek-ai/dsh-typert-registry@0.2.2-alpha.3"

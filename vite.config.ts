@@ -1,87 +1,28 @@
 import { defineConfig } from "vite-plus";
 
-/**
- * Every `@deepseek-ai/*` module is provided by the running DSH, so no bundle may carry
- * its own copy. Matched by namespace instead of enumerating packages: a newly added DSH
- * dependency stays external without touching this file. The published manifest declares
- * them under `devDependencies` only, so a profile install resolves them through the host
- * installation while a linked checkout resolves the local development copies.
- */
-const dshProvided = /^@deepseek-ai\//;
-
 export default defineConfig({
-  pack: [
-    {
-      entry: ["./src/*.ts"],
-      dts: {
-        generator: "tsgo",
-      },
-      deps: {
-        neverBundle: [dshProvided],
-        dts: {
-          neverBundle: [dshProvided],
-        },
-      },
-      copy: [
-        "pstack/dist/pstack",
-        { from: "skills/authored", to: "dist/skills" },
-        { from: "skills/.agents/skills", to: "dist/skills", rename: "vendored" },
-      ],
-      exports: {
-        customExports: {
-          "./client": "./dist/client.mjs",
-          "./locale/*.json": "./locale/*.json",
-        },
-      },
+  pack: {
+    entry: ["./src/*.ts", "./src/client/*.ts"],
+    dts: {
+      generator: "tsgo",
     },
-    {
-      name: "dsh-pstack/client",
-      cwd: ".",
-      entry: ["./src/client/index.ts"],
-      outDir: "dist",
-      format: "cjs",
-      platform: "browser",
-      dts: false,
-      clean: false,
-      sourcemap: true,
-      exports: false,
-      deps: {
-        // Browser modules the host module loader supplies. `dshProvided` covers the whole
-        // `@deepseek-ai/*` namespace, including the packages named by `dsh.client.inject`.
-        neverBundle: [
-          "react",
-          "react/jsx-runtime",
-          "react-dom",
-          "react-dom/client",
-          "zod",
-          "@tanstack/react-virtual",
-          dshProvided,
-        ],
-      },
-      outputOptions: {
-        entryFileNames: "client.mjs",
-        banner: 'window.__ModuleLoader__.load({ id: "dsh-pstack", factory: (require) => {',
-        footer: "return module.exports; } });",
-        intro: "var module = { exports: {} }; var exports = module.exports;",
-      },
+    deps: {
+      neverBundle: [/^@deepseek-ai\//],
     },
-  ],
+    copy: [
+      "pstack",
+      { from: "skills/authored", to: "dist/skills" },
+      { from: "skills/.agents/skills", to: "dist/skills", rename: "vendored" },
+    ],
+  },
   test: {
     include: ["tests/**/*.test.{ts,tsx}"],
+    passWithNoTests: true,
   },
   run: {
     tasks: {
-      test: {
-        command: "vp test",
-      },
-      dev: {
-        command: "vp pack --watch",
-        dependsOn: ["@internal/pstack#build"],
-        cache: false,
-      },
       build: {
         command: "vp pack",
-        dependsOn: ["@internal/pstack#build"],
       },
       typecheck: {
         command: "tsc --noEmit -p tsconfig.json",
@@ -123,10 +64,10 @@ export default defineConfig({
       typeAware: true,
       typeCheck: true,
     },
-    ignorePatterns: ["upstream", "**/*.md", "pstack/pstack", "pstack/runtime"],
+    ignorePatterns: ["upstream", "**/*.md", "pstack"],
   },
   fmt: {
-    ignorePatterns: ["upstream", "**/*.md", "pstack/pstack", "pstack/runtime"],
+    ignorePatterns: ["upstream", "**/*.md", "pstack"],
   },
   staged: {
     "*": "vp check --fix",

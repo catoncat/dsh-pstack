@@ -2,18 +2,17 @@
  * 能力自动化 runner（入口 playground/cases-run.mjs 经 Vite runnerImport 加载本文件）。
  *
  * 读取 playground/config.json（每个 provider 一层：apiKey + 模型 -> 思考等级），
- * 逐条能力用例：先校验路由属于本机部署，再按用例自动写 playground/.dsh/pstack-models.mdc，
- * 用 `dsh headless --json` 跑一次真实会话，解析事件流里的 tool_call / tool_result 做
- * 「能力级」断言（child 数量、route 互异、脚本输出等），最后输出 pass/fail 报告。
+ * 逐条能力用例：先校验允许路由属于本机部署，再用 `dsh headless --json` 跑一次真实会话。
+ * 用例读取事件流里的 tool_call / tool_result，按当时需要观察的行为写断言，
+ * 最后输出 pass/fail 报告。
  *
- * 它只断言工具契约的可观察事实，不写死插件文案或 UI 内容；真实会话证据仍在
- * playground/.dsh/sessions 下（可用 zstdcat 复核）。
+ * 用例断言目标行为。真实会话证据在 playground/.dsh/sessions 下，可用 zstdcat 复核。
  *
  * 用法（经 playground/cases-run.mjs 用 Vite runnerImport 运行，或 vp run cases）：
  *   node playground/cases-run.mjs --list          # 列出用例与就绪状态（不跑模型）
  *   node playground/cases-run.mjs --check         # 校验配置+部署+路由，不跑模型
  *   node playground/cases-run.mjs                 # 跑全部可跑用例
- *   node playground/cases-run.mjs --case CASE-PANEL-01
+ *   node playground/cases-run.mjs --case CASE-ID
  *
  * 前置：playground 至少启动过一次（playground/.dsh/cordis.patch.yml 存在），
  *       并复制 config.example.json 为 config.json，填入 provider 的 apiKey 与模型。
@@ -26,7 +25,6 @@ import {
   lstatSync,
   mkdirSync,
   readFileSync,
-  rmSync,
   symlinkSync,
   writeFileSync,
 } from "node:fs";
@@ -39,7 +37,6 @@ const yaml = require("js-yaml");
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = dirname(HERE);
 const DSH_HOME = join(HERE, ".dsh");
-const ROLE_FILE = join(DSH_HOME, "pstack-models.mdc");
 const HOME_PATCH = join(DSH_HOME, "cordis.patch.yml");
 const PROFILE_NAME = "pstack-headless";
 const PROFILE_DIR = join(DSH_HOME, "profiles", PROFILE_NAME);
@@ -347,10 +344,10 @@ const CASES = Object.values(caseModules)
   .filter((entry) => entry && typeof entry.build === "function" && typeof entry.id === "string")
   .sort((left, right) => left.id.localeCompare(right.id));
 
-if (CASES.length === 0) {
+if (CASES.length === 0 && !opts.help) {
   console.error(
-    "[run-cases] 未加载到任何用例：import.meta.glob 需要经 Vite 模块运行器展开。\n" +
-      "请用 `vp run cases`（内部走 playground/cases-run.mjs 的 runnerImport）。",
+    "[run-cases] 未加载到任何用例。按 playground/cases/_template.mjs 添加 *.case.mjs，" +
+      "再用 `vp run cases` 运行。",
   );
   process.exit(2);
 }
@@ -358,18 +355,6 @@ if (CASES.length === 0) {
 // ---------------------------------------------------------------------------
 // 执行
 // ---------------------------------------------------------------------------
-
-function withRoleFile(lines, run) {
-  const previous = existsSync(ROLE_FILE) ? readFileSync(ROLE_FILE, "utf8") : null;
-  try {
-    const body = lines.length > 0 ? `${lines.join("\n")}\n` : "# case probe: no role lines\n";
-    writeFileSync(ROLE_FILE, body);
-    return run();
-  } finally {
-    if (previous !== null) writeFileSync(ROLE_FILE, previous);
-    else rmSync(ROLE_FILE, { force: true });
-  }
-}
 
 function runHeadless(prompt) {
   const result = spawnSync(DSH_BIN, ["--profile", PROFILE_NAME, "--json", prompt], {
@@ -447,20 +432,16 @@ function main() {
       continue;
     }
     process.stdout.write(`- ${c.id} 跑… `);
-    const outcome = withRoleFile(built.roleLines, () => {
-      const run = runHeadless(built.prompt);
-      const events = parseEvents(run.stdout);
-      const calls = collectToolCalls(events);
-      const final = events.find((e) => e.type === "final");
-      const verify = built.verify({ calls, events, final, run });
-      const completed = run.status === 0 && final?.reason?.kind === "completed";
-      if (!completed && verify.ok) {
-        return bad(
-          `会话未正常完成（exit=${run.status}, reason=${final?.reason?.kind ?? "无 final"}）`,
-        );
-      }
-      return verify;
-    });
+    const run = runHeadless(built.prompt);
+    const events = parseEvents(run.stdout);
+    const calls = collectToolCalls(events);
+    const final = events.find((event) => event.type === "final");
+    const outcome = built.verify({ calls, events, final, run });
+    const completed = run.status === 0 && final?.reason?.kind === "completed";
+    if (!completed && outcome.ok) {
+      outcome.ok = false;
+      outcome.detail = `会话未正常完成（exit=${run.status}, reason=${final?.reason?.kind ?? "无 final"}）`;
+    }
     const status = outcome.ok ? "PASS" : "FAIL";
     results.push({ id: c.id, title: c.title, status, detail: outcome.detail });
     console.log(`${status}  ${outcome.detail}`);
