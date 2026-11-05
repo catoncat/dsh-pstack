@@ -70,6 +70,14 @@ export default defineConfig({
       typecheck: {
         command: "tsc --noEmit -p tsconfig.json",
       },
+      generate: {
+        command: "node port/generate.mjs",
+        cache: false,
+      },
+      "generate:check": {
+        command: "node port/generate.mjs --check",
+        cache: false,
+      },
       playground: {
         command: "node playground/start.mjs",
         cache: false,
