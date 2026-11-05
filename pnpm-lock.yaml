@@ -335,14 +335,9 @@ importers:
 
   skills:
     devDependencies:
-      '@internal/cursor-team-kit-skills':
-        specifier: workspace:*
-        version: link:../vendor/cursor-team-kit-skills
       skills:
         specifier: catalog:agentic
         version: 1.7.4
-
-  vendor/cursor-team-kit-skills: {}
 
 packages:
 

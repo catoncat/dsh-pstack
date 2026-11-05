@@ -8,7 +8,6 @@ shellEmulator: true
 packages:
   - skills
   - playground
-  - vendor/cursor-team-kit-skills
 
 allowBuilds:
   agent-browser: true

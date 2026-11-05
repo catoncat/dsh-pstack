@@ -6,7 +6,6 @@
     "prepare": "skills experimental_sync -y -a universal --copy"
   },
   "devDependencies": {
-    "@internal/cursor-team-kit-skills": "workspace:*",
     "skills": "catalog:agentic"
   },
   "skills": [
@@ -19,12 +18,13 @@
       "ref": "59db609eb1e18aaf59b63284d0e52255aff0c63c"
     },
     {
-      "source": "npm:@internal/cursor-team-kit-skills",
+      "source": "cursor/plugins/cursor-team-kit/skills",
       "skills": [
         "deslop",
         "control-ui",
         "control-cli"
-      ]
+      ],
+      "ref": "ae5650febf4320793844c12c4adaa937f417f8da"
     }
   ]
 }

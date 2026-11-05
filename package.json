@@ -28,6 +28,7 @@
     "dist",
     "assets",
     "cordis.patch.yml",
+    "licenses",
     "locale",
     "README.md",
     "README.zh.md"
@@ -35,20 +36,50 @@
   "type": "module",
   "types": "./dist/index.d.mts",
   "exports": {
-    ".": "./dist/index.mjs",
-    "./models": "./dist/models.mjs",
-    "./skill": "./dist/skill.mjs",
-    "./roles": "./dist/role-catalog.mjs",
-    "./role-service": "./dist/roles.mjs",
-    "./subagent": "./dist/subagent.mjs",
-    "./readonly": "./dist/readonly.mjs",
-    "./render": "./dist/render.mjs",
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./models": {
+      "types": "./dist/models.d.mts",
+      "import": "./dist/models.mjs"
+    },
+    "./readonly": {
+      "types": "./dist/readonly.d.mts",
+      "import": "./dist/readonly.mjs"
+    },
+    "./render": {
+      "types": "./dist/render.d.mts",
+      "import": "./dist/render.mjs"
+    },
+    "./role-catalog": {
+      "types": "./dist/role-catalog.d.mts",
+      "import": "./dist/role-catalog.mjs"
+    },
+    "./role-service": {
+      "types": "./dist/role-service.d.mts",
+      "import": "./dist/role-service.mjs"
+    },
+    "./skill": {
+      "types": "./dist/skill.d.mts",
+      "import": "./dist/skill.mjs"
+    },
+    "./subagent": {
+      "types": "./dist/subagent.d.mts",
+      "import": "./dist/subagent.mjs"
+    },
     "./package.json": "./package.json",
-    "./client": "./dist/client.mjs",
+    "./client": {
+      "import": "./dist/client.mjs"
+    },
+    "./roles": {
+      "types": "./dist/role-catalog.d.mts",
+      "import": "./dist/role-catalog.mjs"
+    },
     "./locale/*.json": "./locale/*.json"
   },
   "scripts": {
-    "prepare": "vp config && skills experimental_sync -y -a universal",
+    "prepare": "vp config && skills experimental_sync -y -a universal --copy",
     "prerelease": "vp run build && vp run typecheck && vp test",
     "release": "bumpp",
     "prepublishOnly": "vp run build"

@@ -29,7 +29,7 @@ The [playground guide](./playground/README.md) covers browser and headless verif
 
 ## Package skills
 
-The `skills/` workspace includes independently maintained skills. `skills/authored/` contains local skills. `skills/.agents/skills/` contains vendored skills loaded from the `skills` declarations in [`skills/package.json`](./skills/package.json), with sources and hashes in [`skills/skills-lock.json`](./skills/skills-lock.json). The cursor-team-kit skill files come from the local `@internal/cursor-team-kit-skills` package in [`vendor/cursor-team-kit-skills`](./vendor/cursor-team-kit-skills).
+The `skills/` workspace includes independently maintained skills. `skills/authored/` contains local skills. `skills/.agents/skills/` contains vendored skills loaded from the `skills` declarations in [`skills/package.json`](./skills/package.json), with sources and hashes in [`skills/skills-lock.json`](./skills/skills-lock.json). The cursor-team-kit skills come from `cursor/plugins` at the pinned ref; the retained upstream MIT license and source note are in [`licenses/cursor-team-kit`](./licenses/cursor-team-kit).
 
 | Skill | Source | Purpose |
 |---|---|---|

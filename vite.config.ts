@@ -7,10 +7,41 @@ const dshProvided = /^@deepseek-ai\//;
 /** The generated tree is present for release builds and absent before step 5 of a fresh port. */
 const generatedTree = existsSync("pstack") ? ["pstack"] : [];
 
+const publicEntries = [
+  "./src/index.ts",
+  "./src/models.ts",
+  "./src/skill.ts",
+  "./src/role-catalog.ts",
+  "./src/role-service.ts",
+  "./src/subagent.ts",
+  "./src/readonly.ts",
+  "./src/render.ts",
+];
+
+/** Add declaration conditions and the two non-pack subpaths to tsdown's generated exports. */
+function generatedExports(exports: Record<string, unknown>): Record<string, unknown> {
+  for (const [key, value] of Object.entries(exports)) {
+    if (key === "./package.json" || key === "./locale/*.json") continue;
+    if (typeof value === "string" && value.endsWith(".mjs")) {
+      exports[key] = {
+        types: value.replace(/\.mjs$/, ".d.mts"),
+        import: value,
+      };
+    }
+  }
+  exports["./client"] = { import: "./dist/client.mjs" };
+  exports["./roles"] = {
+    types: "./dist/role-catalog.d.mts",
+    import: "./dist/role-catalog.mjs",
+  };
+  exports["./locale/*.json"] = "./locale/*.json";
+  return exports;
+}
+
 export default defineConfig({
   pack: [
     {
-      entry: ["./src/*.ts"],
+      entry: publicEntries,
       dts: {
         generator: "tsgo",
       },
@@ -20,20 +51,13 @@ export default defineConfig({
           neverBundle: [dshProvided],
         },
       },
+      exports: {
+        customExports: generatedExports,
+      },
       copy: [
         ...generatedTree,
         { from: "skills/.agents/skills", to: "dist/skills", rename: "vendored" },
         { from: "skills/authored", to: "dist/skills", rename: "authored" },
-        {
-          from: "vendor/cursor-team-kit-skills/LICENSE",
-          to: "dist/skills",
-          rename: "LICENSE-cursor-team-kit",
-        },
-        {
-          from: "vendor/cursor-team-kit-skills/SOURCES.md",
-          to: "dist/skills",
-          rename: "SOURCES-cursor-team-kit.md",
-        },
       ],
     },
     {
