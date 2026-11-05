@@ -4,7 +4,7 @@
 
 ## 处置状态
 
-本轮已在对话中确认 65 项，剩余 2 项待确认：CAP-048、CAP-051。待确认项保持 `待审核`，不进入实现。
+本轮已确认处置 67 项。
 
 - `直接映射`：DSH 标准模式已经提供。
 - `官方插件`：启用 DSH 随附的官方插件即可。
@@ -18,8 +18,8 @@
 | 指标 | 数值 |
 |:--|--:|
 | 能力总数 | 67 |
-| 已确认处置 | 65 |
-| 待确认处置 | 2 |
+| 已确认处置 | 67 |
+| 待确认处置 | 0 |
 | 技能 | 58 |
 | 脚本入口 | 7 |
 | 引用校验 | 230 |
@@ -62,10 +62,7 @@
 
 ## 待确认
 
-剩余 2 项在审核清单里保持 `待审核`。确认后回填处置，再进入实现。
-
-- CAP-048：cursor-team-kit 插件
-- CAP-051：代码去噪技能
+当前无待确认项。
 
 <a id="审核清单"></a>
 
@@ -105,7 +102,7 @@
 | [CAP-026](#cap-026) | 继承父模型 | 🟢 直接映射 | 无 | 直接映射 | |
 | [CAP-027](#cap-027) | 自动模型 | 🟢 直接映射 | 无 | 直接映射 | |
 | [CAP-028](#cap-028) | 角色模型规则文件 | 🟠 插件实现 | 需要一个跨会话可读的角色配置文件 | 插件实现 | |
-| [CAP-029](#cap-029) | 角色模型配置流程 | 🟠 插件实现 | 需要插件提供配置入口与角色映射，对应本地扩展中的插件配置入口与角色模型配置 | 插件实现 | |
+| [CAP-029](#cap-029) | 角色模型配置流程 | 🟠 插件实现 | 需要插件提供完整的模型列表工具、配置入口与角色映射，对应本地扩展中的插件配置入口与角色模型配置 | 插件实现 | |
 | [CAP-030](#cap-030) | Cursor 技能目录 | 🟢 直接映射 | 路径名不同，内容格式兼容 | 直接映射 | |
 | [CAP-031](#cap-031) | Cursor 规则文件 | 🟢 直接映射 | 需要把规则内容放进 `AGENTS.md` | 直接映射 | |
 | [CAP-032](#cap-032) | Cursor 插件目录 | 🟢 直接映射 | 打包格式不同，需要 DSH 插件包 | 直接映射 | |
@@ -124,10 +121,10 @@
 | [CAP-045](#cap-045) | MCP 连接 | 🟢 直接映射 | 需要用户提供服务器配置与凭证 | 直接映射 | |
 | [CAP-046](#cap-046) | Webhook 接收 | 🔴 舍弃 | 随 Automations 舍弃 | 舍弃 | |
 | [CAP-047](#cap-047) | Tailscale 暴露页面 | 🔴 舍弃 | 需要外部安装与用户授权 | 舍弃 | |
-| [CAP-048](#cap-048) | cursor-team-kit 插件 | 🟠 插件实现 | 三份技能是 cursor-team-kit 的 MIT 指令文件，仓库默认没有 | 待审核 | |
+| [CAP-048](#cap-048) | cursor-team-kit 插件 | 🟠 插件实现 | 三份技能是 cursor-team-kit 的 MIT 指令文件，仓库默认没有 | 插件实现 | |
 | [CAP-049](#cap-049) | UI 控制技能 | 🟠 插件实现 | 需要外部 `agent-browser` 技能 | 插件实现 | |
 | [CAP-050](#cap-050) | CLI 控制技能 | 🔵 官方插件 | 没有现成的 control-cli 技能，DSH 标准模式也没有 TUI 驱动技能 | 官方插件 | |
-| [CAP-051](#cap-051) | 代码去噪技能 | 🟠 插件实现 | `deslop` 属于 `cursor-team-kit`，pstack 仓库和 DSH 标准模式都没有这份技能 | 待审核 | |
+| [CAP-051](#cap-051) | 代码去噪技能 | 🟠 插件实现 | `deslop` 属于 `cursor-team-kit`，pstack 仓库和 DSH 标准模式都没有这份技能 | 插件实现 | |
 | [CAP-052](#cap-052) | Graphite CLI | 🔴 舍弃 | 上游明确非必需 | 舍弃 | |
 | [CAP-053](#cap-053) | Origin forge CLI | 🔴 舍弃 | 本机没有 `origin` | 舍弃 | |
 | [CAP-054](#cap-054) | Bun 运行时 | 🟢 直接映射 | 插件必须声明 Bun 依赖 | 直接映射 | |
@@ -612,7 +609,7 @@
 | 🕳️ 剩余缺口 | 本部署的路由不是 Claude 命名，slug 必须映射到实际路由。没有映射时不能照抄。 |
 | ⚔️ 冲突 | DSH 的模型选择设置会记录会话路由，插件角色配置（见 CAP-028）又会覆盖每个角色的路由。两个来源同时生效时以插件角色配置为准，但用户在界面改的模型可能被静默覆盖。 |
 | 🚧 最终遗留 | Cursor slug 与实际路由之间需要维护映射表，DSH 升级或供应商变化后要重新映射。 |
-| 💡 推荐 | 🟢 直接映射。调用时用 `list_subagent_models` 返回的实际路由填 `provider`、`model`、`reasoning_effort`。Cursor slug 到实际路由的映射写进角色配置，见 CAP-028。 |
+| 💡 推荐 | 🟢 直接映射。调用时用插件 `pstack_models` 返回的实际路由填 `provider`、`model`、`reasoning_effort`。`list_subagent_models` 只在 Web 与 Desktop 标准预设提供，不能作为唯一来源。Cursor slug 到实际路由的映射写进角色配置，见 CAP-028。 |
 | ✅ 处置 | 直接映射 |
 
 [返回审核清单](#审核清单)
@@ -630,7 +627,7 @@
 | 🕳️ 剩余缺口 | 本部署不提供 Grok 命名路由时必须改用实际路由。 |
 | ⚔️ 冲突 | 同 CAP-023，插件角色配置与 DSH 会话模型设置是两个来源。 |
 | 🚧 最终遗留 | 本部署不提供 Grok 命名路由时必须改用实际路由，映射表同样需要维护。 |
-| 💡 推荐 | 🟢 直接映射。Grok slug 按 `list_subagent_models` 的实际路由映射。本部署没有对应路由时选最接近的可用路由，并在角色配置记录替代关系。 |
+| 💡 推荐 | 🟢 直接映射。Grok slug 按插件 `pstack_models` 的实际路由映射。本部署没有对应路由时选最接近的可用路由，并在角色配置记录替代关系。 |
 | ✅ 处置 | 直接映射 |
 
 [返回审核清单](#审核清单)
@@ -648,7 +645,7 @@
 | 🕳️ 剩余缺口 | 按实际路由映射。 |
 | ⚔️ 冲突 | 同 CAP-023，插件角色配置与 DSH 会话模型设置是两个来源。 |
 | 🚧 最终遗留 | GPT 命名路由不存在时只能按实际路由映射。 |
-| 💡 推荐 | 🟢 直接映射。GPT slug 按 `list_subagent_models` 的实际路由映射，不按名字猜测。 |
+| 💡 推荐 | 🟢 直接映射。GPT slug 按插件 `pstack_models` 的实际路由映射，不按名字猜测。 |
 | ✅ 处置 | 直接映射 |
 
 [返回审核清单](#审核清单)
@@ -716,13 +713,13 @@
 |:--|:--|
 | 📍 使用位置 | `skills/poteto-help/SKILL.md:27`、`skills/poteto-mode/SKILL.md:96`、`skills/setup-pstack/SKILL.md:2`、`docs/guide/01-setup.md:15` |
 | 🖱️ Cursor 行为 | `setup-pstack` 检测可用模型，按预算把每个角色映射到模型，写入 always-applied 规则。 |
-| 🧰 标准模式 | `list_subagent_models` 在开启 Session 模型选择后可枚举允许路由与 effort；没有策略时只列父路由。没有配置界面与预算映射。 |
+| 🧰 标准模式 | `list_subagent_models` 只在 `modelDiscovery: true` 的 `dsh-tool-subagent` 实例上注册，Web 标准预设已开启；关闭时工具不存在。没有记录模型选择策略时只列父路由。没有配置界面与预算映射。 |
 | 🧩 官方插件 | 无。 |
-| 🕳️ 剩余缺口 | 需要插件提供配置入口与角色映射，对应本地扩展中的插件配置入口与角色模型配置。 |
-| 🛠️ 插件要求与验收 | 插件提供角色配置页或配置命令，列出角色、当前路由、可选路由与预算，写回角色配置文件。验收：在 Web UI 修改一个角色并保存，重启后仍生效。 |
+| 🕳️ 剩余缺口 | 需要插件提供完整的模型列表工具、配置入口与角色映射，对应本地扩展中的插件配置入口与角色模型配置。 |
+| 🛠️ 插件要求与验收 | 插件提供 `pstack_models` 工具，枚举 LLM 服务注册的全部 provider、model 与 effort，不依赖 `list_subagent_models` 或 `modelDiscovery`。插件提供角色配置页或配置命令，列出角色、当前路由、可选路由与预算，写回角色配置文件。验收：在 `modelDiscovery` 关闭的 profile 中 `pstack_models` 仍返回完整路由；Web UI 修改一个角色并保存，重启后仍生效。 |
 | ⚔️ 冲突 | 无。`setup-pstack` 和设置页都写同一份角色配置文件，以最后写入的值为准。 |
 | 🚧 最终遗留 | 同一角色的路由没有版本历史，后写覆盖先写。 |
-| 💡 推荐 | 🟠 插件实现。插件提供角色配置页或配置命令，列出角色、当前路由、可选路由与预算，写回角色配置文件。 |
+| 💡 推荐 | 🟠 插件实现。插件提供 `pstack_models` 工具，枚举 LLM 服务注册的全部 provider、model 与 effort，不依赖 `list_subagent_models` 或 `modelDiscovery`。 |
 | ✅ 处置 | 插件实现 |
 
 [返回审核清单](#审核清单)
@@ -1080,11 +1077,11 @@
 | 🧰 标准模式 | DSH 标准模式没有这个插件，也没有等价的三份技能。`dsh-skill-filesystem` 支持 `bundledSkillDir` 和 `customSkillDirs`，可以加载插件随包或项目目录里的技能。 |
 | 🧩 官方插件 | 无。 |
 | 🕳️ 剩余缺口 | 三份技能是 cursor-team-kit 的 MIT 指令文件，仓库默认没有。`control-ui` 和 `control-cli` 依赖宿主机的浏览器与 PTY 工具，`deslop` 只依赖 `git`。 |
-| 🛠️ 插件要求与验收 | 插件以 vendored 形式随包提供 `cursor-team-kit` 的 `deslop`、`control-ui`、`control-cli` 三个技能目录，放在包内 `skills/` 下，保留上游 LICENSE 与来源版本。插件 composition 用 `dsh-skill-filesystem` 的 `bundledSkillDir` 指向该目录，不写插件工具代码。`control-ui` 优先复用仓库已有 Playwright/Cypress/Storybook 或已安装的 `agent-browser`；`control-cli` 使用 `bash` 的 tmux 或 PTY。验收：三份技能可被发现，缺少外部工具时报告并询问安装。 |
+| 🛠️ 插件要求与验收 | 插件以 vendored 形式随包提供 `cursor-team-kit` 的 `deslop`、`control-ui`、`control-cli` 三个技能目录，放在包内 `skills/` 下，保留上游 LICENSE 与来源版本。插件 composition 用 `dsh-skill-filesystem` 的 `bundledSkillDir` 指向该目录，不写插件工具代码。依赖处理以上游 `SKILL.md` 为准；上游没有写依赖缺失处理时，插件不额外处理，只在 `dsh.md` 与 README 记录前提。验收：三份技能可被发现，正文与上游一致。 |
 | ⚔️ 冲突 | 如果用户另外安装 `cursor-team-kit` 或同名技能，会出现两份实现。`bundledSkillDir` 的 rank 600 低于项目根与用户根，高优先级版本覆盖随包版本。约定随包版本作默认，用户覆盖时以高优先级版本为准。 |
-| 🚧 最终遗留 | `control-ui` 和 `control-cli` 只是指令，实际能力取决于宿主机是否安装浏览器与 PTY 工具；没有工具时只能跳过对应验证 lane。 |
-| 💡 推荐 | 🟠 插件实现。插件以 vendored 形式随包提供三份 MIT 技能目录，保留 LICENSE 与来源版本，通过 `dsh-skill-filesystem` 的 `bundledSkillDir` 暴露，不写插件工具代码。缺少浏览器或 PTY 工具时报告并询问安装。 |
-| ✅ 处置 | 待审核 |
+| 🚧 最终遗留 | `control-ui` 和 `control-cli` 只是指令，实际能力取决于宿主机是否安装浏览器与 PTY 工具。上游没有规定缺失时的处理，插件不额外补偿，只在 `dsh.md` 与 README 记录前提。 |
+| 💡 推荐 | 🟠 插件实现。插件以 vendored 形式随包提供三份 MIT 技能目录，保留 LICENSE 与来源版本，通过 `dsh-skill-filesystem` 的 `bundledSkillDir` 暴露，不写插件工具代码。依赖处理按上游，不在插件层额外处理。 |
+| ✅ 处置 | 插件实现 |
 
 [返回审核清单](#审核清单)
 
@@ -1140,7 +1137,7 @@
 | ⚔️ 冲突 | `deslop` 清代码，`unslop` 清 prose，名字接近但对象不同。不要把 `unslop` 当 `deslop` 用。 |
 | 🚧 最终遗留 | `deslop` 只是指令技能，不能强制每个提交都运行，需要在 playbook 中显式点名。 |
 | 💡 推荐 | 🟠 插件实现。插件以 vendored 形式随包提供 `deslop` 技能目录，保留上游 LICENSE 与来源版本，不写插件工具代码。 |
-| ✅ 处置 | 待审核 |
+| ✅ 处置 | 插件实现 |
 
 [返回审核清单](#审核清单)
 
