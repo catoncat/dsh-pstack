@@ -4,7 +4,7 @@
 
 ## 处置状态
 
-本轮已在对话中确认 62 项，剩余 5 项待确认：CAP-048、CAP-051、CAP-065、CAP-066、CAP-067。待确认项保持 `待审核`，不进入实现。
+本轮已在对话中确认 65 项，剩余 2 项待确认：CAP-048、CAP-051。待确认项保持 `待审核`，不进入实现。
 
 - `直接映射`：DSH 标准模式已经提供。
 - `官方插件`：启用 DSH 随附的官方插件即可。
@@ -18,8 +18,8 @@
 | 指标 | 数值 |
 |:--|--:|
 | 能力总数 | 67 |
-| 已确认处置 | 62 |
-| 待确认处置 | 5 |
+| 已确认处置 | 65 |
+| 待确认处置 | 2 |
 | 技能 | 58 |
 | 脚本入口 | 7 |
 | 引用校验 | 230 |
@@ -62,13 +62,10 @@
 
 ## 待确认
 
-剩余 5 项在审核清单里保持 `待审核`。确认后回填处置，再进入实现。
+剩余 2 项在审核清单里保持 `待审核`。确认后回填处置，再进入实现。
 
 - CAP-048：cursor-team-kit 插件
 - CAP-051：代码去噪技能
-- CAP-065：Pele 图表渲染
-- CAP-066：视频渲染
-- CAP-067：性能测量 工具链
 
 <a id="审核清单"></a>
 
@@ -127,7 +124,7 @@
 | [CAP-045](#cap-045) | MCP 连接 | 🟢 直接映射 | 需要用户提供服务器配置与凭证 | 直接映射 | |
 | [CAP-046](#cap-046) | Webhook 接收 | 🔴 舍弃 | 随 Automations 舍弃 | 舍弃 | |
 | [CAP-047](#cap-047) | Tailscale 暴露页面 | 🔴 舍弃 | 需要外部安装与用户授权 | 舍弃 | |
-| [CAP-048](#cap-048) | cursor-team-kit 插件 | 🟠 插件实现 | 三份技能是 cursor-team-kit 的指令文件，仓库默认没有 | 待审核 | |
+| [CAP-048](#cap-048) | cursor-team-kit 插件 | 🟠 插件实现 | 三份技能是 cursor-team-kit 的 MIT 指令文件，仓库默认没有 | 待审核 | |
 | [CAP-049](#cap-049) | UI 控制技能 | 🟠 插件实现 | 需要外部 `agent-browser` 技能 | 插件实现 | |
 | [CAP-050](#cap-050) | CLI 控制技能 | 🔵 官方插件 | 没有现成的 control-cli 技能，DSH 标准模式也没有 TUI 驱动技能 | 官方插件 | |
 | [CAP-051](#cap-051) | 代码去噪技能 | 🟠 插件实现 | `deslop` 属于 `cursor-team-kit`，pstack 仓库和 DSH 标准模式都没有这份技能 | 待审核 | |
@@ -144,9 +141,9 @@
 | [CAP-062](#cap-062) | 决策日志脚本 | 🟢 直接映射 | 无 | 直接映射 | |
 | [CAP-063](#cap-063) | statechart 脚本树 | 🟢 直接映射 | 依赖 Bun 或 Node 的 TypeScript 执行、mise、TLC、Java 与网络 | 直接映射 | |
 | [CAP-064](#cap-064) | 依赖安装器 | 🟢 直接映射 | 离线环境不可用 | 直接映射 | |
-| [CAP-065](#cap-065) | Pele 图表渲染 | 🟠 插件实现 | 宿主默认没有安装 `pele@1.9.0` | 待审核 | |
-| [CAP-066](#cap-066) | 视频渲染 | 🟠 插件实现 | 本机没有 ffmpeg、convert 或 magick | 待审核 | |
-| [CAP-067](#cap-067) | 性能测量 工具链 | 🟢 直接映射 | 本机缺少 `py-spy` | 待审核 | |
+| [CAP-065](#cap-065) | Pele 图表渲染 | 🟠 插件实现 | 宿主默认没有安装 `pele@1.9.0` | 插件实现 | |
+| [CAP-066](#cap-066) | 视频渲染 | 🟠 插件实现 | 本机没有 ffmpeg、convert 或 magick | 插件实现 | |
+| [CAP-067](#cap-067) | 性能测量 工具链 | 🟢 直接映射 | 本机缺少 `py-spy` | 直接映射 | |
 
 ## 本轮基线
 
@@ -155,7 +152,7 @@
 - pstack：`upstream/cursor-plugins` 提交 `ae5650febf4320793844c12c4adaa937f417f8da`，插件版本 0.15.36。
 - 审核日期：2026-11-05。
 - 工具清单取自运行时 `Tool.listTools`。官方插件状态取自当前 Web profile 的 `dsh.profile.bundles`。
-- `list_subagent_models` 由 `@deepseek-ai/dsh-tool-subagent` 的 `modelDiscovery` 注册。默认关闭，Web 与 Desktop 标准预设开启，headless、SDK、ACP 不包含。
+- `list_subagent_models` 由 `@deepseek-ai/dsh-tool-subagent` 的 `modelDiscovery` 注册。`modelDiscovery` 为 false 时工具根本不注册，不是隐藏或空列表。默认 false，Web 与 Desktop 标准预设设为 true，headless、SDK、ACP 不包含。
 - `subagent` 的 `agent_preset` 由 `allowedAgentPresets` 开启。预设是 Cordis 插件组合，子代理启动时按所选预设挂载，系统提示与工具随组合加载。
 - 扫描器：`node port/scan.mjs` 输出 `.audit/scan/capability-scan.tsv`，覆盖 136 个 Markdown 文件与 50 个脚本或配置文件。`node port/scan.mjs --check port/audit.md` 校验本文件引用的行号。
 
@@ -610,7 +607,7 @@
 |:--|:--|
 | 📍 使用位置 | `skills/architect/SKILL.md:31`、`skills/arena/SKILL.md:17`、`skills/how/SKILL.md:11`、`skills/poteto-mode/SKILL.md:96` |
 | 🖱️ Cursor 行为 | 技能默认使用 `claude-opus-5-5-xhigh` 等 Cursor 模型 slug，并带 `-fast` 后缀与推理档位。 |
-| 🧰 标准模式 | `list_subagent_models` 在 Web 标准模式可用。没有记录模型选择策略时只返回父会话当前路由；开启子代理模型选择后按 Session 记录的路由列表返回。`subagent` 接受 `provider`、`model`、`reasoning_effort`。 |
+| 🧰 标准模式 | `list_subagent_models` 只在 `modelDiscovery: true` 的 `dsh-tool-subagent` 实例上注册，Web 标准预设已开启；关闭时工具不存在。没有记录模型选择策略时只返回父会话当前路由；开启子代理模型选择后按 Session 记录的路由列表返回。`subagent` 接受 `provider`、`model`、`reasoning_effort`。 |
 | 🧩 官方插件 | 无。 |
 | 🕳️ 剩余缺口 | 本部署的路由不是 Claude 命名，slug 必须映射到实际路由。没有映射时不能照抄。 |
 | ⚔️ 冲突 | DSH 的模型选择设置会记录会话路由，插件角色配置（见 CAP-028）又会覆盖每个角色的路由。两个来源同时生效时以插件角色配置为准，但用户在界面改的模型可能被静默覆盖。 |
@@ -1079,14 +1076,14 @@
 | 维度 | 内容 |
 |:--|:--|
 | 📍 使用位置 | `skills/poteto-help/SKILL.md:116`、`skills/poteto-mode/playbooks/autopilot-full.md:10`、`docs/guide/05-build-and-clean.md:59`、`README.md:263` |
-| 🖱️ Cursor 行为 | `cursor-team-kit` 1.2.0 在兄弟目录，带 19 个技能。pstack 明确引用其中三个，`deslop`、`control-ui`、`control-cli`。poteto-help 说它们不在 pstack 里。 |
-| 🧰 标准模式 | DSH 标准模式没有这个插件，也没有等价的三份技能。 |
+| 🖱️ Cursor 行为 | `cursor-team-kit` 1.2.0 在兄弟目录，带 19 个技能，许可证是 MIT。pstack 明确引用其中三个，`deslop`、`control-ui`、`control-cli`。poteto-help 说它们不在 pstack 里。 |
+| 🧰 标准模式 | DSH 标准模式没有这个插件，也没有等价的三份技能。`dsh-skill-filesystem` 支持 `bundledSkillDir` 和 `customSkillDirs`，可以加载插件随包或项目目录里的技能。 |
 | 🧩 官方插件 | 无。 |
-| 🕳️ 剩余缺口 | 三份技能是 cursor-team-kit 的指令文件，仓库默认没有。`control-ui` 和 `control-cli` 依赖宿主机的浏览器与 PTY 工具，`deslop` 只依赖 `git`。 |
-| 🛠️ 插件要求与验收 | 插件随包提供 `deslop`、`control-ui`、`control-cli` 三个技能文件，不写插件工具代码。`control-ui` 优先复用仓库已有 Playwright/Cypress/Storybook 或已安装的 `agent-browser`；`control-cli` 使用 `bash` 的 tmux 或 PTY。验收：三份技能可被发现，缺少外部工具时报告并询问安装。 |
-| ⚔️ 冲突 | 如果用户另外安装 `cursor-team-kit` 的同名技能，会出现两份实现。约定只保留本插件随包的版本，外部同名技能优先时禁用本插件版本。 |
+| 🕳️ 剩余缺口 | 三份技能是 cursor-team-kit 的 MIT 指令文件，仓库默认没有。`control-ui` 和 `control-cli` 依赖宿主机的浏览器与 PTY 工具，`deslop` 只依赖 `git`。 |
+| 🛠️ 插件要求与验收 | 插件以 vendored 形式随包提供 `cursor-team-kit` 的 `deslop`、`control-ui`、`control-cli` 三个技能目录，放在包内 `skills/` 下，保留上游 LICENSE 与来源版本。插件 composition 用 `dsh-skill-filesystem` 的 `bundledSkillDir` 指向该目录，不写插件工具代码。`control-ui` 优先复用仓库已有 Playwright/Cypress/Storybook 或已安装的 `agent-browser`；`control-cli` 使用 `bash` 的 tmux 或 PTY。验收：三份技能可被发现，缺少外部工具时报告并询问安装。 |
+| ⚔️ 冲突 | 如果用户另外安装 `cursor-team-kit` 或同名技能，会出现两份实现。`bundledSkillDir` 的 rank 600 低于项目根与用户根，高优先级版本覆盖随包版本。约定随包版本作默认，用户覆盖时以高优先级版本为准。 |
 | 🚧 最终遗留 | `control-ui` 和 `control-cli` 只是指令，实际能力取决于宿主机是否安装浏览器与 PTY 工具；没有工具时只能跳过对应验证 lane。 |
-| 💡 推荐 | 🟠 插件实现。插件随包提供 `deslop`、`control-ui`、`control-cli` 三个技能文件，不写插件工具代码。`deslop` 无外部依赖；`control-ui` 与 `control-cli` 缺少运行工具时报告并询问安装。 |
+| 💡 推荐 | 🟠 插件实现。插件以 vendored 形式随包提供三份 MIT 技能目录，保留 LICENSE 与来源版本，通过 `dsh-skill-filesystem` 的 `bundledSkillDir` 暴露，不写插件工具代码。缺少浏览器或 PTY 工具时报告并询问安装。 |
 | ✅ 处置 | 待审核 |
 
 [返回审核清单](#审核清单)
@@ -1135,14 +1132,14 @@
 | 维度 | 内容 |
 |:--|:--|
 | 📍 使用位置 | `skills/poteto-help/SKILL.md:116`、`skills/poteto-mode/playbooks/autopilot-full.md:10`、`docs/guide/05-build-and-clean.md:59`、`README.md:263` |
-| 🖱️ Cursor 行为 | 提交前运行 `cursor-team-kit` 的 `deslop`，删除叙述性注释、无依据的守卫、死兼容路径和无关改动。 |
-| 🧰 标准模式 | DSH 标准模式没有代码清理技能。pstack 自带的 `unslop` 只处理 prose。 |
+| 🖱️ Cursor 行为 | 提交前运行 `cursor-team-kit` 的 `deslop`，删除叙述性注释、无依据的守卫、死兼容路径和无关改动。该技能使用 MIT 许可证。 |
+| 🧰 标准模式 | DSH 标准模式没有代码清理技能。`deslop` 是 cursor-team-kit 的 MIT 单独技能，可作为 vendored 技能加载。pstack 自带的 `unslop` 只处理 prose。 |
 | 🧩 官方插件 | 无。 |
 | 🕳️ 剩余缺口 | `deslop` 属于 `cursor-team-kit`，pstack 仓库和 DSH 标准模式都没有这份技能。 |
-| 🛠️ 插件要求与验收 | 插件随包提供 `deslop` 技能文件，按上游 `SKILL.md` 原样复制到 `skills/deslop/`，不写成插件工具代码。验收：对一个真实 diff 运行一次，报告删除的注释与守卫。 |
+| 🛠️ 插件要求与验收 | 插件以 vendored 形式随包提供 `deslop` 技能目录，按上游 `SKILL.md` 原样复制到包内 `skills/deslop/`，保留 LICENSE 与来源版本，不写插件工具代码。验收：对一个真实 diff 运行一次，报告删除的注释与守卫。 |
 | ⚔️ 冲突 | `deslop` 清代码，`unslop` 清 prose，名字接近但对象不同。不要把 `unslop` 当 `deslop` 用。 |
 | 🚧 最终遗留 | `deslop` 只是指令技能，不能强制每个提交都运行，需要在 playbook 中显式点名。 |
-| 💡 推荐 | 🟠 插件实现。插件随包提供 `deslop` 技能文件，按上游 `SKILL.md` 原样复制，不并入插件工具代码。 |
+| 💡 推荐 | 🟠 插件实现。插件以 vendored 形式随包提供 `deslop` 技能目录，保留上游 LICENSE 与来源版本，不写插件工具代码。 |
 | ✅ 处置 | 待审核 |
 
 [返回审核清单](#审核清单)
@@ -1402,7 +1399,7 @@
 | ⚔️ 冲突 | Pele 与 Mermaid 是两条渲染路径。Pele 需要安装依赖，Mermaid 文本始终可用。约定优先 Pele，缺依赖时回退 Mermaid。 |
 | 🚧 最终遗留 | Pele 安装需要网络与用户同意，离线时只能给 Mermaid 文本。 |
 | 💡 推荐 | 🟠 插件实现。缺少 `pele` 时说明并询问是否安装到缓存目录；安装后支持 SVG 渲染，不安装则返回 Mermaid 文本。 |
-| ✅ 处置 | 待审核 |
+| ✅ 处置 | 插件实现 |
 
 [返回审核清单](#审核清单)
 
@@ -1421,7 +1418,7 @@
 | ⚔️ 冲突 | 视频渲染依赖外部渲染器。`ketchup` 与 `ketchup-video` 共用截图素材，渲染失败时只回复文字摘要。 |
 | 🚧 最终遗留 | 不安装 ffmpeg 与 ImageMagick 时视频能力不可用。 |
 | 💡 推荐 | 🟠 插件实现。缺少 ffmpeg 或 ImageMagick 时说明并询问是否安装；安装后支持视频渲染，不安装则只返回文字摘要。 |
-| ✅ 处置 | 待审核 |
+| ✅ 处置 | 插件实现 |
 
 [返回审核清单](#审核清单)
 
@@ -1439,7 +1436,7 @@
 | ⚔️ 冲突 | 无。 |
 | 🚧 最终遗留 | 缺少 `py-spy`，Python 性能剖析只能换工具或跳过。 |
 | 💡 推荐 | 🟢 直接映射。性能测量全部走 `bash`。缺少 `py-spy` 时先说明并询问是否安装；不安装时改用 `perf`、`strace` 或 `node --cpu-prof`，都没有就在报告中写明限制，不猜数字。 |
-| ✅ 处置 | 待审核 |
+| ✅ 处置 | 直接映射 |
 
 [返回审核清单](#审核清单)
 
