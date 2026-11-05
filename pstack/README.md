@@ -602,7 +602,7 @@ B 的关键行为对照清单（`pstack/runtime/skills/statechart/scripts/statec
 
 ## 8. 分阶段状态
 
-下表逐项记录实现、审查、文档与最终覆盖状态。状态沿用上一轮完成结果；本轮 `implement port` 复核 8 个插件内实现项，没有改变实现与审查状态。`审查` 列采用 2026-11-05 的 `review port` 全量复核结果：五条门禁退出 0、3 个 `active` EXT 验收测试全通过、无 `active` FIX、135 项均无开放 finding，EXT-003、EXT-004、EXT-005 保持 `active`；证据见 [docs/port-review.md](../docs/port-review.md)。上一轮 `doc` 复核了主适配文档与双语根 README，并同步互斥关系与可选插件限制。`实现` 列的 `已实现` 表示该能力按第 2～4 节分类的映射、标准模式、可选插件或插件内路径已落地并核验；`不适用（平台排除）` 表示按上游排除基线不实现。`文档` 列定位实际适配产物；`最终覆盖` 区分完整、已覆盖（有适配语义差异）、条件覆盖、部分覆盖和平台排除，括号内列出外部条件、剩余差异或对应缺口。
+下表逐项记录实现、审查、文档与最终覆盖状态。状态沿用上一轮完成结果；本轮 `implement port` 复核 8 个插件内实现项，没有改变实现与审查状态。`审查` 列采用 2026-11-05 的 `review port` 全量复核结果：五条门禁退出 0、3 个 `active` EXT 验收测试全通过、无 `active` FIX、135 项均无开放 finding，EXT-003、EXT-004、EXT-005 保持 `active`；证据见 [docs/port-review.md](../docs/port-review.md)。本轮 `doc` 的文档产物与最终覆盖核对见 8.5 与 9.4。`实现` 列的 `已实现` 表示该能力按第 2～4 节分类的映射、标准模式、可选插件或插件内路径已落地并核验；`不适用（平台排除）` 表示按上游排除基线不实现。`文档` 列定位实际适配产物；`最终覆盖` 区分完整、已覆盖（有适配语义差异）、条件覆盖、部分覆盖和平台排除，括号内列出外部条件、剩余差异或对应缺口。
 
 ### 8.1 模板、脚本与路径
 
@@ -761,9 +761,9 @@ B 的关键行为对照清单（`pstack/runtime/skills/statechart/scripts/statec
 
 ### 8.5 文档产物与覆盖口径
 
-文档状态：上一轮 `doc` 阶段于 2026-11-04 完成。主适配文档是 [pstack/harness/docs/harness/dsh.md](harness/docs/harness/dsh.md)，生成副本是 [pstack/pstack/docs/harness/dsh.md](pstack/docs/harness/dsh.md)。它保留上游模板的六个章节，并增加 [Local replacements](harness/docs/harness/dsh.md#local-replacements) 与 [Optional plugins](harness/docs/harness/dsh.md#optional-plugins) 两个固定追加小节，分别覆盖运行期替代与 OPT-02 至 OPT-09 的包名、启用能力、未启用 fallback 和支持边界。双语根 README 记录相同的互斥关系和可选插件限制。技能、playbook、reference 与 principle 正文保持上游原文，由生成器在需要 Cursor 名称映射的技能中加入适配文档指针。
+文档状态：本轮 `doc` 阶段于 2026-11-05 完成。主适配文档是 [pstack/harness/docs/harness/dsh.md](harness/docs/harness/dsh.md)，生成副本是 [pstack/pstack/docs/harness/dsh.md](pstack/docs/harness/dsh.md)。它保留上游模板的六个章节，并增加 [Local replacements](harness/docs/harness/dsh.md#local-replacements) 与 [Optional plugins](harness/docs/harness/dsh.md#optional-plugins) 两个固定追加小节，分别覆盖运行期替代与 OPT-02 至 OPT-09 的包名、启用能力、未启用 fallback 和支持边界。双语根 README 记录相同的互斥关系和可选插件限制。本轮对账确认两处产物与根 README 的动态内容无差异，未改写适配文档或根 README。技能、playbook、reference 与 principle 正文保持上游原文，由生成器在需要 Cursor 名称映射的技能中加入适配文档指针。
 
-最终覆盖以固定上游提交和上一轮测试为限。完整覆盖不排除技能本身声明的通用外部前提；条件覆盖必须启用括号中的插件或安装外部工具；部分覆盖仍有明确语义差异；平台排除按上游规则输出跳过行并继续，不计为通过。五项未决证据保留在 9.3，不因文档完成而核销。
+最终覆盖以固定上游提交和本轮测试为限。完整覆盖不排除技能本身声明的通用外部前提；条件覆盖必须启用括号中的插件或安装外部工具；部分覆盖仍有明确语义差异；平台排除按上游规则输出跳过行并继续，不计为通过。五项未决证据保留在 9.3，不因文档完成而核销。
 
 ## 9. 文档追踪与未决证据
 
@@ -870,4 +870,4 @@ B 的关键行为对照清单（`pstack/runtime/skills/statechart/scripts/statec
 | 待选择实现项 | 0 |
 | 未决证据 | 5（`U-01` 至 `U-05`） |
 
-最终覆盖结论：135 项中 79 项完整、6 项已覆盖但有适配语义差异、35 项需要所列插件或外部条件、2 项仍有部分覆盖缺口、13 项按上游平台排除。`SKL-25` 的技能 `paths` 不自动挂载，`SKL-32` 的 mp4 与逐帧核验需要外部工具；13 个平台排除项不计为通过。3 个本地扩展均为 `active`，不混入这 135 项。8 个插件内实现项均已实现并通过 2026-11-05 的 `review port` 全量复核；本轮复核无开放 finding，验证记录与未覆盖证据见 [docs/port-review.md](../docs/port-review.md)。
+最终覆盖结论：135 项中 79 项完整、6 项已覆盖但有适配语义差异、35 项需要所列插件或外部条件、2 项仍有部分覆盖缺口、13 项按上游平台排除。`SKL-25` 的技能 `paths` 不自动挂载，`SKL-32` 的 mp4 与逐帧核验需要外部工具；13 个平台排除项不计为通过。3 个本地扩展均为 `active`，不混入这 135 项。8 个插件内实现项均已实现并通过 2026-11-05 的 `review port` 全量复核；本轮 `doc` 复核适配文档与双语根 README 无差异，复核无开放 finding，验证记录与未覆盖证据见 [docs/port-review.md](../docs/port-review.md)。
