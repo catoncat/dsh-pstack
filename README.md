@@ -29,7 +29,7 @@ The [playground guide](./playground/README.md) covers browser and headless verif
 
 ## Package skills
 
-The `skills/` workspace includes independently maintained skills. `skills/authored/` contains local skills. `skills/.agents/skills/` contains vendored skills loaded from the `skills` declarations in [`skills/package.json`](./skills/package.json), with sources and hashes in [`skills/skills-lock.json`](./skills/skills-lock.json). The cursor-team-kit skills come from `cursor/plugins` at the pinned ref; the retained upstream MIT license and source note are in [`licenses/cursor-team-kit`](./licenses/cursor-team-kit).
+The `skills/` workspace includes independently maintained skills. `skills/authored/` contains local skills. `skills/.agents/skills/` contains vendored skills loaded from the `skills` declarations in [`skills/package.json`](./skills/package.json), with sources and hashes in [`skills/skills-lock.json`](./skills/skills-lock.json).
 
 | Skill | Source | Purpose |
 |---|---|---|
@@ -60,4 +60,4 @@ This project is a community port, not an official Cursor or DeepSeek release.
 
 ## License
 
-Original dsh-pstack code and documentation use the [MIT license](./LICENSE) © [leiwang](https://github.com/l246804). Bundled upstream projects and vendored skills retain their licenses and notices.
+Original dsh-pstack code and documentation use the [MIT license](./LICENSE) © [leiwang](https://github.com/l246804).

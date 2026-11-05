@@ -30,7 +30,7 @@ vp install
 
 ## 随包技能
 
-`skills/` 工作区包含独立维护的技能。`skills/authored/` 是本仓技能，`skills/.agents/skills/` 是通过 [`skills/package.json`](./skills/package.json) 的 `skills` 声明加载的 vendored 技能，来源与哈希记录在 [`skills/skills-lock.json`](./skills/skills-lock.json)。cursor-team-kit 技能来自固定 ref 的 `cursor/plugins`，保留的上游 MIT 许可证与来源说明在 [`licenses/cursor-team-kit`](./licenses/cursor-team-kit)。
+`skills/` 工作区包含独立维护的技能。`skills/authored/` 是本仓技能，`skills/.agents/skills/` 是通过 [`skills/package.json`](./skills/package.json) 的 `skills` 声明加载的 vendored 技能，来源与哈希记录在 [`skills/skills-lock.json`](./skills/skills-lock.json)。
 
 | 技能 | 来源 | 作用 |
 |---|---|---|
@@ -61,4 +61,4 @@ vp install
 
 ## License
 
-本仓原创代码与文档采用 [MIT License](./LICENSE) © [leiwang](https://github.com/l246804)。上游项目及 vendored 技能保留各自的许可证与声明。
+本仓原创代码与文档采用 [MIT License](./LICENSE) © [leiwang](https://github.com/l246804)。
