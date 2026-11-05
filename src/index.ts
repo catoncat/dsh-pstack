@@ -20,3 +20,4 @@ export { apply as applyModels, createPstackModelsTool } from "./models.ts";
 export { apply as applyRoleCatalog, createPstackRolesTool } from "./role-catalog.ts";
 export { apply as applySubagent, createPstackSubagentTool } from "./subagent.ts";
 export { apply as applyReadonly } from "./readonly.ts";
+export { apply as applyRender, createPstackRenderTool } from "./render.ts";

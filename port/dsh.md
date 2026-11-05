@@ -76,7 +76,7 @@ DeepSeek Harness has no Cursor Automations, Bugbot, Cursor cloud agents, or buil
 | `/loop` | Use `create_goal` for automatic continuation, `schedule_create` for a timed heartbeat, or a background `bash` watcher for observable events. These tools do not subscribe to forge events. |
 | `/automate` | Use `writing-for-agents` to create a personal skill from verified work patterns. When historical evidence is needed, use the session-search fallback in Optional plugins. |
 | Custom Mode | Invoke `/poteto-mode` on each task. The shipped `poteto-agent` preset is only for delegates and must not run the parent playbook. No persistent root preset ships. |
-| `/visualize` | Use Mermaid for diagrams. When `pele@1.9.0` is available, render a `.mmd` file to SVG with its `render` API; otherwise return Mermaid text. Use host-installed image, video, or ffmpeg tools for rendered media, and report any unavailable rendering separately. |
+| `/visualize` | Use Mermaid for diagrams. Call `pstack_render` with `kind: "pele"` to render a `.mmd` file to SVG when `pele@1.9.0` is installed; if it reports a missing dependency, return Mermaid text instead. Call `pstack_render` with `kind: "video"` for slide videos when ffmpeg and ImageMagick are installed; otherwise return the text summary and report the missing dependency separately. |
 | `control-ui`, `control-cli`, and `cursor-team-kit` | The package vendors `control-ui` and `control-cli` as instruction skills. Their browser and PTY requirements are stated in their own `SKILL.md`; enable `@deepseek-ai/dsh-browser-use` or the experimental persistent terminal bundle when those dependencies are required. Keep unavailable GUI or video evidence marked as skipped. |
 
 ## Optional plugins

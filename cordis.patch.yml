@@ -34,6 +34,8 @@
       config:
         provider: spawn
         maxDepth: 2
+    - id: pstack-render
+      name: dsh-pstack/render
     - id: preset-poteto-agent
       name: "@deepseek-ai/dsh-agent-preset"
       config:
