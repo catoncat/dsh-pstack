@@ -11,7 +11,7 @@
 - 本文的「插件」一律指本仓 `dsh-pstack`；「可选插件」一律指 DSH 官方提供、默认未启用的插件或 bundle。
 - 审查与随包适配文档以 DSH Web profile 为基准：随附 `web` 模板加本仓插件，即 `playground/profile/` 提交的形态，只登记该 profile 下可观察的行为。只在其它 profile 形态存在的路径——手写 `dsh.profile.bundles` 选择独立 worktree bundle、headless 的 `ask_user_question` 回答者与 `agentPresets` 服务——不计入能力行、可选插件行或未决证据；取舍见 [docs/decisions/2026-11-04-web-profile-baseline.md](../docs/decisions/2026-11-04-web-profile-baseline.md)。playground 的能力自动化 runner 是开发期验证手段，按同一决策保留 headless 形态。
 - 「当前提交未证实」表示在固定提交与本次调查范围内找不到足够源码证据，不表示该能力在别的 DSH 版本也不存在。
-- 本轮是 `baseline` 轮次，没有 core Issue 或 EXT 输入。`docs/port-prepare.md` 确认 pstack 子树在 `4dd1d05..ae5650f` 间没有文件变化（树哈希同为 `4719e1c4b4c43bac85d4206a8b41dd2899769c1c`），因此沿用上一轮冻结的 135 项原子能力。DSH 与上一轮同为 `05b1cae`（`0.2.2-alpha.3`），本轮按该提交重新核对全部 DSH 证据与 34 个被引用文件，没有需求变化。差异影响见 1.8。
+- 本轮是 `baseline` 轮次，没有 core Issue 或 EXT 输入。`docs/port-prepare.md` 确认 pstack 子树在 `4dd1d05..ae5650f` 间没有文件变化（树哈希同为 `4719e1c4b4c43bac85d4206a8b41dd2899769c1c`），因此沿用上一轮冻结的 135 项原子能力。DSH 与上一轮同为 `05b1cae`（`0.2.2-alpha.3`），本轮按该提交重新核对全部 DSH 证据与 35 个被引用文件，并复核上一轮 `doc` 后新增的 accepted 决策，没有需求变化。差异影响见 1.8。
 
 ### 1.2 上游提交与版本
 
@@ -116,9 +116,10 @@
 | 事实 | 观察 | 对本轮影响 |
 |---|---|---|
 | pstack 子树 | 仍为 `ae5650f`，树哈希 `4719e1c4b4c43bac85d4206a8b41dd2899769c1c`；与 `4dd1d05` 相比没有文件变化 | 136 个文档与 135 项能力的上游证据沿用，没有新增或删除能力行 |
-| DSH 提交 | 仍为 `05b1cae`（`0.2.2-alpha.3`），与上一轮相同；34 个被引用文件在本次审查中全部按该提交复核 | 证据行号与结论不变，没有能力改判 |
+| DSH 提交 | 仍为 `05b1cae`（`0.2.2-alpha.3`），与上一轮相同；35 个被引用文件在本次审查中全部按该提交复核 | 证据行号与结论不变，没有能力改判 |
 | DSH 默认工具配置 | `dsh-base` 与 Web `standard` 的 `tool-fs` 行均为 `applyPatch: false`，`fs-observation-policy` 行 `disabled: true`；[docs/tool-catalog.md#L1178](../upstream/deepseek-harness/docs/tool-catalog.md#L1178) 仍写 `dsh-base` 与 `standard` 启用 `apply_patch`，与配置不一致 | pstack 不依赖 `apply_patch` 或 read-before-edit 策略，`read`、`write`、`edit` 的主路径与能力结论不变；配置证据见 [base cordis.patch.yml#L292-L301](../upstream/deepseek-harness/packages/bundle/base/cordis.patch.yml#L292-L301) 与 [standard.patch.yml#L27-L31](../upstream/deepseek-harness/packages/bundle/web-app/presets/standard.patch.yml#L27-L31) |
 | 上一轮已记录的 DSH 变化 | forge/worktree bundle 合并、`OPT-02` 启用路径与 `G-05`/`G-07` 措辞已在上轮按 `05b1cae` 冻结 | 当前提交仍成立，本轮沿用 |
+| 上一轮 `doc` 后的仓库决策 | [Web profile 基准](../docs/decisions/2026-11-04-web-profile-baseline.md)（accepted）把 DSH Web profile 定为唯一基准，裁掉 `OPT-01` 与非 Web 路径，未决证据由 6 项降为 5 项；[DSH 命名空间外链](../docs/decisions/2026-11-04-dsh-namespace-external.md)（accepted）把 `@deepseek-ai/*` 整体外链，cordis 改回 peer + devDependencies | 135 项能力、分类与覆盖计数不变；§1.1、§3.3、§8.5、§9.3 与 §9.4 已按这两条决策更新，本轮重新核对无漂移 |
 
 ## 2. 完整能力表
 
@@ -512,7 +513,7 @@
 
 `PI-04 orch CLI` 已随上游 `1ba91fc` 删除 `orch.ts` 与 `store.ts` 而退役，本轮不再进入插件实现范围；本地旧镜像由 `prepare` 删除。
 
-本轮 `implement port` 复核结论（DSH `05b1cae`）：上表 8 项均保留现有实现，没有新增、修改或删除的代码；本轮没有 `status: active` 的 FIX。各项实现位置、公共接口依据与验证用例记录在 `docs/port-review.md` 的「实现记录」。
+上一轮 `implement port` 复核结论（DSH `05b1cae`）：上表 8 项均保留现有实现，没有新增、修改或删除的代码；当时没有 `status: active` 的 FIX。本轮 audit 只冻结需求基线，实现复核留给下一步 `implement port`。
 
 不属于插件内实现：
 
@@ -601,7 +602,7 @@ B 的关键行为对照清单（`pstack/runtime/skills/statechart/scripts/statec
 
 ## 8. 分阶段状态
 
-下表逐项记录实现、审查、文档与最终覆盖状态。`审查` 列采用 2026-11-04 的 `review port` 全量复核结果：135 项均无开放 finding，EXT-003、EXT-004、EXT-005 保持 `active`。本轮 `doc` 复核了主适配文档与双语根 README，并同步互斥关系与可选插件限制。`实现` 列的 `已实现` 表示该能力按第 2～4 节分类的映射、标准模式、可选插件或插件内路径已落地并核验；`不适用（平台排除）` 表示按上游排除基线不实现。`文档` 列定位实际适配产物；`最终覆盖` 区分完整、已覆盖（有适配语义差异）、条件覆盖、部分覆盖和平台排除，括号内列出外部条件、剩余差异或对应缺口。
+下表逐项记录实现、审查、文档与最终覆盖状态。状态沿用上一轮完成结果；本轮 audit 只重建需求基线，不改变实现与审查状态。`审查` 列采用 2026-11-04 的 `review port` 全量复核结果：135 项均无开放 finding，EXT-003、EXT-004、EXT-005 保持 `active`。上一轮 `doc` 复核了主适配文档与双语根 README，并同步互斥关系与可选插件限制。`实现` 列的 `已实现` 表示该能力按第 2～4 节分类的映射、标准模式、可选插件或插件内路径已落地并核验；`不适用（平台排除）` 表示按上游排除基线不实现。`文档` 列定位实际适配产物；`最终覆盖` 区分完整、已覆盖（有适配语义差异）、条件覆盖、部分覆盖和平台排除，括号内列出外部条件、剩余差异或对应缺口。
 
 ### 8.1 模板、脚本与路径
 
@@ -760,9 +761,9 @@ B 的关键行为对照清单（`pstack/runtime/skills/statechart/scripts/statec
 
 ### 8.5 文档产物与覆盖口径
 
-文档状态：本轮 `doc` 阶段于 2026-11-04 完成。主适配文档是 [pstack/harness/docs/harness/dsh.md](harness/docs/harness/dsh.md)，生成副本是 [pstack/pstack/docs/harness/dsh.md](pstack/docs/harness/dsh.md)。它保留上游模板的六个章节，并增加 [Local replacements](harness/docs/harness/dsh.md#local-replacements) 与 [Optional plugins](harness/docs/harness/dsh.md#optional-plugins) 两个固定追加小节，分别覆盖运行期替代与 OPT-02 至 OPT-09 的包名、启用能力、未启用 fallback 和支持边界。双语根 README 记录相同的互斥关系和可选插件限制。技能、playbook、reference 与 principle 正文保持上游原文，由生成器在需要 Cursor 名称映射的技能中加入适配文档指针。
+文档状态：上一轮 `doc` 阶段于 2026-11-04 完成。主适配文档是 [pstack/harness/docs/harness/dsh.md](harness/docs/harness/dsh.md)，生成副本是 [pstack/pstack/docs/harness/dsh.md](pstack/docs/harness/dsh.md)。它保留上游模板的六个章节，并增加 [Local replacements](harness/docs/harness/dsh.md#local-replacements) 与 [Optional plugins](harness/docs/harness/dsh.md#optional-plugins) 两个固定追加小节，分别覆盖运行期替代与 OPT-02 至 OPT-09 的包名、启用能力、未启用 fallback 和支持边界。双语根 README 记录相同的互斥关系和可选插件限制。技能、playbook、reference 与 principle 正文保持上游原文，由生成器在需要 Cursor 名称映射的技能中加入适配文档指针。
 
-最终覆盖以固定上游提交和本轮测试为限。完整覆盖不排除技能本身声明的通用外部前提；条件覆盖必须启用括号中的插件或安装外部工具；部分覆盖仍有明确语义差异；平台排除按上游规则输出跳过行并继续，不计为通过。五项未决证据保留在 9.3，不因文档完成而核销。
+最终覆盖以固定上游提交和上一轮测试为限。完整覆盖不排除技能本身声明的通用外部前提；条件覆盖必须启用括号中的插件或安装外部工具；部分覆盖仍有明确语义差异；平台排除按上游规则输出跳过行并继续，不计为通过。五项未决证据保留在 9.3，不因文档完成而核销。
 
 ## 9. 文档追踪与未决证据
 
@@ -869,4 +870,4 @@ B 的关键行为对照清单（`pstack/runtime/skills/statechart/scripts/statec
 | 待选择实现项 | 0 |
 | 未决证据 | 5（`U-01` 至 `U-05`） |
 
-最终覆盖结论：135 项中 79 项完整、6 项已覆盖但有适配语义差异、35 项需要所列插件或外部条件、2 项仍有部分覆盖缺口、13 项按上游平台排除。`SKL-25` 的技能 `paths` 不自动挂载，`SKL-32` 的 mp4 与逐帧核验需要外部工具；13 个平台排除项不计为通过。3 个本地扩展均为 `active`，不混入这 135 项。8 个插件内实现项均已实现并通过本轮审查；验证记录与未覆盖证据见 [docs/port-review.md](../docs/port-review.md)。
+最终覆盖结论：135 项中 79 项完整、6 项已覆盖但有适配语义差异、35 项需要所列插件或外部条件、2 项仍有部分覆盖缺口、13 项按上游平台排除。`SKL-25` 的技能 `paths` 不自动挂载，`SKL-32` 的 mp4 与逐帧核验需要外部工具；13 个平台排除项不计为通过。3 个本地扩展均为 `active`，不混入这 135 项。8 个插件内实现项均已实现并通过上一轮审查；本轮 audit 只重建需求基线，验证记录与未覆盖证据见 [docs/port-review.md](../docs/port-review.md)。
