@@ -3,18 +3,34 @@
 - 轮次（round）：`baseline`
 - 上游提交：pstack `ae5650febf4320793844c12c4adaa937f417f8da`（`0.15.36`）；DSH `05b1cae8db6e674c5685101494d4eec24652424a`（`0.2.2-alpha.3`）
 - 开始时间（started_at）：2026-11-04T22:20:39+08:00
+- 审查日期：2026-11-05（`review port` 全量复核）
+- 受审提交：本仓 `532bff36afee55edffd884f2fbfad29fe8e0d799`（`implement port` 产物）；`audit` 基线 `c7227f9`
+- 适用约定：根 `AGENTS.md`（Vite+ 门禁与 playground 唯一真实环境）、`docs/decisions/AGENTS.md`（决策检索）、`docs/architecture.md`（模块边界）。相交 accepted 决策：[插件工具面](../decisions/2026-10-28-pstack-plugin-tools.md)、[生成树与适配树](../decisions/2026-10-29-pstack-harness-tree-port.md)、[Web profile 基准](../decisions/2026-11-04-web-profile-baseline.md)、[DSH 命名空间外链](../decisions/2026-11-04-dsh-namespace-external.md)、[playground 真实测试](../decisions/2026-10-30-playground-real-plugin-testing.md)、[pnpm catalog 分类](../decisions/2026-10-30-pnpm-catalog-dependencies.md)、[pnpm 默认 store home](../decisions/2026-10-30-pnpm-default-store-home.md)、[脚本命令位置](../decisions/2026-10-30-script-commands-in-vite-config.md)、[配置页 i18n](../decisions/2026-10-30-pstack-config-page-i18n.md)、[skills 目录边界](../decisions/2026-10-28-skills-directory-scope.md)、[决策状态更新](../decisions/2026-10-28-decision-skill-lifecycle.md)。与当前实现一致，无冲突；`proposed` 记录不作为本轮审查依据。破坏性版本边界按 `references/contract.md` §6 与 [破坏性分界政策](../decisions/2026-11-04-dsh-breaking-version-boundary-policy.md)（proposed，待落地方向）、[破坏性提交格式](../decisions/2026-11-04-breaking-change-commit-format.md)（proposed）核对。
+- 验证环境：本仓 workspace-write 沙箱（`/home/leihaohao/workspace/dsh-pstack`，`vp v1.5.0` 本地 `vite-plus v1.4.0`），pstack `ae5650f` / DSH `05b1cae` 固定子模块提交，无网络依赖。真实运行层按 [playground 真实测试决策](../decisions/2026-10-30-playground-real-plugin-testing.md)：涉及用户所选模型的会话由用户操作并确认，本轮只做命令/配置层，不代跑真实会话、不另建 home 或 profile。
 
 ## Findings
 
-（本轮实现复核未发现开放 finding；无 `status: active` FIX、无待修复 port finding。）
+（本轮全量复核未发现开放 finding；无 `status: active` FIX、无 `fixed-pending-review` 待复核项、无待修复 port finding、无 EXT 破坏、无 replay 冲突或退役候选。详见下节逐项观察。）
+
+| 维度 | 观察 | 结论 |
+|---|---|---|
+| README 能力与覆盖 | 135 项原子能力、47 映射 / 72 标准 / 3 可选 / 13 平台排除计数与 §3.1、§9.4 一致；§8 审查列沿用上轮「通过」，本轮无需求或分类变化 | 无开放 finding |
+| core `required_behavior` | 本轮无 core Issue / EXT 输入，无 core `required_behavior` 待覆盖 | 无 |
+| 公共 API | 在 DSH `05b1cae` 复核 `ctx.skills.get()`（`packages/skill/skill/src/index.ts:500`）、`ctx.llm.listProviders/listModels/resolveModelInfo`（`packages/llm/llm/src/index.ts:483/718`）、`ctx.subagents.startActivation`（`packages/subagent/subagent/src/index.ts:264`）签名未变；`host-contract.ts` 全为 `import type`，无运行期依赖 | 无漂移 |
+| 权限与副作用 | `pstack_skill` 只读并按相对路径越界检查；`pstack_models`/`pstack_roles` 只读；`pstack_subagent` 每次委派重读角色文件、写工具由 preset 静态移除；`pstack_script` 封闭 id 用 `process.execPath` 启动（AD-01 已接受的沙箱代价） | 与 §6.1 一致 |
+| 最小性 | `implement port` 提交 `532bff3` 的 `git diff --name-only` 仅 `docs/port-review.md`、`docs/port-state.yaml`、`pstack/README.md`；未改 `src/**`、`tests/**`、`pstack/runtime/**`、`pstack/harness/**`；`pstack/pstack/` 与 `dist/` 无手写 | 最小 |
+| 共享影响 | 5 条门禁、全部 active EXT 验收测试、runtime PI 套件、显式 typecheck 全通过；`generate --check` 无漂移；EXT 登记表 3 项保持 `active`、无意外变化 | 无回归 |
+| 适配文档门禁 | `check:harness-doc` 通过（无 FAIL，不触发 R-12 开放 finding） | 通过 |
+| DSH 破坏性版本边界（§6） | `engines.dsh: >=0.2.2-alpha.3`；`peerDependencies.@deepseek-ai/cordis: catalog:types`（`~4.0.6-alpha.2`）；`pnpm-workspace.yaml` 的 `catalog:types` 各 `@deepseek-ai/dsh-*` 均为 `0.2.2-alpha.3`、`minimumReleaseAgeExclude` 同步 `alpha.3`；`pnpm-lock.yaml` 一致；`src/**`/`tests/**` 无旧 DSH 兼容分支（仅 `tests/optional-plugins.test.ts` 的版本对照守卫）；`pstack/README.md` 与 `dsh.md` 无旧版不支持说明；`dsh.md` 仅六个模板章节 + `## Local replacements` + `## Optional plugins`；双语根 README 有版本对照表（`0.2.2-alpha.3` 及更新 / `0.2.2-alpha.2` 及更早 `v0.2.1`）；破坏性提交 `c1870fd feat!: support dsh0.2.2-alpha.3` 使用 `type!:` | 对齐 |
+| 范围检查 | 工作树审查起始为 clean；本分支只写 `docs/port-review.md`、`pstack/README.md` 审查字段与 `docs/port-state.yaml` 阶段字段 | 符合 §4 写入边界 |
 
 ## 实现记录
 
 `implement port` 的范围是 `pstack/README.md` 第 5 节的 `PI-01`～`PI-09`（`PI-04` 已随上游 `1ba91fc` 删除 `orch.ts` 与 `store.ts` 退役），以及 `docs/port-fixes.yaml` 中 `status: active` 的 FIX。本轮 `docs/port-fixes.yaml` 的 `fixes` 为空，没有 active FIX；8 个插件内实现项逐项读取现有实现后全部记为「保留」，生产代码沿用已通过前轮审查的实现，本轮没有新增、修改或删除代码。
 
-保留依据：`docs/port-prepare.md` 已确认 pstack 子树在 `4dd1d05..ae5650f` 间无文件差异（树哈希同为 `4719e1c4b4c43bac85d4206a8b41dd2899769c1c`）；本轮 DSH 参考提交与上一轮同为 `05b1cae`（`0.2.2-alpha.3`），35 个被引用文件按该提交全部复核，公共接口未变。`ctx.skills.get()`、`ctx.llm.listProviders/listModels/resolveModelInfo`、`ctx.subagents.startActivation`、`ctx.tools.register`、`ctx.workingDirectory.ensure` 的签名未变；`vp run typecheck`、`vp check` 通过，没有出现需要改动 `src/**`、`tests/**`、`pstack/runtime/**` 或 `pstack/harness/**` 的新需求。
+保留依据：`docs/port-prepare.md` 已确认 pstack 子树在 `4dd1d05..ae5650f` 间无文件差异（树哈希同为 `4719e1c4b4c43bac85d4206a8b41dd2899769c1c`）；本轮 DSH 参考提交与上一轮同为 `05b1cae`（`0.2.2-alpha.3`），公共接口按该提交复核签名未变。`vp run typecheck`、`vp check` 通过，没有出现需要改动 `src/**`、`tests/**`、`pstack/runtime/**` 或 `pstack/harness/**` 的新需求。
 
-本轮沿用已落地的 DSH 破坏性版本边界，并按当前提交复核无漂移：`package.json` 的 `engines.dsh` 为 `>=0.2.2-alpha.3`、`peerDependencies` 的 `@deepseek-ai/cordis` 为 `catalog:types`，`pnpm-workspace.yaml` 的 `catalog:types` 各 `@deepseek-ai/dsh-*` 均为 `0.2.2-alpha.3`、`minimumReleaseAgeExclude` 同步到 `alpha.3`，`pnpm-lock.yaml` 一致；`src/**`、`tests/**` 只实现当前 DSH 公共接口，无旧版兼容分支或弃用路径（版本对照只在双语根 README，由 `tests/optional-plugins.test.ts` 守住）。`docs/decisions/AGENTS.md` 检索出的相交 accepted 决策——[插件工具面](../decisions/2026-10-28-pstack-plugin-tools.md)、[生成树与适配树](../decisions/2026-10-29-pstack-harness-tree-port.md)、[Web profile 基准](../decisions/2026-11-04-web-profile-baseline.md)、[DSH 命名空间外链](../decisions/2026-11-04-dsh-namespace-external.md)、[playground 真实测试](../decisions/2026-10-30-playground-real-plugin-testing.md)——与当前实现一致，无冲突；`proposed` 记录不作为本轮实现依据。
+本轮沿用已落地的 DSH 破坏性版本边界，并按当前提交复核无漂移（见 Findings 的版本边界行）。`docs/decisions/AGENTS.md` 检索出的相交 accepted 决策与当前实现一致，无冲突；`proposed` 记录不作为本轮实现依据。
 
 | 编号 | 覆盖能力 | 实现位置 | 验证用例 |
 |---|---|---|---|
@@ -51,27 +67,46 @@
 
 ## 验证记录
 
-适用约定：根 `AGENTS.md`（Vite+ 门禁与 playground 唯一真实环境）、`docs/decisions/AGENTS.md`（决策检索）、[playground 真实测试决策](../decisions/2026-10-30-playground-real-plugin-testing.md)（真实会话由用户操作确认，命令/配置层在 playground 内跑）、[Web profile 基准](../decisions/2026-11-04-web-profile-baseline.md)（Web profile 为唯一基准）、[插件工具面](../decisions/2026-10-28-pstack-plugin-tools.md) 与 [生成树适配树](../decisions/2026-10-29-pstack-harness-tree-port.md)（实现方向）。验证环境：本仓 workspace-write 沙箱，Vite+ `vp v1.5.0`（本地 `vite-plus v1.4.0`），pstack `ae5650f` / DSH `05b1cae` 固定子模块提交，无网络依赖。
+本分支按 `references/review.md` §3 运行全部五条门禁，并逐项运行全部 `active` EXT 验收测试（不抽查）与全部 `active` FIX replay（台账为空，无 active 记录）。每条命令记录实际退出码。
+
+### 五条门禁（`review port` 要求全部运行）
+
+| # | 命令 | 退出码 | 结果 |
+|---|---|---|---|
+| 1 | `vp check` | 0 | 94 个文件格式正确；0 errors；1 个既有 warning：`pstack/scripts/generate-pstack-harness-tree.mjs:204` 的 `require-array-sort-compare`（非本轮新增） |
+| 2 | `vp test` | 0 | 18 个测试文件、123 个测试通过 |
+| 3 | `vp run @internal/pstack#check:harness-doc` | 0 | `harness doc is consistent with README, the upstream template, and src.`；`generate --check` 子任务 `pstack/pstack is up to date.`（2/2 任务成功） |
+| 4 | `node pstack/scripts/generate-pstack-harness-tree.mjs --check` | 0 | `pstack/pstack is up to date.` |
+| 5 | `node pstack/scripts/port-fixes.mjs replay` | 0 | `No active FIX records; replay passed.` |
+
+### 全量 active EXT 验收测试（不抽查）
+
+| EXT | 验收测试 | 退出码 | 结果 |
+|---|---|---|---|
+| EXT-003 角色模型配置页 | `vp test` `tests/role-page.test.tsx`、`role-editor.test.ts`、`role-state.test.ts`、`roles-remote.test.ts`、`roles-service.test.ts`、`role-catalog.test.ts`、`effort.test.ts`、`models.test.ts` | 0 | 8 文件、56 测试通过 |
+| EXT-004 推荐可选插件启用页 | `vp test` `tests/optional-plugins.test.ts`、`optional-plugins-page.test.tsx` | 0 | 2 文件、21 测试通过（含 DSH `05b1cae` 版本对照与 forge/worktree 合并守卫） |
+| EXT-005 bundle 配置模态框 | `vp test` `tests/bundle-config-dialog.test.tsx`、`client-plugin.test.ts` | 0 | 2 文件、4 测试通过 |
+
+三个 EXT 登记表状态保持 `active`，无 `broken`，工作文件无待处理项（验收证据在对应 Issue 验收评论，符合 contract §2）。
+
+### 补充验证
 
 | 检查 | 命令或用例 | 退出码 | 结果 |
 |---|---|---|---|
-| 静态检查 | `vp check` | 0 | 94 个文件格式正确；0 errors；1 个既有 warning：`pstack/scripts/generate-pstack-harness-tree.mjs:204` 的 `require-array-sort-compare` |
+| 运行时 PI 套件 | `vp run @internal/pstack#test` | 0 | 12 suite、76 测试通过、0 失败（check-plan / watch-pr / worktree-audit / log / statechart 行为） |
 | 显式类型 | `vp run typecheck` | 0 | `tsc --noEmit -p tsconfig.json` 通过（缓存命中） |
-| 插件测试 | `vp test` | 0 | 18 个测试文件、123 个测试通过 |
-| 运行时测试 | `vp run @internal/pstack#test` | 0 | 12 个 suite、76 个测试通过、0 失败 |
-| 构建 | `vp run build` | 0 | 5/5 任务成功；根发布 ESM 22 个文件、client 2 个文件；root ESM 共 158.75 kB |
-| 生成树漂移 | `node pstack/scripts/generate-pstack-harness-tree.mjs --check` | 0 | `pstack/pstack is up to date.` |
-| 适配文档对账 | `vp run @internal/pstack#check:harness-doc` | 0 | `harness doc is consistent with README, the upstream template, and src.`（2/2 任务成功） |
-| FIX 重放 | `node pstack/scripts/port-fixes.mjs replay` | 0 | `No active FIX records; replay passed.` |
-| 脚本入口 | 五个随包入口逐个调用 | — | `check-plan` 无参数 2、`watch-pr --help` 0、`worktree-audit --help` 0、`log` 无参数 1、`statechart` 无参数 2，符合各脚本契约 |
-| 技能索引 | `node --input-type=module` 加载 `dist/index.mjs` 的 `loadBundledSkillIndexes(SKILL_ROOTS)` | 0 | 64 个技能加载成功：61 个禁止模型调用（隐藏）、3 个允许模型调用、64 个用户可调用 |
-| playground 组合 | `DSH_HOME=$PWD/playground/.dsh dsh --profile pstack-playground --dump-config` | 0 | DSH `0.2.2-alpha.3` 合成配置含六条 `dsh-pstack` 行、`preset-poteto-agent`/`preset-comment-sicko` 两个 preset 与 `pstack-subagent.maxDepth: 2` |
-| 版本边界 | `grep` 核对 `package.json` 与 `pnpm-workspace.yaml`；`tests/optional-plugins.test.ts` | 0 | `engines.dsh: >=0.2.2-alpha.3`；`catalog:types` 各 `dsh-*` 为 `0.2.2-alpha.3`；`minimumReleaseAgeExclude` 同步 `alpha.3`；版本对照只在双语根 README（测试通过） |
+| 版本边界 | `grep` 核对 `package.json`、`pnpm-workspace.yaml`；`tests/optional-plugins.test.ts` | 0 | `engines.dsh: >=0.2.2-alpha.3`；各 `dsh-*` catalog 为 `0.2.2-alpha.3`；`minimumReleaseAgeExclude` 同步 `alpha.3`；版本对照只在双语根 README；破坏性提交 `feat!:`；`dsh.md` 无旧版说明、仅两追加小节 |
+| 公共接口 | 在 DSH `05b1cae` 复核 `skills.get` / `llm.listProviders,listModels,resolveModelInfo` / `subagents.startActivation` 源码签名 | — | 签名未变，`host-contract.ts` 全为 `import type` |
+| 范围检查 | `git diff --name-only 532bff3^ 532bff3` | — | 仅 `docs/port-review.md`、`docs/port-state.yaml`、`pstack/README.md`；无 port 基线手写源改动 |
 
 ## 范围检查
 
-本轮改动只涉及 `pstack/README.md` 的实现说明、`docs/port-review.md` 的实现与验证证据、`docs/port-state.yaml` 的阶段字段。`docs/extensions.md`、`docs/port-fixes.yaml`、`docs/port-fixes-archive.yaml` 无差异；`src/**`、`tests/**`、`pstack/runtime/**`、`pstack/harness/**` 无改动；`pstack/pstack/` 与 `dist/` 只由生成器与构建刷新，没有手写。`git diff --name-only` 仅含上述三个文档/状态文件。
+本轮 `review port` 改动只涉及 `docs/port-review.md`（本文件，全量复核证据）、`pstack/README.md` 的审查字段更新、`docs/port-state.yaml` 的阶段字段（`phase: doc`）。`docs/extensions.md`、`docs/port-fixes.yaml`、`docs/port-fixes-archive.yaml` 无差异；`src/**`、`tests/**`、`pstack/runtime/**`、`pstack/harness/**` 无改动；`pstack/pstack/` 与 `dist/` 只由生成器与构建刷新，没有手写。审查起始工作树为 clean。
 
 ## 未解决限制
 
-无新增未解决限制。`pstack/README.md` §9.3 的 `U-01` 至 `U-05` 保持原样：视频录制工具链、子代理 transcript 覆盖、浏览器截图证据、连续工作树创建、宿主外部命令可用性仍按「当前提交未证实」处理，不在本轮实现范围内。真实会话层未在本轮执行：按 playground 决策，涉及用户所选模型的会话由用户操作并确认；本轮 playground 仅做 `--dump-config` 组合核对，未启动 web 服务、未运行真实会话。
+无新增未解决限制。`pstack/README.md` §9.3 的 `U-01` 至 `U-05` 保持原样：视频录制工具链、子代理 transcript 覆盖、浏览器截图证据、连续工作树创建、宿主外部命令可用性仍按「当前提交未证实」处理，不在本轮实现范围内。真实会话层未在本轮执行：按 playground 决策，涉及用户所选模型的会话由用户操作并确认；本轮未启动 web 服务、未运行真实会话、未另建 home 或 profile。这些是有意跳过项，不计为失败。
+
+## 结论
+
+所有 `active` EXT 测试通过、FIX replay 通过（无 active 记录）、135 项能力与 core 需求（本轮无 core 输入）逐项覆盖、五条门禁退出 0、无开放 finding、DSH 破坏性变更轮次的版本边界与提交标记核对完成。按 `references/review.md` §3.3 通过处理：`port.phase` 设为 `doc`，`blocker` 保持 `null`，下一步 `/pstack-port doc`。
