@@ -27,23 +27,60 @@
   "files": [
     "dist",
     "assets",
+    "cordis.patch.yml",
+    "locale",
     "README.md",
     "README.zh.md"
   ],
   "type": "module",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": "./dist/index.mjs",
+    "./models": "./dist/models.mjs",
+    "./skill": "./dist/skill.mjs",
+    "./roles": "./dist/role-catalog.mjs",
+    "./role-service": "./dist/roles.mjs",
+    "./subagent": "./dist/subagent.mjs",
+    "./readonly": "./dist/readonly.mjs",
+    "./package.json": "./package.json",
+    "./client": "./dist/client.mjs",
+    "./locale/*.json": "./locale/*.json"
+  },
   "scripts": {
     "prepare": "vp config && skills experimental_sync -y -a universal",
+    "prerelease": "vp run build && vp run typecheck && vp test",
     "release": "bumpp",
     "prepublishOnly": "vp run build"
   },
   "devDependencies": {
+    "@deepseek-ai/cordis": "catalog:types",
+    "@deepseek-ai/dsh-agent": "catalog:types",
+    "@deepseek-ai/dsh-api-gateway": "catalog:types",
+    "@deepseek-ai/dsh-client-locale": "catalog:types",
+    "@deepseek-ai/dsh-client-ui-renderer": "catalog:types",
+    "@deepseek-ai/dsh-client-ui-settings": "catalog:types",
+    "@deepseek-ai/dsh-client-ui-slots": "catalog:types",
+    "@deepseek-ai/dsh-llm": "catalog:types",
+    "@deepseek-ai/dsh-sandbox-policy": "catalog:types",
+    "@deepseek-ai/dsh-skill": "catalog:types",
+    "@deepseek-ai/dsh-subagent": "catalog:types",
+    "@deepseek-ai/dsh-tools": "catalog:types",
+    "@deepseek-ai/dsh-typert-protocol": "catalog:types",
+    "@deepseek-ai/dsh-working-directory": "catalog:types",
     "@types/node": "catalog:types",
+    "@types/react": "catalog:ui",
+    "@types/react-dom": "catalog:ui",
     "agent-browser": "catalog:browser",
     "bumpp": "catalog:cli",
     "js-yaml": "catalog:testing",
+    "react": "catalog:ui",
+    "react-dom": "catalog:ui",
     "skills": "catalog:agentic",
     "typescript": "catalog:cli",
     "vite-plus": "catalog:cli"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "catalog:types"
   },
   "icon": "./assets/logo.png",
   "devEngines": {
@@ -59,7 +96,18 @@
     }
   },
   "engines": {
+    "dsh": ">=0.2.2-rc.1",
     "node": ">=24.21.1"
+  },
+  "dsh": {
+    "manifestVersion": 1,
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": []
+    }
   },
   "skills": [
     {

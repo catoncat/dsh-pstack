@@ -1,0 +1,44 @@
+import { describe, expect, it } from "vite-plus/test";
+
+import { collectCatalogue, renderCatalogue, type ModelsLlm } from "../src/models.ts";
+
+const signal = new AbortController().signal;
+
+const llm = {
+  listProviders: () => [
+    { id: "cpa", name: "CPA" },
+    { id: "broken", name: "Broken" },
+  ],
+  listModels: async (provider: string) => {
+    if (provider === "broken") throw new Error("adapter went away");
+    return [
+      { provider: "cpa", id: "vendor/model-a", name: "Model A" },
+      { provider: "cpa", id: "vendor/model-b", name: "Model B" },
+    ];
+  },
+  resolveModelInfo: async (provider: string, model: string) => ({
+    provider,
+    id: model,
+    name: model,
+    reasoning: {
+      efforts: [{ id: "off" }, { id: "low" }, { id: "high" }],
+      defaultEffort: "high",
+    },
+  }),
+} as unknown as ModelsLlm;
+
+describe("pstack_models", () => {
+  it("lists live providers, routes, and efforts", async () => {
+    const result = await collectCatalogue(llm, undefined, signal);
+    expect(result.providers.map((provider) => provider.provider)).toEqual(["cpa", "broken"]);
+    expect(result.providers[0]?.models[0]?.route).toBe("cpa/vendor/model-a");
+    expect(result.providers[0]?.models[0]?.efforts).toEqual(["off", "low", "high"]);
+    expect(result.providers[1]?.error).toMatch(/adapter went away/);
+    expect(renderCatalogue(result)).toContain("cpa/vendor/model-a — efforts: off, low, high");
+  });
+
+  it("filters by provider id or display name", async () => {
+    expect((await collectCatalogue(llm, "CPA", signal)).providers).toHaveLength(1);
+    expect((await collectCatalogue(llm, "missing", signal)).providers).toHaveLength(0);
+  });
+});

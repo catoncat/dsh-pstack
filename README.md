@@ -29,12 +29,15 @@ The [playground guide](./playground/README.md) covers browser and headless verif
 
 ## Package skills
 
-The `skills/` workspace includes independently maintained skills. `skills/authored/` contains local skills. `skills/.agents/skills/` contains vendored skills, with sources and hashes in [`skills/skills-lock.json`](./skills/skills-lock.json).
+The `skills/` workspace includes independently maintained skills. `skills/authored/` contains local skills. `skills/.agents/skills/` contains vendored skills loaded from the `skills` declarations in [`skills/package.json`](./skills/package.json), with sources and hashes in [`skills/skills-lock.json`](./skills/skills-lock.json). The cursor-team-kit skill files come from the local `@internal/cursor-team-kit-skills` package in [`vendor/cursor-team-kit-skills`](./vendor/cursor-team-kit-skills).
 
 | Skill | Source | Purpose |
 |---|---|---|
 | `writing-for-agents` | vendored | Write skills and agent-facing documentation. |
 | `retro` | vendored | Review the agent environment without modifying the repository. |
+| `deslop` | vendored | Remove AI-generated code slop from a diff. |
+| `control-ui` | vendored | Drive and inspect a local web, IDE, or Electron UI with evidence. |
+| `control-cli` | vendored | Drive and inspect an interactive CLI or TUI with evidence. |
 | `decision-write` | authored | Create, land, and supersede decision records. |
 | `decision-audit` | authored | Audit decision-record status and relationships. |
 | `setup-project-docs` | authored | Set up sustainable project documentation. |
@@ -51,7 +54,7 @@ Each row identifies a published release and its dependency baseline. Add a row w
 
 ## Credits
 
-[pstack](https://github.com/cursor/plugins/tree/main/pstack) is designed and open-sourced by Lauren Tan and the Cursor team. [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) is provided by the DeepSeek team. [mattpocock/skills](https://github.com/mattpocock/skills) provides the vendored `writing-for-agents` and `retro` skills.
+[pstack](https://github.com/cursor/plugins/tree/main/pstack) is designed and open-sourced by Lauren Tan and the Cursor team. [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) is provided by the DeepSeek team. [cursor/plugins `cursor-team-kit`](https://github.com/cursor/plugins/tree/main/cursor-team-kit) provides the vendored `deslop`, `control-ui`, and `control-cli` skills. [mattpocock/skills](https://github.com/mattpocock/skills) provides the vendored `writing-for-agents` and `retro` skills.
 
 This project is a community port, not an official Cursor or DeepSeek release.
 

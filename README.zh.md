@@ -30,12 +30,15 @@ vp install
 
 ## 随包技能
 
-`skills/` 工作区包含独立维护的技能。`skills/authored/` 是本仓技能，`skills/.agents/skills/` 是 vendored 技能。来源与哈希记录在 [`skills/skills-lock.json`](./skills/skills-lock.json)。
+`skills/` 工作区包含独立维护的技能。`skills/authored/` 是本仓技能，`skills/.agents/skills/` 是通过 [`skills/package.json`](./skills/package.json) 的 `skills` 声明加载的 vendored 技能，来源与哈希记录在 [`skills/skills-lock.json`](./skills/skills-lock.json)。cursor-team-kit 技能文件来自本地 [`vendor/cursor-team-kit-skills`](./vendor/cursor-team-kit-skills) 包。
 
 | 技能 | 来源 | 作用 |
 |---|---|---|
 | `writing-for-agents` | vendored | 编写技能与 agent 文档。 |
 | `retro` | vendored | 只读复盘 agent 环境，不修改仓库。 |
+| `deslop` | vendored | 清理 diff 中的 AI 代码噪声。 |
+| `control-ui` | vendored | 驱动并检查本地 Web、IDE 或 Electron UI，产出证据。 |
+| `control-cli` | vendored | 驱动并检查交互式 CLI 或 TUI，产出证据。 |
 | `decision-write` | authored | 创建、落地和取代决策记录。 |
 | `decision-audit` | authored | 审计决策记录状态与关联关系。 |
 | `setup-project-docs` | authored | 搭建可持续维护的项目文档。 |
@@ -52,7 +55,7 @@ vp install
 
 ## 鸣谢
 
-[pstack](https://github.com/cursor/plugins/tree/main/pstack) 由 Lauren Tan 与 Cursor 团队设计并开源。[DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 由 DeepSeek 团队提供。[mattpocock/skills](https://github.com/mattpocock/skills) 提供 vendored 的 `writing-for-agents` 与 `retro` 技能。
+[pstack](https://github.com/cursor/plugins/tree/main/pstack) 由 Lauren Tan 与 Cursor 团队设计并开源。[DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 由 DeepSeek 团队提供。[cursor/plugins `cursor-team-kit`](https://github.com/cursor/plugins/tree/main/cursor-team-kit) 提供 vendored 的 `deslop`、`control-ui` 与 `control-cli` 技能。[mattpocock/skills](https://github.com/mattpocock/skills) 提供 vendored 的 `writing-for-agents` 与 `retro` 技能。
 
 本项目是社区移植，不是 Cursor 或 DeepSeek 官方发行。
 

@@ -1,20 +1,63 @@
+import { existsSync } from "node:fs";
 import { defineConfig } from "vite-plus";
 
+/** DSH provides its own runtime packages; never bundle them. */
+const dshProvided = /^@deepseek-ai\//;
+
+/** The generated tree is present for release builds and absent before step 5 of a fresh port. */
+const generatedTree = existsSync("pstack") ? ["pstack"] : [];
+
 export default defineConfig({
-  pack: {
-    entry: ["./src/*.ts", "./src/client/*.ts"],
-    dts: {
-      generator: "tsgo",
+  pack: [
+    {
+      entry: ["./src/*.ts"],
+      dts: {
+        generator: "tsgo",
+      },
+      deps: {
+        neverBundle: [dshProvided],
+        dts: {
+          neverBundle: [dshProvided],
+        },
+      },
+      copy: [
+        ...generatedTree,
+        { from: "skills/.agents/skills", to: "dist/skills", rename: "vendored" },
+        { from: "skills/authored", to: "dist/skills", rename: "authored" },
+        {
+          from: "vendor/cursor-team-kit-skills/LICENSE",
+          to: "dist/skills",
+          rename: "LICENSE-cursor-team-kit",
+        },
+        {
+          from: "vendor/cursor-team-kit-skills/SOURCES.md",
+          to: "dist/skills",
+          rename: "SOURCES-cursor-team-kit.md",
+        },
+      ],
     },
-    deps: {
-      neverBundle: [/^@deepseek-ai\//],
+    {
+      name: "dsh-pstack/client",
+      cwd: ".",
+      entry: ["./src/client/index.ts"],
+      outDir: "dist",
+      format: "cjs",
+      platform: "browser",
+      dts: false,
+      clean: false,
+      sourcemap: true,
+      exports: false,
+      deps: {
+        neverBundle: ["react", "react/jsx-runtime", "react-dom", "react-dom/client", dshProvided],
+      },
+      outputOptions: {
+        entryFileNames: "client.mjs",
+        banner: 'window.__ModuleLoader__.load({ id: "dsh-pstack", factory: (require) => {',
+        footer: "return module.exports; } });",
+        intro: "var module = { exports: {} }; var exports = module.exports;",
+      },
     },
-    copy: [
-      "pstack",
-      { from: "skills/authored", to: "dist/skills" },
-      { from: "skills/.agents/skills", to: "dist/skills", rename: "vendored" },
-    ],
-  },
+  ],
   test: {
     include: ["tests/**/*.test.{ts,tsx}"],
     passWithNoTests: true,
