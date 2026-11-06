@@ -73,6 +73,7 @@ describe("poteto-mode root preset", () => {
 
     const block = patch.slice(start, end);
     expect(block).toContain("id: poteto-mode");
+    expect(block).toContain('name: "dsh-pstack/preset"');
     expect(block).toContain("name: dsh-pstack/poteto-mode");
     expect(block).toContain("name: dsh-pstack");
     expect(block).toContain("id: planning");
@@ -95,6 +96,7 @@ describe("poteto-mode creator root preset", () => {
 
     const block = patch.slice(start, end);
     expect(block).toContain("id: poteto-mode-creator");
+    expect(block).toContain('name: "dsh-pstack/preset"');
     expect(block).toContain("name: dsh-pstack/poteto-mode");
     expect(block).toContain("id: tool-cordis");
     expect(block).toContain("customSkillDirs");

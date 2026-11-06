@@ -6,6 +6,7 @@ import type {} from "@deepseek-ai/dsh-client-locale/client";
 import type {} from "@deepseek-ai/dsh-client-ui-renderer/client";
 import type {} from "@deepseek-ai/dsh-client-ui-settings/client";
 import type {} from "@deepseek-ai/dsh-client-ui-slots";
+import type {} from "@deepseek-ai/dsh-client-ui-tool/client";
 import type {} from "@deepseek-ai/dsh-client-ui-plugin-manager/client";
 
 import type { CatalogueResult } from "../models.ts";
@@ -21,6 +22,7 @@ import { createPstackConfigAction } from "./PstackConfigDialog.tsx";
 import { NS, catalogs } from "./locales.ts";
 import type { BundleView, PluginManagerApi } from "./RecommendedPluginsPage.tsx";
 import type { RoleSettingsApi } from "./RoleSettingsPage.tsx";
+import { PSTACK_TOOL_NAMES, PstackToolRow } from "./tool-views.tsx";
 
 /** Browser services this plugin needs. */
 export const inject = ["remote", "slots", "locale", "remote.pluginManager"];
@@ -46,6 +48,15 @@ interface PluginManagerNamespace {
 export async function apply(ctx: Context): Promise<() => Promise<void>> {
   const disposeRemote = await ctx.remote.$mount(pstackRolesRemote);
   ctx.effect(() => ctx.locale.register(NS, { ...catalogs }), "pstack-config.locale");
+  for (const key of PSTACK_TOOL_NAMES) {
+    ctx.effect(
+      () =>
+        ctx.slots.inject("tool.call.toolview", () =>
+          ctx.slots.register({ name: "tool.call.toolview", key, locale: NS }, PstackToolRow),
+        ),
+      `pstack-config.toolview.${key}`,
+    );
+  }
 
   ctx.inject(["remote.pstackRoles"], (scope: Context) => {
     const remote = scope.remote as unknown as {

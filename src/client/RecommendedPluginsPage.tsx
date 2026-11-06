@@ -21,36 +21,34 @@ export interface PluginManagerApi {
   setBundleEnabled(name: string, enabled: boolean): Promise<void>;
 }
 
-const RECOMMENDED_PLUGINS = [
+interface RecommendedPlugin {
+  readonly name: string;
+  readonly titleKey: PstackLocaleKey;
+  readonly descriptionKey: PstackLocaleKey;
+}
+
+const RECOMMENDED_PLUGINS: readonly RecommendedPlugin[] = [
   {
     name: "@deepseek-ai/dsh-experimental-forge-bundle",
-    title: "Change requests & worktrees",
-    titleZh: "变更请求与工作树",
-    description: "Track GitHub PRs, checks, reviews, and local worktrees beside the conversation.",
-    descriptionZh: "在会话侧边栏跟踪 GitHub PR、检查、评审和本地工作树。",
+    titleKey: "recommendedForgeTitle",
+    descriptionKey: "recommendedForgeDescription",
   },
   {
     name: "@deepseek-ai/dsh-experimental-session-search",
-    title: "Session search",
-    titleZh: "会话搜索",
-    description: "Search earlier sessions and inspect their events.",
-    descriptionZh: "搜索历史会话并检查其中的事件。",
+    titleKey: "recommendedSessionSearchTitle",
+    descriptionKey: "recommendedSessionSearchDescription",
   },
   {
     name: "@deepseek-ai/dsh-experimental-terminal-bundle",
-    title: "Persistent terminals",
-    titleZh: "持久终端",
-    description: "Keep PTY terminals alive for CLI and TUI verification.",
-    descriptionZh: "保留 PTY 终端，用于 CLI 和 TUI 验证。",
+    titleKey: "recommendedTerminalTitle",
+    descriptionKey: "recommendedTerminalDescription",
   },
   {
     name: "@deepseek-ai/dsh-experimental-ralph-bundle",
-    title: "Ralph loop",
-    titleZh: "Ralph 循环",
-    description: "Run a foreground fresh-agent loop with structured handoff.",
-    descriptionZh: "运行带结构化交接的前台 fresh-agent 循环。",
+    titleKey: "recommendedRalphTitle",
+    descriptionKey: "recommendedRalphDescription",
   },
-] as const;
+];
 
 export function RecommendedPluginsView(props: {
   api: PluginManagerApi | undefined;
@@ -140,16 +138,10 @@ export function RecommendedPluginsView(props: {
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                <strong style={{ fontSize: 13 }}>
-                  {recommended.title} · {recommended.titleZh}
-                </strong>
+                <strong style={{ fontSize: 13 }}>{t(recommended.titleKey)}</strong>
                 <span style={{ color: secondary, fontSize: 12 }}>{status}</span>
               </div>
-              <div style={{ color: secondary, fontSize: 12 }}>
-                {recommended.description}
-                <br />
-                {recommended.descriptionZh}
-              </div>
+              <div style={{ color: secondary, fontSize: 12 }}>{t(recommended.descriptionKey)}</div>
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                 <code style={{ color: secondary, fontSize: 11 }}>{recommended.name}</code>
                 <button

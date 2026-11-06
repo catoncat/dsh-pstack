@@ -44,7 +44,7 @@
     - id: pstack-render
       name: dsh-pstack/render
     - id: preset-poteto-mode
-      name: "@deepseek-ai/dsh-agent-preset"
+      name: "dsh-pstack/preset"
       config:
         id: poteto-mode
         name: pstack poteto-mode
@@ -170,7 +170,7 @@
             name: dsh-pstack/poteto-mode
 
     - id: preset-poteto-mode-creator
-      name: "@deepseek-ai/dsh-agent-preset"
+      name: "dsh-pstack/preset"
       config:
         id: poteto-mode-creator
         name: pstack poteto-mode creator
@@ -301,7 +301,7 @@
             name: dsh-pstack/poteto-mode
 
     - id: preset-poteto-agent
-      name: "@deepseek-ai/dsh-agent-preset"
+      name: "dsh-pstack/preset"
       config:
         id: poteto-agent
         name: pstack poteto-agent
@@ -344,7 +344,7 @@
               provider: spawn
               maxDepth: 1
     - id: preset-comment-sicko
-      name: "@deepseek-ai/dsh-agent-preset"
+      name: "dsh-pstack/preset"
       config:
         id: comment-sicko
         name: pstack comment-sicko
@@ -398,7 +398,7 @@
           - id: pstack-skill
             name: dsh-pstack
     - id: preset-readonly
-      name: "@deepseek-ai/dsh-agent-preset"
+      name: "dsh-pstack/preset"
       config:
         id: readonly
         name: pstack readonly
