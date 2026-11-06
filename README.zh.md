@@ -41,7 +41,7 @@
 
 `dsh-pstack` 将 [pstack](https://github.com/cursor/plugins/tree/main/pstack) 移植到 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH），保留其技能、playbook 与参考文档，并提供原生技能路由、按角色配置模型、按角色路由的子代理和可选本地渲染。
 
-完整的移植审查见[能力审核](./port/audit.md)与[运行时映射](./port/dsh.md)。
+完整的移植审查见[能力审核](./port/audit.md)与[运行时映射](./port/dsh.zh.md)。
 
 当前审核覆盖 68 项 Cursor 能力：39 项直接映射、2 项官方插件、18 项插件实现、9 项有意舍弃。
 
