@@ -42,4 +42,6 @@ vp run cases -- --case CASE-ID
 
 `cases/*.case.mjs` 注册用例。复制 `cases/_template.mjs` 开始。runner 提供事件流、工具调用和进程结果，每个用例定义自己的断言。报告写入 `playground/.dsh/cases-report/`，原始会话保存在 `playground/.dsh/sessions/`。
 
+无头用例的提示词必须是自然的用户请求，不能直接点名工具或展开调用参数。每个目标只允许首次调用成功；出现失败后重试、重复加载或先错后对，该用例判为失败。
+
 不要把涉及用户模型选择的验证结论交给 agent 自行确认。自动化结果用于核对行为和日志，模型路由是否符合用户意图仍由用户确认。
