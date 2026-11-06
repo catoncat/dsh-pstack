@@ -54,7 +54,7 @@ const zh = {
   pluginsSummary: "推荐已启用 {enabled}/{total}",
   groupRecommended: "推荐",
   groupRecommendedDescription: "与 pstack 工作流直接配合，通常应启用。",
-  groupNormal: "普通",
+  groupNormal: "可选",
   groupNormalDescription: "用于特定工作流，按需启用。",
   groupConflict: "冲突",
   groupConflictDescription: "与 pstack 根预设或 pstack_subagent 冲突。",

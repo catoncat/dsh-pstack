@@ -36,7 +36,7 @@ export interface RoleSettingsApi {
 
 interface RoleDraft {
   readonly routes: RouteView[];
-  readonly baseline: string;
+  readonly baseline: readonly RouteView[];
   readonly busy: boolean;
   readonly message?: { readonly tone: "success" | "error"; readonly text: string };
 }
@@ -131,15 +131,18 @@ export function RoleSettingsView(props: {
   };
 
   const resetRole = (key: string): void => {
-    const role = snapshot.roles.find((entry) => entry.key === key);
-    if (role === undefined) return;
     setBulkMessage(undefined);
     setDrafts((current) => {
       const draft = current[key];
       if (draft === undefined) return current;
       return {
         ...current,
-        [key]: { ...draft, routes: routesOf(role), message: undefined, busy: false },
+        [key]: {
+          ...draft,
+          routes: draft.baseline.map((route) => ({ ...route })),
+          message: undefined,
+          busy: false,
+        },
       };
     });
   };
@@ -149,7 +152,15 @@ export function RoleSettingsView(props: {
       Object.fromEntries(
         snapshot.roles.map((role) => {
           const draft = current[role.key] ?? draftOf(role);
-          return [role.key, { ...draft, routes: routesOf(role), message: undefined, busy: false }];
+          return [
+            role.key,
+            {
+              ...draft,
+              routes: draft.baseline.map((route) => ({ ...route })),
+              message: undefined,
+              busy: false,
+            },
+          ];
         }),
       ),
     );
@@ -181,7 +192,7 @@ export function RoleSettingsView(props: {
             [key]: {
               ...currentDraft,
               routes,
-              baseline: savedRole === undefined ? draft.baseline : signature(routes),
+              baseline: routes,
               busy: false,
               message: { tone: "success", text: common("saved") },
             },
@@ -408,25 +419,44 @@ function RoleCard(props: {
         </div>
       )}
       <div className="pstack-route-list">
-        {draft.routes.map((route, index) => (
-          <RouteRow
-            key={`${role.key}-${index}`}
-            roleName={name}
-            route={route}
-            catalogue={catalogue}
-            disabled={controlsDisabled}
-            canRemove={role.shape === "list" && draft.routes.length > 1}
-            onChange={(next) =>
-              onRoutesChange(
-                draft.routes.map((item, position) => (position === index ? next : item)),
-              )
-            }
-            onRemove={() =>
-              onRoutesChange(draft.routes.filter((_item, position) => position !== index))
-            }
-            translations={translations}
-          />
-        ))}
+        {draft.routes.map((route, index) => {
+          const baseline = draft.baseline[index];
+          const resetRoute =
+            role.shape !== "list"
+              ? undefined
+              : (): void => {
+                  if (baseline === undefined) {
+                    onRoutesChange(draft.routes.filter((_item, position) => position !== index));
+                    return;
+                  }
+                  onRoutesChange(
+                    draft.routes.map((item, position) =>
+                      position === index ? { ...baseline } : item,
+                    ),
+                  );
+                };
+          return (
+            <RouteRow
+              key={`${role.key}-${index}`}
+              roleName={name}
+              route={route}
+              catalogue={catalogue}
+              disabled={controlsDisabled}
+              canRemove={role.shape === "list" && draft.routes.length > 1}
+              canReset={baseline === undefined || signature([route]) !== signature([baseline])}
+              onReset={resetRoute}
+              onChange={(next) =>
+                onRoutesChange(
+                  draft.routes.map((item, position) => (position === index ? next : item)),
+                )
+              }
+              onRemove={() =>
+                onRoutesChange(draft.routes.filter((_item, position) => position !== index))
+              }
+              translations={translations}
+            />
+          );
+        })}
       </div>
       <footer className="pstack-role-foot">
         <div className="pstack-role-foot-actions">
@@ -455,13 +485,15 @@ function RoleCard(props: {
               {draft.message.text}
             </span>
           )}
-          <IconButton
-            label={t("resetRole")}
+          <Button
+            variant="outline"
+            size="sm"
+            icon={<IconUndo size={13} />}
             disabled={controlsDisabled || !dirty}
             onClick={onReset}
           >
-            <IconUndo size={14} />
-          </IconButton>
+            {t("resetRole")}
+          </Button>
           <Button
             variant="primary"
             size="sm"
@@ -483,12 +515,24 @@ function RouteRow(props: {
   catalogue: CatalogueResult | undefined;
   disabled: boolean;
   canRemove: boolean;
+  canReset: boolean;
+  onReset?: () => void;
   onChange: (route: RouteView) => void;
   onRemove: () => void;
   translations: PstackTranslations;
 }): ReactElement {
-  const { roleName, route, catalogue, disabled, canRemove, onChange, onRemove, translations } =
-    props;
+  const {
+    roleName,
+    route,
+    catalogue,
+    disabled,
+    canRemove,
+    canReset,
+    onReset,
+    onChange,
+    onRemove,
+    translations,
+  } = props;
   const t = translations.roles;
   const providerValue = route.kind === "inherit" ? `__inherit__:${route.alias}` : route.provider;
   const providers = catalogue?.providers ?? [];
@@ -499,14 +543,13 @@ function RouteRow(props: {
     route.kind === "route" && route.effort !== undefined && !efforts.includes(route.effort)
       ? [route.effort, ...efforts]
       : efforts;
-  const columns =
+  const actionCount = (onReset === undefined ? 0 : 1) + (canRemove ? 1 : 0);
+  const actionWidth = actionCount === 0 ? 0 : actionCount * 32 + (actionCount - 1) * 6;
+  const fields =
     route.kind === "route"
-      ? canRemove
-        ? "minmax(0, 1.25fr) minmax(0, 1.25fr) minmax(0, 0.7fr) 32px"
-        : "minmax(0, 1.25fr) minmax(0, 1.25fr) minmax(0, 0.7fr)"
-      : canRemove
-        ? "minmax(0, 1fr) 32px"
-        : "minmax(0, 1fr)";
+      ? "minmax(0, 1.25fr) minmax(0, 1.25fr) minmax(0, 0.7fr)"
+      : "minmax(0, 1fr)";
+  const columns = actionWidth === 0 ? fields : `${fields} ${actionWidth}px`;
   return (
     <div className="pstack-route-row" style={{ gridTemplateColumns: columns }}>
       <label className="pstack-field">
@@ -611,23 +654,32 @@ function RouteRow(props: {
           </label>
         </>
       ) : null}
-      {canRemove ? (
-        <IconButton
-          danger
-          label={`${t("removeRoute")} ${roleName}`}
-          disabled={disabled}
-          onClick={onRemove}
-        >
-          <IconTrash size={14} />
-        </IconButton>
-      ) : null}
+      {actionCount === 0 ? null : (
+        <div className="pstack-route-actions">
+          {onReset === undefined ? null : (
+            <IconButton label={t("resetRoute")} disabled={disabled || !canReset} onClick={onReset}>
+              <IconUndo size={14} />
+            </IconButton>
+          )}
+          {canRemove ? (
+            <IconButton
+              danger
+              label={`${t("removeRoute")} ${roleName}`}
+              disabled={disabled}
+              onClick={onRemove}
+            >
+              <IconTrash size={14} />
+            </IconButton>
+          ) : null}
+        </div>
+      )}
     </div>
   );
 }
 
 function draftOf(role: RoleView): RoleDraft {
   const routes = routesOf(role);
-  return { routes, baseline: signature(routes), busy: false };
+  return { routes, baseline: routes.map((route) => ({ ...route })), busy: false };
 }
 
 function routesOf(role: RoleView): RouteView[] {
@@ -637,7 +689,7 @@ function routesOf(role: RoleView): RouteView[] {
 }
 
 function isDirty(draft: RoleDraft): boolean {
-  return signature(draft.routes) !== draft.baseline;
+  return signature(draft.routes) !== signature(draft.baseline);
 }
 
 function signature(routes: readonly RouteView[]): string {

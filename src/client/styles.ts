@@ -512,10 +512,15 @@ const CSS = `
   border-radius: var(--dsw-radius-lg);
   background: var(--dsw-alias-bg-module-platform);
 }
-.pstack-route-row > .pstack-icon-btn {
+.pstack-route-actions {
+  display: flex;
+  align-items: center;
+  align-self: end;
+  gap: 6px;
+}
+.pstack-route-actions .pstack-icon-btn {
   width: 32px;
   height: 32px;
-  align-self: end;
 }
 .pstack-field {
   display: flex;
@@ -654,9 +659,6 @@ const CSS = `
   to {
     transform: rotate(360deg);
   }
-}
-[data-plugin-detail="dsh-pstack"] input[type="search"] {
-  display: none;
 }
 @media (prefers-reduced-motion: reduce) {
   .pstack-spinner,
