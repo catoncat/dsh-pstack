@@ -109,9 +109,12 @@ describe("pstack_subagent arguments and planning", () => {
     expect(result.children[0]?.childId).toBe("child-1");
   });
 
-  it("treats maxDepth 0 as the safe default", () => {
-    const plan = planDelegation(args({ maxDepth: 0 }), fakeRuntime(home()));
+  it("rejects maxDepth 0 before planning", () => {
+    expect(() => args({ maxDepth: 0 })).toThrow(/positive safe integer/);
+  });
+
+  it("defaults maxDepth to 1 when omitted", () => {
+    const plan = planDelegation(args(), fakeRuntime(home()));
     expect(plan.children[0]?.maxDepth).toBe(1);
-    expect(plan.diagnostics.join("\n")).toMatch(/maxDepth 0 cannot start a child/);
   });
 });

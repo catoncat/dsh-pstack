@@ -159,7 +159,7 @@ export function normalizeConfig(value: unknown): PstackSubagentConfig {
   }
   const maxDepth = record["maxDepth"];
   if (maxDepth !== undefined && !isDepth(maxDepth)) {
-    throw new Error("pstack-subagent: maxDepth must be a non-negative safe integer");
+    throw new Error("pstack-subagent: maxDepth must be a positive safe integer");
   }
   return {
     provider: typeof provider === "string" ? provider : DEFAULT_PROVIDER,
@@ -235,7 +235,7 @@ export function parseDelegationArgs(raw: unknown): DelegationArgs {
     throw new Error("cwd must be a non-empty string or null");
   }
   if (maxDepth !== undefined && maxDepth !== null && !isDepth(maxDepth)) {
-    throw new Error("maxDepth must be a non-negative safe integer or null");
+    throw new Error("maxDepth must be a positive safe integer or null");
   }
 
   return {
@@ -298,7 +298,7 @@ export function planDelegation(
       ? injectPotetoModePath(args.prompt, runtime.potetoModeSkillPath)
       : args.prompt;
   const hostDepth = runtime.subagents.resolveMaxDepth(config.maxDepth);
-  const depth = resolveChildDepth(args.maxDepth, config, hostDepth, diagnostics);
+  const depth = resolveChildDepth(args.maxDepth, config, hostDepth);
 
   const total = routes.length;
   const children: ChildPlan[] = routes.map((route, index) => {
@@ -463,8 +463,9 @@ export function createPstackSubagentTool(
         },
         maxDepth: {
           type: ["integer", "null"],
+          minimum: 1,
           description:
-            "Optional delegation-depth cap. Omit or null for depth 1; 0 is treated as 1; the row cap still applies.",
+            "Optional delegation-depth cap. Omit or null for depth 1; explicit values must be at least 1. The row cap still applies.",
         },
       },
       required: ["description", "prompt", "agent", "role", "roleIndex", "reasoningEffort", "cwd"],
@@ -575,14 +576,10 @@ function resolveChildDepth(
   requested: number | null,
   config: PstackSubagentConfig,
   hostLimit: number | undefined,
-  diagnostics: string[],
 ): number | undefined {
   let depth = requested === null ? DEFAULT_CHILD_DEPTH : requested;
-  if (depth === 0) {
-    diagnostics.push(
-      "maxDepth 0 cannot start a child (the child is already depth 1); this call used 1",
-    );
-    depth = 1;
+  if (depth < 1) {
+    throw new Error("maxDepth must be a positive safe integer or null");
   }
   if (config.maxDepth !== undefined && depth > config.maxDepth) {
     throw new Error(`maxDepth ${depth} exceeds this row's configured cap of ${config.maxDepth}`);
@@ -684,7 +681,7 @@ function isNonNegativeInteger(value: unknown): value is number {
 }
 
 function isDepth(value: unknown): value is number {
-  return isNonNegativeInteger(value);
+  return isNonNegativeInteger(value) && value >= 1;
 }
 
 function describeError(error: unknown): string {

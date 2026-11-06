@@ -16,7 +16,7 @@ pstack 技能沿用 Cursor 名称。在 DeepSeek Harness 中，每个会话先�
 
 | Cursor | DeepSeek Harness |
 | --- | --- |
-| `subagent_type: generalPurpose` | `agent: "general"`，加入父代理 preset，继承父工具。每次调用还要传 `description`、`prompt`、`role`、`roleIndex`、`reasoningEffort`、`cwd`；只有 `maxDepth` 可选。未用的值传 `null`。`roleIndex` 需要非空 role。非空 `cwd` 必须在会话目录或独立 Git 工作树内。省略或传空 `maxDepth` 得到深度 1；`maxDepth: 0` 也按 1 处理。插件行的深度上限仍然生效。 |
+| `subagent_type: generalPurpose` | `agent: "general"`，加入父代理 preset，继承父工具。每次调用还要传 `description`、`prompt`、`role`、`roleIndex`、`reasoningEffort`、`cwd`；只有 `maxDepth` 可选。未用的值传 `null`。`roleIndex` 需要非空 role。非空 `cwd` 必须在会话目录或独立 Git 工作树内。省略或传 `null` 得到深度 1；显式 `maxDepth` 必须至少为 1。插件行的深度上限仍然生效。 |
 | `poteto-agent`、`comment-sicko` | `agent: "poteto-agent"`、`agent: "comment-sicko"`。插件把它们声明为 `@deepseek-ai/dsh-agent-preset`。`poteto-agent` 注入 pstack 人格和 `poteto-mode` 指令的绝对路径；`comment-sicko` 挂载评论评审 preset。它们不是 `subagent_type` 值。 |
 | `readonly: true` | `agent: "readonly"`。readonly preset 挂载只读沙箱策略，拒绝文件写入和可写 shell 命令，保留读取和查询。 |
 | `readonly: false` | `agent: "general"`，继承父工具，包括已挂载的 MCP 工具。 |
