@@ -431,20 +431,25 @@ function main() {
       console.log(`- ${c.id} SKIP  ${built.skip}`);
       continue;
     }
-    process.stdout.write(`- ${c.id} 跑… `);
-    const run = runHeadless(built.prompt);
-    const events = parseEvents(run.stdout);
-    const calls = collectToolCalls(events);
-    const final = events.find((event) => event.type === "final");
-    const outcome = built.verify({ calls, events, final, run });
-    const completed = run.status === 0 && final?.reason?.kind === "completed";
-    if (!completed && outcome.ok) {
-      outcome.ok = false;
-      outcome.detail = `会话未正常完成（exit=${run.status}, reason=${final?.reason?.kind ?? "无 final"}）`;
+    built.setup?.();
+    try {
+      process.stdout.write(`- ${c.id} 跑… `);
+      const run = runHeadless(built.prompt);
+      const events = parseEvents(run.stdout);
+      const calls = collectToolCalls(events);
+      const final = events.find((event) => event.type === "final");
+      const outcome = built.verify({ calls, events, final, run });
+      const completed = run.status === 0 && final?.reason?.kind === "completed";
+      if (!completed && outcome.ok) {
+        outcome.ok = false;
+        outcome.detail = `会话未正常完成（exit=${run.status}, reason=${final?.reason?.kind ?? "无 final"}）`;
+      }
+      const status = outcome.ok ? "PASS" : "FAIL";
+      results.push({ id: c.id, title: c.title, status, detail: outcome.detail });
+      console.log(`${status}  ${outcome.detail}`);
+    } finally {
+      built.cleanup?.();
     }
-    const status = outcome.ok ? "PASS" : "FAIL";
-    results.push({ id: c.id, title: c.title, status, detail: outcome.detail });
-    console.log(`${status}  ${outcome.detail}`);
   }
 
   const reportPath = writeReport(results, { source, routes }, deployment);
