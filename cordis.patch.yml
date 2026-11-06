@@ -1,11 +1,11 @@
 # dsh-pstack bundle patch.
 #
-# `pstack-skill` registers the trusted hidden-skill loader. The two
-# `dsh-skill-filesystem` rows expose the generated pstack tree and the vendored
-# cursor-team-kit skills at bundled rank 600. `pstack-models` reports the live
-# route catalogue; `pstack-role-catalog` reports role shapes; `pstack-subagent`
-# delegates one child per selected route. The preset rows below own the child
-# personas and tool compositions.
+# `pstack-skill` registers the trusted hidden-skill loader. The three
+# `dsh-skill-filesystem` rows expose the generated pstack tree, vendored
+# cursor-team-kit skills, and authored project skills at bundled rank 600.
+# `pstack-models` reports the live route catalogue; `pstack-role-catalog` reports
+# role shapes; `pstack-subagent` delegates one child per selected route. The
+# preset rows below own the child personas and tool compositions.
 - insert:
     - id: pstack
       name: dsh-pstack
@@ -23,6 +23,13 @@
         includeDefaultRoots: false
         watch: false
         bundledSkillDir: !!js process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('dsh-pstack/package.json')), 'dist/skills/vendored')
+    - id: pstack-authored-skills
+      name: "@deepseek-ai/dsh-skill-filesystem"
+      config:
+        providerName: pstack-authored
+        includeDefaultRoots: false
+        watch: false
+        bundledSkillDir: !!js process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('dsh-pstack/package.json')), 'dist/skills/authored')
     - id: pstack-models
       name: dsh-pstack/models
     - id: pstack-roles

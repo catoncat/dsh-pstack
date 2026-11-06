@@ -25,6 +25,7 @@ import {
   lstatSync,
   mkdirSync,
   readFileSync,
+  rmSync,
   symlinkSync,
   writeFileSync,
 } from "node:fs";
@@ -40,6 +41,8 @@ const DSH_HOME = join(HERE, ".dsh");
 const HOME_PATCH = join(DSH_HOME, "cordis.patch.yml");
 const PROFILE_NAME = "pstack-headless";
 const PROFILE_DIR = join(DSH_HOME, "profiles", PROFILE_NAME);
+const PRESET_PROFILE_NAME = "pstack-presets";
+const PRESET_PROFILE_DIR = join(DSH_HOME, "profiles", PRESET_PROFILE_NAME);
 const REPORT_DIR = join(DSH_HOME, "cases-report");
 const CONFIG_FILE = join(HERE, "config.json");
 const DSH_BIN = process.env.DSH_BIN || "dsh";
@@ -269,10 +272,10 @@ function prepareCredentials(config, deployment, routes) {
 // Headless profile
 // ---------------------------------------------------------------------------
 
-function ensureHeadlessProfile() {
-  mkdirSync(join(PROFILE_DIR, "node_modules"), { recursive: true });
+function ensureProfile(profileName, profileDir, patchText) {
+  mkdirSync(join(profileDir, "node_modules"), { recursive: true });
   const manifest = {
-    name: "dsh-profile-pstack-headless",
+    name: `dsh-profile-${profileName}`,
     private: true,
     dependencies: { "dsh-pstack": `link:${REPO_ROOT}` },
     dsh: {
@@ -281,8 +284,10 @@ function ensureHeadlessProfile() {
       },
     },
   };
-  writeFileSync(join(PROFILE_DIR, "package.json"), `${JSON.stringify(manifest, null, 2)}\n`);
-  const link = join(PROFILE_DIR, "node_modules", "dsh-pstack");
+  writeFileSync(join(profileDir, "package.json"), `${JSON.stringify(manifest, null, 2)}\n`);
+  if (patchText !== undefined) writeFileSync(join(profileDir, "cordis.patch.yml"), patchText);
+  else rmSync(join(profileDir, "cordis.patch.yml"), { force: true });
+  const link = join(profileDir, "node_modules", "dsh-pstack");
   let linked = false;
   try {
     linked = lstatSync(link).isSymbolicLink() || lstatSync(link).isDirectory();
@@ -294,10 +299,26 @@ function ensureHeadlessProfile() {
       symlinkSync(REPO_ROOT, link, "dir");
     } catch (error) {
       die(
-        `无法为 headless profile 链接 dsh-pstack：${error instanceof Error ? error.message : String(error)}`,
+        `无法为 ${profileName} 链接 dsh-pstack：${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }
+}
+
+function ensureHeadlessProfile() {
+  ensureProfile(PROFILE_NAME, PROFILE_DIR);
+}
+
+function ensurePresetProfile() {
+  const patch = [
+    "- insert:",
+    "    - id: agent-preset-registry",
+    "      name: '@deepseek-ai/dsh-agent-preset-registry'",
+    "      config:",
+    "        default: poteto-agent",
+    "",
+  ].join("\n");
+  ensureProfile(PRESET_PROFILE_NAME, PRESET_PROFILE_DIR, patch);
 }
 
 // ---------------------------------------------------------------------------
@@ -356,8 +377,8 @@ if (CASES.length === 0 && !opts.help) {
 // 执行
 // ---------------------------------------------------------------------------
 
-function runHeadless(prompt) {
-  const result = spawnSync(DSH_BIN, ["--profile", PROFILE_NAME, "--json", prompt], {
+function runHeadless(prompt, profileName = PROFILE_NAME) {
+  const result = spawnSync(DSH_BIN, ["--profile", profileName, "--json", prompt], {
     cwd: REPO_ROOT,
     env: { ...process.env, DSH_HOME },
     encoding: "utf8",
@@ -422,6 +443,7 @@ function main() {
   }
 
   ensureHeadlessProfile();
+  ensurePresetProfile();
 
   const results = [];
   for (const c of selected) {
@@ -434,7 +456,10 @@ function main() {
     built.setup?.();
     try {
       process.stdout.write(`- ${c.id} 跑… `);
-      const run = runHeadless(built.prompt);
+      const run = runHeadless(
+        built.prompt,
+        built.profile === "presets" ? PRESET_PROFILE_NAME : PROFILE_NAME,
+      );
       const events = parseEvents(run.stdout);
       const calls = collectToolCalls(events);
       const final = events.find((event) => event.type === "final");

@@ -7,7 +7,7 @@ export default {
     return {
       prompt: [
         "请加载 pstack 的 `how` 技能，并读取路径 `references/../references/explainer-prompt.md` 指向的参考文件，确认它可读。",
-        "只读取这个参考文件，不要执行技能正文，也不要修改文件。",
+        "resource 参数请原样保留 `../` 片段，不要规范化成 `references/explainer-prompt.md`；只读取这个参考文件，不要执行技能正文，也不要修改文件。",
       ].join("\n"),
       verify({ calls }) {
         const targetCalls = calls.filter(
