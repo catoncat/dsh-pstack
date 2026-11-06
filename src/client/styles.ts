@@ -655,6 +655,9 @@ const CSS = `
     transform: rotate(360deg);
   }
 }
+[data-plugin-detail="dsh-pstack"] input[type="search"] {
+  display: none;
+}
 @media (prefers-reduced-motion: reduce) {
   .pstack-spinner,
   .pstack-segmented-indicator,
