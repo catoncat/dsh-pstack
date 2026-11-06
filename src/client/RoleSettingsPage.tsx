@@ -12,9 +12,7 @@ import type {
   SaveRoleRequest,
   SaveRoleResult,
 } from "../role-wire.ts";
-import type { PstackLocaleKey } from "./locales.ts";
-
-export type Translate = (key: PstackLocaleKey, vars?: Record<string, string | number>) => string;
+import type { PstackTranslations } from "./locales/index.ts";
 
 export interface RoleSettingsApi {
   status(): Promise<RoleFileSnapshot>;
@@ -28,8 +26,13 @@ const secondary = "var(--dsw-alias-label-secondary)";
 const border = "var(--dsw-alias-border-l3)";
 const surface = "var(--dsw-alias-bg-layer-1)";
 
-export function RoleSettingsView(props: { api: RoleSettingsApi; t: Translate }): ReactElement {
-  const { api, t } = props;
+export function RoleSettingsView(props: {
+  api: RoleSettingsApi;
+  translations: PstackTranslations;
+}): ReactElement {
+  const { api, translations } = props;
+  const t = translations.roles;
+  const common = translations.common;
   const [snapshot, setSnapshot] = useState<RoleFileSnapshot | undefined>();
   const [catalogue, setCatalogue] = useState<CatalogueResult | undefined>();
   const [loading, setLoading] = useState(true);
@@ -57,7 +60,7 @@ export function RoleSettingsView(props: { api: RoleSettingsApi; t: Translate }):
       <div style={{ display: "grid", gap: 10, color: text }}>
         <div style={{ color: "var(--dsw-alias-state-error-primary)" }}>{error}</div>
         <button type="button" style={buttonStyle()} onClick={load}>
-          {t("retry")}
+          {common("retry")}
         </button>
       </div>
     );
@@ -77,7 +80,7 @@ export function RoleSettingsView(props: { api: RoleSettingsApi; t: Translate }):
           </span>
         )}
       </header>
-      <BudgetEditor snapshot={snapshot} api={api} t={t} />
+      <BudgetEditor snapshot={snapshot} api={api} translations={translations} />
       <div style={{ display: "grid", gap: 8 }}>
         {snapshot.roles.map((role) => (
           <RoleCard
@@ -85,7 +88,7 @@ export function RoleSettingsView(props: { api: RoleSettingsApi; t: Translate }):
             role={role}
             catalogue={catalogue}
             api={api}
-            t={t}
+            translations={translations}
             disabled={!snapshot.canSave}
           />
         ))}
@@ -97,9 +100,11 @@ export function RoleSettingsView(props: { api: RoleSettingsApi; t: Translate }):
 function BudgetEditor(props: {
   snapshot: RoleFileSnapshot;
   api: RoleSettingsApi;
-  t: Translate;
+  translations: PstackTranslations;
 }): ReactElement {
-  const { snapshot, api, t } = props;
+  const { snapshot, api, translations } = props;
+  const t = translations.roles;
+  const common = translations.common;
   const [budget, setBudget] = useState(snapshot.budget ?? "");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | undefined>();
@@ -138,7 +143,7 @@ function BudgetEditor(props: {
               .finally(() => setBusy(false));
           }}
         >
-          {busy ? t("saving") : t("saveBudget")}
+          {busy ? common("saving") : t("saveBudget")}
         </button>
         {message === undefined ? null : (
           <span style={{ color: secondary, fontSize: 12 }}>{message}</span>
@@ -152,10 +157,12 @@ function RoleCard(props: {
   role: RoleView;
   catalogue: CatalogueResult | undefined;
   api: RoleSettingsApi;
-  t: Translate;
+  translations: PstackTranslations;
   disabled: boolean;
 }): ReactElement {
-  const { role, catalogue, api, t, disabled } = props;
+  const { role, catalogue, api, translations, disabled } = props;
+  const t = translations.roles;
+  const common = translations.common;
   const [routes, setRoutes] = useState<RouteView[]>(
     role.routes.length === 0
       ? [{ kind: "inherit", alias: "inherit-parent" }]
@@ -198,7 +205,7 @@ function RoleCard(props: {
             onRemove={() =>
               setRoutes((current) => current.filter((_item, position) => position !== index))
             }
-            t={t}
+            translations={translations}
           />
         ))}
       </div>
@@ -231,7 +238,7 @@ function RoleCard(props: {
                       .find((entry) => entry.key === role.key)
                       ?.routes.map((route) => ({ ...route })) ?? routes,
                   );
-                  setMessage(t("saved"));
+                  setMessage(common("saved"));
                 } else {
                   setMessage(t("saveRejected", { reason: result.reason }));
                 }
@@ -242,7 +249,7 @@ function RoleCard(props: {
               .finally(() => setBusy(false));
           }}
         >
-          {busy ? t("saving") : t("save")}
+          {busy ? common("saving") : common("save")}
         </button>
         {message === undefined ? null : (
           <span style={{ color: secondary, fontSize: 12 }}>{message}</span>
@@ -260,9 +267,10 @@ function RouteRow(props: {
   canRemove: boolean;
   onChange: (route: RouteView) => void;
   onRemove: () => void;
-  t: Translate;
+  translations: PstackTranslations;
 }): ReactElement {
-  const { role, route, catalogue, disabled, canRemove, onChange, onRemove, t } = props;
+  const { role, route, catalogue, disabled, canRemove, onChange, onRemove, translations } = props;
+  const t = translations.roles;
   const providerValue = route.kind === "inherit" ? `__inherit__:${route.alias}` : route.provider;
   const providers = catalogue?.providers ?? [];
   return (
@@ -358,7 +366,7 @@ function RouteRow(props: {
   );
 }
 
-function statusLabel(status: RoleFileSnapshot["status"], t: Translate): string {
+function statusLabel(status: RoleFileSnapshot["status"], t: PstackTranslations["roles"]): string {
   if (status === "loaded") return t("statusLoaded");
   if (status === "unreadable") return t("statusUnreadable");
   return t("statusMissing");

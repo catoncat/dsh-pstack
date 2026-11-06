@@ -6,45 +6,56 @@ import type { PropsRuntime } from "@deepseek-ai/dsh-client-ui-slots";
 import type {} from "@deepseek-ai/dsh-client-ui-plugin-manager/client";
 
 import { RecommendedPluginsView, type PluginManagerApi } from "./RecommendedPluginsPage.tsx";
-import { RoleSettingsView, type RoleSettingsApi, type Translate } from "./RoleSettingsPage.tsx";
+import { RoleSettingsView, type RoleSettingsApi } from "./RoleSettingsPage.tsx";
+import type { PstackTranslations } from "./locales/index.ts";
 
 export interface PstackConfigDialogProps {
   readonly roleApi: RoleSettingsApi;
   readonly pluginApi: PluginManagerApi | undefined;
-  readonly t: Translate;
+  readonly translations: PstackTranslations;
   readonly onClose: () => void;
 }
 
 export function PstackConfigDialog(props: PstackConfigDialogProps): ReactElement {
   const [tab, setTab] = useState<"plugins" | "roles">("plugins");
-  const { roleApi, pluginApi, t, onClose } = props;
+  const { roleApi, pluginApi, translations, onClose } = props;
   return (
-    <div style={overlayStyle} role="dialog" aria-modal="true" aria-label={t("dialogTitle")}>
-      <button type="button" aria-label={t("close")} style={maskStyle} onClick={onClose} />
+    <div
+      style={overlayStyle}
+      role="dialog"
+      aria-modal="true"
+      aria-label={translations.config("dialogTitle")}
+    >
+      <button
+        type="button"
+        aria-label={translations.common("close")}
+        style={maskStyle}
+        onClick={onClose}
+      />
       <div style={panelStyle}>
         <header style={headerStyle}>
-          <strong>{t("dialogTitle")}</strong>
+          <strong>{translations.config("dialogTitle")}</strong>
           <button type="button" style={closeStyle} onClick={onClose}>
-            {t("close")}
+            {translations.common("close")}
           </button>
         </header>
         <nav style={navStyle}>
           <TabButton
             active={tab === "plugins"}
             onClick={() => setTab("plugins")}
-            label={t("tabPlugins")}
+            label={translations.config("tabPlugins")}
           />
           <TabButton
             active={tab === "roles"}
             onClick={() => setTab("roles")}
-            label={t("tabRoles")}
+            label={translations.config("tabRoles")}
           />
         </nav>
         <main style={bodyStyle}>
           {tab === "plugins" ? (
-            <RecommendedPluginsView api={pluginApi} t={t} />
+            <RecommendedPluginsView api={pluginApi} translations={translations} />
           ) : (
-            <RoleSettingsView api={roleApi} t={t} />
+            <RoleSettingsView api={roleApi} translations={translations} />
           )}
         </main>
       </div>
@@ -56,7 +67,7 @@ export function PstackConfigDialog(props: PstackConfigDialogProps): ReactElement
 export function createPstackConfigAction(
   roleApi: RoleSettingsApi,
   pluginApi: PluginManagerApi | undefined,
-  t: Translate,
+  translations: PstackTranslations,
 ): (props: PropsRuntime<"plugins.detail.actions">) => ReactElement | null {
   return function PstackConfigAction(
     props: PropsRuntime<"plugins.detail.actions">,
@@ -66,14 +77,14 @@ export function createPstackConfigAction(
     return (
       <>
         <button type="button" style={actionStyle} onClick={() => setOpen(true)}>
-          {t("configureAction")}
+          {translations.config("configureAction")}
         </button>
         {open && typeof document !== "undefined"
           ? createPortal(
               <PstackConfigDialog
                 roleApi={roleApi}
                 pluginApi={pluginApi}
-                t={t}
+                translations={translations}
                 onClose={() => setOpen(false)}
               />,
               document.body,

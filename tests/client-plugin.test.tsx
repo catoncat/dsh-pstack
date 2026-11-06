@@ -7,7 +7,7 @@ import { apply, inject } from "../src/client/index.ts";
 import type { PstackRolesNamespace } from "../src/role-remote.ts";
 import type { BundleView } from "../src/client/RecommendedPluginsPage.tsx";
 import { RecommendedPluginsView } from "../src/client/RecommendedPluginsPage.tsx";
-import { catalogs } from "../src/client/locales.ts";
+import { catalogs, type PstackTranslations } from "../src/client/locales/index.ts";
 import { FALLBACK_LOCALE } from "../src/preset-copy.ts";
 
 type Dictionaries = Record<string, Record<string, string>>;
@@ -17,6 +17,15 @@ function translateFrom(
   language = FALLBACK_LOCALE,
 ): (key: string) => string {
   return (key) => dictionaries[language]?.[key] ?? dictionaries[FALLBACK_LOCALE]?.[key] ?? key;
+}
+
+function translationsFrom(language = FALLBACK_LOCALE): PstackTranslations {
+  return {
+    common: translateFrom(catalogs.common as Dictionaries, language),
+    config: translateFrom(catalogs.config as Dictionaries, language),
+    plugins: translateFrom(catalogs.plugins as Dictionaries, language),
+    roles: translateFrom(catalogs.roles as Dictionaries, language),
+  };
 }
 
 function roleApi() {
@@ -83,6 +92,12 @@ describe("pstack client", () => {
 
     await apply(ctx);
     expect(inject).toEqual(["remote", "slots", "locale", "remote.pluginManager"]);
+    expect([...dictionaries.keys()].sort()).toEqual([
+      "pstack.common",
+      "pstack.config",
+      "pstack.plugins",
+      "pstack.roles",
+    ]);
     expect(mounts).toHaveLength(1);
     expect(slots.filter((slot) => slot.name === "plugins.detail.actions")).toHaveLength(1);
     const action = slots.find((slot) => slot.name === "plugins.detail.actions");
@@ -105,11 +120,13 @@ describe("pstack client", () => {
   });
 
   it("renders recommended plugin copy in one language only", () => {
-    const t = translateFrom(catalogs as Dictionaries, "zh");
-    const html = renderToStaticMarkup(createElement(RecommendedPluginsView, { api: undefined, t }));
-    expect(html).toContain(catalogs.zh.recommendedForgeTitle);
-    expect(html).toContain(catalogs.zh.recommendedForgeDescription);
-    expect(html).not.toContain(catalogs.en.recommendedForgeTitle);
-    expect(html).not.toContain(catalogs.en.recommendedForgeDescription);
+    const translations = translationsFrom("zh");
+    const html = renderToStaticMarkup(
+      createElement(RecommendedPluginsView, { api: undefined, translations }),
+    );
+    expect(html).toContain(catalogs.plugins.zh.recommendedForgeTitle);
+    expect(html).toContain(catalogs.plugins.zh.recommendedForgeDescription);
+    expect(html).not.toContain(catalogs.plugins.en.recommendedForgeTitle);
+    expect(html).not.toContain(catalogs.plugins.en.recommendedForgeDescription);
   });
 });

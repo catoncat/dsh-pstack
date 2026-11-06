@@ -54,8 +54,9 @@
     "./skill": "./dist/skill.mjs",
     "./subagent": "./dist/subagent.mjs",
     "./package.json": "./package.json",
+    "./*/locale/en.json": "./modules/*/locale/en.json",
+    "./*/locale/zh.json": "./modules/*/locale/zh.json",
     "./locale/*.json": "./locale/*.json",
-    "./*": "./modules/*",
     "./client": "./dist/client.mjs"
   },
   "scripts": {

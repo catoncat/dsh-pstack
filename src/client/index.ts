@@ -18,7 +18,7 @@ import type {
   SaveRoleResult,
 } from "../role-wire.ts";
 import { createPstackConfigAction } from "./PstackConfigDialog.tsx";
-import { NS, catalogs } from "./locales.ts";
+import { NS, catalogs } from "./locales/index.ts";
 import type { BundleView, PluginManagerApi } from "./RecommendedPluginsPage.tsx";
 import type { RoleSettingsApi } from "./RoleSettingsPage.tsx";
 
@@ -45,7 +45,22 @@ interface PluginManagerNamespace {
 
 export async function apply(ctx: Context): Promise<() => Promise<void>> {
   const disposeRemote = await ctx.remote.$mount(pstackRolesRemote);
-  ctx.effect(() => ctx.locale.register(NS, { ...catalogs }), "pstack-config.locale");
+  ctx.effect(
+    () => ctx.locale.register(NS.common, { ...catalogs.common }),
+    "pstack-config.locale.common",
+  );
+  ctx.effect(
+    () => ctx.locale.register(NS.config, { ...catalogs.config }),
+    "pstack-config.locale.config",
+  );
+  ctx.effect(
+    () => ctx.locale.register(NS.plugins, { ...catalogs.plugins }),
+    "pstack-config.locale.plugins",
+  );
+  ctx.effect(
+    () => ctx.locale.register(NS.roles, { ...catalogs.roles }),
+    "pstack-config.locale.roles",
+  );
 
   ctx.inject(["remote.pstackRoles"], (scope: Context) => {
     const remote = scope.remote as unknown as {
@@ -71,16 +86,21 @@ export async function apply(ctx: Context): Promise<() => Promise<void>> {
               unwrap(await pluginManager.setBundleEnabled(name, enabled));
             },
           };
-    const t = ctx.locale.bind(NS);
+    const translations = {
+      common: ctx.locale.bind(NS.common),
+      config: ctx.locale.bind(NS.config),
+      plugins: ctx.locale.bind(NS.plugins),
+      roles: ctx.locale.bind(NS.roles),
+    };
     scope.slots.inject("plugins.detail.actions", () =>
       scope.slots.register(
         {
           name: "plugins.detail.actions",
           id: "pstack",
           order: 20,
-          label: t("configureAction"),
+          label: translations.config("configureAction"),
         },
-        createPstackConfigAction(roleApi, pluginApi, t),
+        createPstackConfigAction(roleApi, pluginApi, translations),
       ),
     );
   });

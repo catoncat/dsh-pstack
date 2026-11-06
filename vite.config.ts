@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { defineConfig } from "vite-plus";
 
 /** DSH provides its own runtime packages; never bundle them. */
@@ -6,6 +6,24 @@ const dshProvided = /^@deepseek-ai\//;
 
 /** The generated tree is present for release builds and absent before step 5 of a fresh port. */
 const generatedTree = existsSync("pstack") ? ["pstack"] : [];
+
+function moduleLocaleExports(): Record<string, string> {
+  const exports: Record<string, string> = {};
+  if (!existsSync("modules")) return exports;
+  const languages = new Set<string>();
+  for (const module of readdirSync("modules", { withFileTypes: true })) {
+    if (!module.isDirectory()) continue;
+    const localeDirectory = `modules/${module.name}/locale`;
+    if (!existsSync(localeDirectory)) continue;
+    for (const file of readdirSync(localeDirectory)) {
+      if (file.endsWith(".json")) languages.add(file.slice(0, -".json".length));
+    }
+  }
+  for (const language of [...languages].sort()) {
+    exports[`./*/locale/${language}.json`] = `./modules/*/locale/${language}.json`;
+  }
+  return exports;
+}
 
 export default defineConfig({
   pack: [
@@ -22,8 +40,8 @@ export default defineConfig({
       },
       exports: {
         customExports: {
+          ...moduleLocaleExports(),
           "./locale/*.json": "./locale/*.json",
-          "./*": "./modules/*",
           "./client": "./dist/client.mjs",
         },
       },

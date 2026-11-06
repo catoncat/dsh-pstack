@@ -2,9 +2,7 @@
 
 import { useEffect, useState, type CSSProperties, type ReactElement } from "react";
 
-import type { PstackLocaleKey } from "./locales.ts";
-
-export type Translate = (key: PstackLocaleKey, vars?: Record<string, string | number>) => string;
+import type { PstackTranslations, PluginsKey } from "./locales/index.ts";
 
 export interface BundleView {
   readonly name: string;
@@ -23,8 +21,8 @@ export interface PluginManagerApi {
 
 interface RecommendedPlugin {
   readonly name: string;
-  readonly titleKey: PstackLocaleKey;
-  readonly descriptionKey: PstackLocaleKey;
+  readonly titleKey: PluginsKey;
+  readonly descriptionKey: PluginsKey;
 }
 
 const RECOMMENDED_PLUGINS: readonly RecommendedPlugin[] = [
@@ -52,14 +50,16 @@ const RECOMMENDED_PLUGINS: readonly RecommendedPlugin[] = [
 
 export function RecommendedPluginsView(props: {
   api: PluginManagerApi | undefined;
-  t: Translate;
+  translations: PstackTranslations;
 }): ReactElement {
   const [bundles, setBundles] = useState<readonly BundleView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
   const [busy, setBusy] = useState<string | undefined>();
   const [messages, setMessages] = useState<Record<string, string>>({});
-  const { api, t } = props;
+  const { api, translations } = props;
+  const t = translations.plugins;
+  const common = translations.common;
 
   const load = (): void => {
     if (api === undefined) {
@@ -109,9 +109,11 @@ export function RecommendedPluginsView(props: {
           onClick={load}
           disabled={loading || busy !== undefined}
         >
-          {t("refresh")}
+          {common("refresh")}
         </button>
-        {loading ? <span style={{ color: secondary, fontSize: 12 }}>{t("loading")}</span> : null}
+        {loading ? (
+          <span style={{ color: secondary, fontSize: 12 }}>{common("loading")}</span>
+        ) : null}
       </div>
       {error === undefined ? null : (
         <div style={{ color: "var(--dsw-alias-state-error-primary)", fontSize: 12 }}>{error}</div>
@@ -151,7 +153,7 @@ export function RecommendedPluginsView(props: {
                   onClick={() => (bundle === undefined ? undefined : toggle(bundle))}
                 >
                   {busy !== undefined && busy === bundle?.name
-                    ? t("saving")
+                    ? common("saving")
                     : bundle?.enabled === true
                       ? t("disablePlugin")
                       : t("enablePlugin")}
@@ -170,7 +172,7 @@ export function RecommendedPluginsView(props: {
   );
 }
 
-function bundleStatus(bundle: BundleView | undefined, t: Translate): string {
+function bundleStatus(bundle: BundleView | undefined, t: PstackTranslations["plugins"]): string {
   if (bundle === undefined) return t("pluginMissing");
   if (bundle.error !== undefined || !bundle.installed || bundle.availability === "missing") {
     return t("pluginUnavailable");
