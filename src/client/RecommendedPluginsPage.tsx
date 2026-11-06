@@ -1,16 +1,20 @@
-/** Recommended official plugins for the pstack plugin configuration dialog. */
+/** Related official plugins for the pstack plugin configuration dialog. */
 
 import { useEffect, useState, type ReactElement } from "react";
 
 import {
   IconAlert,
+  IconBrowser,
   IconCheck,
   IconCheckCircle,
   IconGitBranch,
+  IconMonitor,
+  IconPlug,
   IconRefresh,
   IconRepeat,
   IconSearch,
   IconTerminal,
+  IconUsers,
   type IconComponent,
 } from "./icons.tsx";
 import { ensurePstackStyles } from "./styles.ts";
@@ -34,37 +38,91 @@ export interface PluginManagerApi {
   setBundleEnabled(name: string, enabled: boolean): Promise<void>;
 }
 
-interface RecommendedPlugin {
+type PluginGroupId = "recommended" | "normal" | "conflict";
+
+interface RelatedPlugin {
   readonly name: string;
   readonly titleKey: PluginsKey;
   readonly descriptionKey: PluginsKey;
   readonly icon: IconComponent;
 }
 
-const RECOMMENDED_PLUGINS: readonly RecommendedPlugin[] = [
+interface PluginGroup {
+  readonly id: PluginGroupId;
+  readonly titleKey: PluginsKey;
+  readonly descriptionKey: PluginsKey;
+  readonly plugins: readonly RelatedPlugin[];
+}
+
+const PLUGIN_GROUPS: readonly PluginGroup[] = [
   {
-    name: "@deepseek-ai/dsh-experimental-forge-bundle",
-    titleKey: "recommendedForgeTitle",
-    descriptionKey: "recommendedForgeDescription",
-    icon: IconGitBranch,
+    id: "recommended",
+    titleKey: "groupRecommended",
+    descriptionKey: "groupRecommendedDescription",
+    plugins: [
+      {
+        name: "@deepseek-ai/dsh-experimental-forge-bundle",
+        titleKey: "recommendedForgeTitle",
+        descriptionKey: "recommendedForgeDescription",
+        icon: IconGitBranch,
+      },
+      {
+        name: "@deepseek-ai/dsh-experimental-session-search",
+        titleKey: "recommendedSessionSearchTitle",
+        descriptionKey: "recommendedSessionSearchDescription",
+        icon: IconSearch,
+      },
+    ],
   },
   {
-    name: "@deepseek-ai/dsh-experimental-session-search",
-    titleKey: "recommendedSessionSearchTitle",
-    descriptionKey: "recommendedSessionSearchDescription",
-    icon: IconSearch,
+    id: "normal",
+    titleKey: "groupNormal",
+    descriptionKey: "groupNormalDescription",
+    plugins: [
+      {
+        name: "@deepseek-ai/dsh-browser-use",
+        titleKey: "recommendedBrowserTitle",
+        descriptionKey: "recommendedBrowserDescription",
+        icon: IconBrowser,
+      },
+      {
+        name: "@deepseek-ai/dsh-cua-bundle",
+        titleKey: "recommendedCuaTitle",
+        descriptionKey: "recommendedCuaDescription",
+        icon: IconMonitor,
+      },
+      {
+        name: "@deepseek-ai/dsh-experimental-terminal-bundle",
+        titleKey: "recommendedTerminalTitle",
+        descriptionKey: "recommendedTerminalDescription",
+        icon: IconTerminal,
+      },
+      {
+        name: "@deepseek-ai/dsh-mcp-client",
+        titleKey: "recommendedMcpTitle",
+        descriptionKey: "recommendedMcpDescription",
+        icon: IconPlug,
+      },
+      {
+        name: "@deepseek-ai/dsh-experimental-ralph-bundle",
+        titleKey: "recommendedRalphTitle",
+        descriptionKey: "recommendedRalphDescription",
+        icon: IconRepeat,
+      },
+    ],
   },
   {
-    name: "@deepseek-ai/dsh-experimental-terminal-bundle",
-    titleKey: "recommendedTerminalTitle",
-    descriptionKey: "recommendedTerminalDescription",
-    icon: IconTerminal,
-  },
-  {
-    name: "@deepseek-ai/dsh-experimental-ralph-bundle",
-    titleKey: "recommendedRalphTitle",
-    descriptionKey: "recommendedRalphDescription",
-    icon: IconRepeat,
+    id: "conflict",
+    titleKey: "groupConflict",
+    descriptionKey: "groupConflictDescription",
+    plugins: [
+      {
+        name: "@deepseek-ai/dsh-experimental-agent-team-profile",
+        titleKey: "recommendedAgentTeamTitle",
+        descriptionKey: "recommendedAgentTeamDescription",
+        icon: IconUsers,
+      },
+    ],
   },
 ];
 
@@ -108,20 +166,21 @@ export function RecommendedPluginsView(props: {
   }, [api, t]);
 
   const byName = new Map(bundles.map((bundle) => [bundle.name, bundle]));
-  const rows = RECOMMENDED_PLUGINS.map((recommended) => ({
-    recommended,
-    bundle: byName.get(recommended.name),
-  }));
-  const switchable = (bundle: BundleView | undefined): boolean =>
+  const available = (bundle: BundleView | undefined): boolean =>
     bundle !== undefined &&
-    bundle.installed &&
     bundle.availability !== "missing" &&
     bundle.error === undefined &&
     bundle.readOnlyReason === undefined;
-  const enableable = rows.filter(
-    (row) => switchable(row.bundle) && row.bundle?.enabled !== true,
+  const switchable = (bundle: BundleView | undefined, group: PluginGroupId): boolean =>
+    available(bundle) && (group !== "conflict" || bundle?.enabled === true);
+  const recommended = PLUGIN_GROUPS.find((group) => group.id === "recommended")!;
+  const recommendedEnabled = recommended.plugins.filter(
+    (plugin) => byName.get(plugin.name)?.enabled === true,
   ).length;
-  const enabled = rows.filter((row) => row.bundle?.enabled === true).length;
+  const enableable = recommended.plugins.filter((plugin) => {
+    const bundle = byName.get(plugin.name);
+    return switchable(bundle, "recommended") && bundle?.enabled !== true;
+  }).length;
 
   const toggle = async (bundle: BundleView): Promise<void> => {
     if (api === undefined) return;
@@ -143,9 +202,12 @@ export function RecommendedPluginsView(props: {
 
   const enableAll = async (): Promise<void> => {
     if (api === undefined) return;
-    const targets = rows
-      .filter((row) => switchable(row.bundle) && row.bundle?.enabled !== true)
-      .map((row) => row.bundle!);
+    const targets = recommended.plugins
+      .map((plugin) => byName.get(plugin.name))
+      .filter(
+        (bundle): bundle is BundleView =>
+          bundle !== undefined && switchable(bundle, "recommended") && !bundle.enabled,
+      );
     if (targets.length === 0) return;
     setBusy(ALL);
     setAllMessage(undefined);
@@ -172,18 +234,26 @@ export function RecommendedPluginsView(props: {
     <section>
       <header className="pstack-section-head">
         <div>
-          <h3 className="pstack-section-title">{t("pluginsTitle")}</h3>
           <p className="pstack-section-desc">{t("pluginsSubtitle")}</p>
         </div>
         <div className="pstack-section-actions">
           <Status
-            tone={enabled === rows.length ? "success" : enabled === 0 ? "neutral" : "brand"}
-            label={t("pluginsSummary", { enabled, total: rows.length })}
+            tone={
+              recommendedEnabled === recommended.plugins.length
+                ? "success"
+                : recommendedEnabled === 0
+                  ? "neutral"
+                  : "brand"
+            }
+            label={t("pluginsSummary", {
+              enabled: recommendedEnabled,
+              total: recommended.plugins.length,
+            })}
           />
           <Button
             variant="outline"
             size="sm"
-            icon={busy === ALL ? <Spinner size={13} /> : <IconCheckCircle size={14} />}
+            icon={busy === ALL ? <Spinner size={13} /> : <IconCheckCircle size={13} />}
             disabled={loading || busy !== undefined || enableable === 0}
             onClick={() => void enableAll()}
           >
@@ -191,14 +261,16 @@ export function RecommendedPluginsView(props: {
               ? t("enableAllBusy")
               : enableable > 0
                 ? t("enableAllCount", { count: enableable })
-                : t("enableAll")}
+                : recommendedEnabled === recommended.plugins.length
+                  ? t("enableAllComplete")
+                  : t("enableAll")}
           </Button>
           <IconButton
             label={common("refresh")}
             disabled={loading || busy !== undefined}
             onClick={() => void load()}
           >
-            {loading ? <Spinner size={14} /> : <IconRefresh size={15} />}
+            {loading ? <Spinner size={14} /> : <IconRefresh size={14} />}
           </IconButton>
         </div>
       </header>
@@ -218,65 +290,96 @@ export function RecommendedPluginsView(props: {
           {allMessage.text}
         </span>
       )}
-      <ul className="pstack-plugin-list">
-        {rows.map(({ recommended, bundle }) => {
-          const status = bundleStatus(bundle, t);
-          const canSwitch = switchable(bundle);
-          const title = t(recommended.titleKey);
-          const action = bundle?.enabled === true ? t("disablePlugin") : t("enablePlugin");
-          const PluginIcon = recommended.icon;
+      <div className="pstack-plugin-groups">
+        {PLUGIN_GROUPS.map((group) => {
+          const enabledInGroup = group.plugins.filter(
+            (plugin) => byName.get(plugin.name)?.enabled === true,
+          ).length;
           return (
-            <li key={recommended.name}>
-              <article className="pstack-plugin-card">
-                <span className="pstack-plugin-icon">
-                  <PluginIcon size={18} />
-                </span>
-                <div className="pstack-plugin-main">
-                  <div className="pstack-plugin-title-row">
-                    <span className="pstack-plugin-name">{title}</span>
-                    <Status
-                      tone={status.tone}
-                      label={status.label}
-                      title={bundle?.readOnlyReason}
-                    />
-                  </div>
-                  <p className="pstack-plugin-desc">{t(recommended.descriptionKey)}</p>
-                  <code className="pstack-plugin-id">{recommended.name}</code>
-                  {messages[recommended.name] ? (
-                    <span className="pstack-inline-message" data-tone="error">
-                      <IconAlert size={12} />
-                      {messages[recommended.name]}
-                    </span>
-                  ) : null}
+            <section className="pstack-plugin-group" key={group.id}>
+              <header className="pstack-plugin-group-head">
+                <div>
+                  <h4 className="pstack-plugin-group-title">{t(group.titleKey)}</h4>
+                  <p className="pstack-plugin-group-desc">{t(group.descriptionKey)}</p>
                 </div>
-                <div className="pstack-plugin-end">
-                  <Switch
-                    checked={bundle?.enabled === true}
-                    disabled={!canSwitch || busy !== undefined}
-                    label={`${action} ${title}`}
-                    onChange={() => (bundle === undefined ? undefined : void toggle(bundle))}
-                  />
-                </div>
-              </article>
-            </li>
+                <Status
+                  tone={
+                    group.id === "conflict" ? "error" : enabledInGroup > 0 ? "success" : "neutral"
+                  }
+                  label={`${enabledInGroup}/${group.plugins.length}`}
+                />
+              </header>
+              <ul className="pstack-plugin-list">
+                {group.plugins.map((plugin) => {
+                  const bundle = byName.get(plugin.name);
+                  const status = bundleStatus(bundle, group.id, t);
+                  const canSwitch = switchable(bundle, group.id);
+                  const title = t(plugin.titleKey);
+                  const action = bundle?.enabled === true ? t("disablePlugin") : t("enablePlugin");
+                  const PluginIcon = plugin.icon;
+                  return (
+                    <li key={plugin.name}>
+                      <article
+                        className="pstack-plugin-card"
+                        data-conflict={group.id === "conflict" ? "true" : undefined}
+                      >
+                        <span className="pstack-plugin-icon">
+                          <PluginIcon size={18} />
+                        </span>
+                        <div className="pstack-plugin-main">
+                          <div className="pstack-plugin-title-row">
+                            <span className="pstack-plugin-name">{title}</span>
+                            <Status
+                              tone={status.tone}
+                              label={status.label}
+                              title={bundle?.error?.diagnostic ?? bundle?.readOnlyReason}
+                            />
+                          </div>
+                          <p className="pstack-plugin-desc">{t(plugin.descriptionKey)}</p>
+                          <code className="pstack-plugin-id">{plugin.name}</code>
+                          {messages[plugin.name] ? (
+                            <span className="pstack-inline-message" data-tone="error">
+                              <IconAlert size={12} />
+                              {messages[plugin.name]}
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="pstack-plugin-end">
+                          <Switch
+                            checked={bundle?.enabled === true}
+                            disabled={!canSwitch || busy !== undefined}
+                            label={`${action} ${title}`}
+                            onChange={() =>
+                              bundle === undefined ? undefined : void toggle(bundle)
+                            }
+                          />
+                        </div>
+                      </article>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
           );
         })}
-      </ul>
+      </div>
     </section>
   );
 }
 
 function bundleStatus(
   bundle: BundleView | undefined,
+  group: PluginGroupId,
   t: PstackTranslations["plugins"],
 ): { label: string; tone: StatusTone } {
-  if (bundle === undefined || !bundle.installed || bundle.availability === "missing") {
+  if (bundle === undefined || bundle.availability === "missing") {
     return { label: t("pluginMissing"), tone: "warn" };
   }
   if (bundle.error !== undefined) return { label: t("pluginUnavailable"), tone: "error" };
   if (bundle.readOnlyReason !== undefined) {
     return { label: t("pluginReadOnly"), tone: "neutral" };
   }
+  if (group === "conflict") return { label: t("pluginConflict"), tone: "error" };
   return bundle.enabled
     ? { label: t("pluginEnabled"), tone: "success" }
     : { label: t("pluginDisabled"), tone: "neutral" };

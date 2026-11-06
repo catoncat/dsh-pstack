@@ -124,3 +124,42 @@ export const IconSave = icon(
     <path d="M5 2.8v3.6h5.2V2.8M5.2 13.2V9.4h5.6v3.8" />
   </>,
 );
+
+export const IconUndo = icon(
+  <>
+    <path d="M3 8a5 5 0 1 0 1.5-3.6" />
+    <path d="M3 2.8v3.1h3.1" />
+  </>,
+);
+
+export const IconBrowser = icon(
+  <>
+    <rect x="1.8" y="2.8" width="12.4" height="10.4" rx="1.8" />
+    <path d="M1.8 6h12.4" />
+    <circle cx="8" cy="9.6" r="2.1" />
+    <path d="M5.9 9.6h4.2M8 7.5v4.2" />
+  </>,
+);
+
+export const IconMonitor = icon(
+  <>
+    <rect x="1.8" y="2.8" width="12.4" height="8.4" rx="1.6" />
+    <path d="M5.2 14h5.6M8 11.2V14" />
+  </>,
+);
+
+export const IconPlug = icon(
+  <>
+    <path d="M6 2.8v3M10 2.8v3" />
+    <path d="M4.4 5.8h7.2v2.4a3.6 3.6 0 0 1-3.6 3.6 3.6 3.6 0 0 1-3.6-3.6z" />
+    <path d="M8 11.8v1.6" />
+  </>,
+);
+
+export const IconUsers = icon(
+  <>
+    <circle cx="6" cy="5.2" r="2" />
+    <path d="M2.4 13v-1.1a3.6 3.6 0 0 1 3.6-3.6h0a3.6 3.6 0 0 1 3.6 3.6V13" />
+    <path d="M10.4 3.5a2 2 0 0 1 0 3.7M11.4 8.6a3.2 3.2 0 0 1 2.2 3V13" />
+  </>,
+);

@@ -19,6 +19,7 @@ import {
   IconRoute,
   IconSave,
   IconTrash,
+  IconUndo,
 } from "./icons.tsx";
 import { ROLE_COPY } from "./role-copy.ts";
 import { ensurePstackStyles } from "./styles.ts";
@@ -33,6 +34,20 @@ export interface RoleSettingsApi {
   save(request: SaveRoleRequest): Promise<SaveRoleResult>;
 }
 
+interface RoleDraft {
+  readonly routes: RouteView[];
+  readonly baseline: string;
+  readonly busy: boolean;
+  readonly message?: { readonly tone: "success" | "error"; readonly text: string };
+}
+
+type DraftMap = Readonly<Record<string, RoleDraft>>;
+
+interface BulkMessage {
+  readonly tone: "success" | "error";
+  readonly text: string;
+}
+
 export function RoleSettingsView(props: {
   api: RoleSettingsApi;
   translations: PstackTranslations;
@@ -42,15 +57,24 @@ export function RoleSettingsView(props: {
   const common = translations.common;
   const [snapshot, setSnapshot] = useState<RoleFileSnapshot | undefined>();
   const [catalogue, setCatalogue] = useState<CatalogueResult | undefined>();
+  const [drafts, setDrafts] = useState<DraftMap>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
+  const [bulkBusy, setBulkBusy] = useState<"save" | undefined>();
+  const [bulkMessage, setBulkMessage] = useState<BulkMessage | undefined>();
+
+  const applySnapshot = (next: RoleFileSnapshot): void => {
+    setSnapshot(next);
+    setDrafts(Object.fromEntries(next.roles.map((role) => [role.key, draftOf(role)])));
+  };
 
   const load = async (): Promise<void> => {
     setLoading(true);
     setError(undefined);
+    setBulkMessage(undefined);
     try {
       const [nextSnapshot, nextCatalogue] = await Promise.all([api.status(), api.catalogue()]);
-      setSnapshot(nextSnapshot);
+      applySnapshot(nextSnapshot);
       setCatalogue(nextCatalogue);
     } catch (reason) {
       setError(t("rolesLoadFailed", { message: messageOf(reason) }));
@@ -83,24 +107,188 @@ export function RoleSettingsView(props: {
     );
   }
 
+  const draftFor = (role: RoleView): RoleDraft => drafts[role.key] ?? draftOf(role);
+  const dirtyKeys = snapshot.roles
+    .filter((role) => isDirty(draftFor(role)))
+    .map((role) => role.key);
+  const dirtyCount = dirtyKeys.length;
+  const anyBusy = Object.values(drafts).some((draft) => draft.busy);
+  const anyIncomplete = Object.values(drafts).some((draft) =>
+    draft.routes.some(
+      (route) =>
+        route.kind === "route" && (route.provider.trim() === "" || route.model.trim() === ""),
+    ),
+  );
   const fileStatus = statusPresentation(snapshot, t);
+
+  const updateRoutes = (key: string, routes: RouteView[]): void => {
+    setBulkMessage(undefined);
+    setDrafts((current) => {
+      const draft = current[key];
+      if (draft === undefined) return current;
+      return { ...current, [key]: { ...draft, routes, message: undefined } };
+    });
+  };
+
+  const resetRole = (key: string): void => {
+    const role = snapshot.roles.find((entry) => entry.key === key);
+    if (role === undefined) return;
+    setBulkMessage(undefined);
+    setDrafts((current) => {
+      const draft = current[key];
+      if (draft === undefined) return current;
+      return {
+        ...current,
+        [key]: { ...draft, routes: routesOf(role), message: undefined, busy: false },
+      };
+    });
+  };
+
+  const resetAll = (): void => {
+    setDrafts((current) =>
+      Object.fromEntries(
+        snapshot.roles.map((role) => {
+          const draft = current[role.key] ?? draftOf(role);
+          return [role.key, { ...draft, routes: routesOf(role), message: undefined, busy: false }];
+        }),
+      ),
+    );
+    setBulkMessage(undefined);
+  };
+
+  const saveRole = async (key: string): Promise<boolean> => {
+    const draft = drafts[key];
+    if (draft === undefined) return true;
+    setDrafts((current) => {
+      const currentDraft = current[key];
+      if (currentDraft === undefined) return current;
+      return {
+        ...current,
+        [key]: { ...currentDraft, busy: true, message: undefined },
+      };
+    });
+    try {
+      const result = await api.save({ key, routes: draft.routes });
+      if (result.ok) {
+        const savedRole = result.snapshot.roles.find((entry) => entry.key === key);
+        setSnapshot(result.snapshot);
+        setDrafts((current) => {
+          const currentDraft = current[key];
+          if (currentDraft === undefined) return current;
+          const routes = savedRole === undefined ? draft.routes : routesOf(savedRole);
+          return {
+            ...current,
+            [key]: {
+              ...currentDraft,
+              routes,
+              baseline: savedRole === undefined ? draft.baseline : signature(routes),
+              busy: false,
+              message: { tone: "success", text: common("saved") },
+            },
+          };
+        });
+        return true;
+      }
+      setDrafts((current) => {
+        const currentDraft = current[key];
+        if (currentDraft === undefined) return current;
+        return {
+          ...current,
+          [key]: {
+            ...currentDraft,
+            busy: false,
+            message: { tone: "error", text: t("saveRejected", { reason: result.reason }) },
+          },
+        };
+      });
+      return false;
+    } catch (reason) {
+      setDrafts((current) => {
+        const currentDraft = current[key];
+        if (currentDraft === undefined) return current;
+        return {
+          ...current,
+          [key]: {
+            ...currentDraft,
+            busy: false,
+            message: { tone: "error", text: t("saveRejected", { reason: messageOf(reason) }) },
+          },
+        };
+      });
+      return false;
+    }
+  };
+
+  const saveAll = async (): Promise<void> => {
+    if (dirtyCount === 0 || bulkBusy !== undefined || anyBusy || anyIncomplete) return;
+    setBulkBusy("save");
+    setBulkMessage(undefined);
+    let saved = 0;
+    let failed = 0;
+    for (const key of dirtyKeys) {
+      if (await saveRole(key)) saved += 1;
+      else failed += 1;
+    }
+    setBulkBusy(undefined);
+    setBulkMessage(
+      failed === 0
+        ? { tone: "success", text: t("saveAllDone", { count: saved }) }
+        : { tone: "error", text: t("saveAllPartial", { count: saved, failed }) },
+    );
+  };
+
   return (
     <section>
       <header className="pstack-section-head">
         <div>
-          <h3 className="pstack-section-title">{t("rolesTitle")}</h3>
           <p className="pstack-section-desc">{t("rolesSubtitle")}</p>
           <div className="pstack-file-meta">
             <Status tone={fileStatus.tone} label={fileStatus.label} />
             <span>{t("file")}</span>
             <code className="pstack-file-path" title={snapshot.path}>
-              {fileName(snapshot.path)}
+              {t("filePath")}
             </code>
           </div>
         </div>
         <div className="pstack-section-actions">
-          <IconButton label={common("refresh")} disabled={loading} onClick={() => void load()}>
-            {loading ? <Spinner size={14} /> : <IconRefresh size={15} />}
+          {dirtyCount === 0 ? null : (
+            <Status tone="warn" label={t("unsavedCount", { count: dirtyCount })} />
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            icon={<IconUndo size={13} />}
+            disabled={dirtyCount === 0 || bulkBusy !== undefined || anyBusy || loading}
+            onClick={resetAll}
+          >
+            {t("resetAll")}
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            icon={bulkBusy === "save" ? <Spinner size={13} /> : <IconSave size={13} />}
+            disabled={
+              dirtyCount === 0 ||
+              bulkBusy !== undefined ||
+              anyBusy ||
+              anyIncomplete ||
+              loading ||
+              !snapshot.canSave
+            }
+            onClick={() => void saveAll()}
+          >
+            {bulkBusy === "save"
+              ? t("savingAll")
+              : dirtyCount > 0
+                ? t("saveAllCount", { count: dirtyCount })
+                : t("saveAll")}
+          </Button>
+          <IconButton
+            label={common("refresh")}
+            disabled={loading || bulkBusy !== undefined || anyBusy}
+            onClick={() => void load()}
+          >
+            {loading ? <Spinner size={14} /> : <IconRefresh size={14} />}
           </IconButton>
         </div>
       </header>
@@ -130,16 +318,24 @@ export function RoleSettingsView(props: {
           </ul>
         </div>
       )}
+      {bulkMessage === undefined ? null : (
+        <span className="pstack-inline-message" data-tone={bulkMessage.tone}>
+          {bulkMessage.tone === "success" ? <IconCheck size={12} /> : <IconAlert size={12} />}
+          {bulkMessage.text}
+        </span>
+      )}
       <div className="pstack-role-list">
         {snapshot.roles.map((role) => (
           <RoleCard
             key={role.key}
             role={role}
+            draft={draftFor(role)}
             catalogue={catalogue}
-            api={api}
             translations={translations}
-            disabled={!snapshot.canSave}
-            onSaved={setSnapshot}
+            disabled={!snapshot.canSave || bulkBusy !== undefined || anyBusy}
+            onRoutesChange={(routes) => updateRoutes(role.key, routes)}
+            onSave={() => void saveRole(role.key)}
+            onReset={() => resetRole(role.key)}
           />
         ))}
       </div>
@@ -149,38 +345,26 @@ export function RoleSettingsView(props: {
 
 function RoleCard(props: {
   role: RoleView;
+  draft: RoleDraft;
   catalogue: CatalogueResult | undefined;
-  api: RoleSettingsApi;
   translations: PstackTranslations;
   disabled: boolean;
-  onSaved: (snapshot: RoleFileSnapshot) => void;
+  onRoutesChange: (routes: RouteView[]) => void;
+  onSave: () => void;
+  onReset: () => void;
 }): ReactElement {
-  const { role, catalogue, api, translations, disabled, onSaved } = props;
+  const { role, draft, catalogue, translations, disabled, onRoutesChange, onSave, onReset } = props;
   const t = translations.roles;
   const common = translations.common;
   const copy = ROLE_COPY[role.key];
   const name = copy === undefined ? role.key : t(copy.nameKey);
   const description = copy === undefined ? "" : t(copy.descriptionKey);
-  const [routes, setRoutes] = useState<RouteView[]>(() => routesOf(role));
-  const [saved, setSaved] = useState<string>(() => signature(routesOf(role)));
-  const [message, setMessage] = useState<{ tone: "success" | "error"; text: string } | undefined>();
-  const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    const next = routesOf(role);
-    setRoutes(next);
-    setSaved(signature(next));
-  }, [role]);
-
-  const dirty = signature(routes) !== saved;
-  const incomplete = routes.some(
+  const dirty = isDirty(draft);
+  const controlsDisabled = disabled || draft.busy;
+  const incomplete = draft.routes.some(
     (route) =>
       route.kind === "route" && (route.provider.trim() === "" || route.model.trim() === ""),
   );
-  const update = (index: number, route: RouteView): void => {
-    setRoutes((current) => current.map((item, position) => (position === index ? route : item)));
-    setMessage(undefined);
-  };
   const status =
     role.issues.length > 0
       ? { tone: "error" as StatusTone, label: t("roleInvalid") }
@@ -188,7 +372,7 @@ function RoleCard(props: {
         ? { tone: "success" as StatusTone, label: t("roleConfigured") }
         : { tone: "neutral" as StatusTone, label: t("roleMissing") };
   return (
-    <section className="pstack-role-card">
+    <section className="pstack-role-card" data-dirty={dirty ? "true" : undefined}>
       <header className="pstack-role-head">
         <span className="pstack-role-glyph">
           <IconRoute size={16} />
@@ -224,17 +408,21 @@ function RoleCard(props: {
         </div>
       )}
       <div className="pstack-route-list">
-        {routes.map((route, index) => (
+        {draft.routes.map((route, index) => (
           <RouteRow
             key={`${role.key}-${index}`}
             roleName={name}
             route={route}
             catalogue={catalogue}
-            disabled={disabled || busy}
-            canRemove={role.shape === "list" && routes.length > 1}
-            onChange={(next) => update(index, next)}
+            disabled={controlsDisabled}
+            canRemove={role.shape === "list" && draft.routes.length > 1}
+            onChange={(next) =>
+              onRoutesChange(
+                draft.routes.map((item, position) => (position === index ? next : item)),
+              )
+            }
             onRemove={() =>
-              setRoutes((current) => current.filter((_item, position) => position !== index))
+              onRoutesChange(draft.routes.filter((_item, position) => position !== index))
             }
             translations={translations}
           />
@@ -247,9 +435,9 @@ function RoleCard(props: {
               variant="outline"
               size="sm"
               icon={<IconPlus size={13} />}
-              disabled={disabled || busy}
+              disabled={controlsDisabled}
               onClick={() =>
-                setRoutes((current) => [...current, { kind: "inherit", alias: "inherit-parent" }])
+                onRoutesChange([...draft.routes, { kind: "inherit", alias: "inherit-parent" }])
               }
             >
               {t("addRoute")}
@@ -257,47 +445,31 @@ function RoleCard(props: {
           ) : null}
         </div>
         <div className="pstack-role-save">
-          {message === undefined ? (
+          {draft.message === undefined ? (
             dirty ? (
               <Status tone="warn" label={t("unsavedChanges")} />
             ) : null
           ) : (
-            <span className="pstack-inline-message" data-tone={message.tone}>
-              {message.tone === "success" ? <IconCheck size={12} /> : <IconAlert size={12} />}
-              {message.text}
+            <span className="pstack-inline-message" data-tone={draft.message.tone}>
+              {draft.message.tone === "success" ? <IconCheck size={12} /> : <IconAlert size={12} />}
+              {draft.message.text}
             </span>
           )}
+          <IconButton
+            label={t("resetRole")}
+            disabled={controlsDisabled || !dirty}
+            onClick={onReset}
+          >
+            <IconUndo size={14} />
+          </IconButton>
           <Button
             variant="primary"
             size="sm"
-            icon={busy ? <Spinner size={13} /> : <IconSave size={13} />}
-            disabled={disabled || busy || !dirty || incomplete}
-            onClick={() => {
-              setBusy(true);
-              setMessage(undefined);
-              void api
-                .save({ key: role.key, routes })
-                .then((result) => {
-                  if (result.ok) {
-                    onSaved(result.snapshot);
-                    setMessage({ tone: "success", text: common("saved") });
-                  } else {
-                    setMessage({
-                      tone: "error",
-                      text: t("saveRejected", { reason: result.reason }),
-                    });
-                  }
-                })
-                .catch((reason: unknown) =>
-                  setMessage({
-                    tone: "error",
-                    text: t("saveRejected", { reason: messageOf(reason) }),
-                  }),
-                )
-                .finally(() => setBusy(false));
-            }}
+            icon={draft.busy ? <Spinner size={13} /> : <IconSave size={13} />}
+            disabled={controlsDisabled || !dirty || incomplete}
+            onClick={onSave}
           >
-            {busy ? common("saving") : common("save")}
+            {draft.busy ? common("saving") : common("save")}
           </Button>
         </div>
       </footer>
@@ -330,10 +502,10 @@ function RouteRow(props: {
   const columns =
     route.kind === "route"
       ? canRemove
-        ? "minmax(0, 1.25fr) minmax(0, 1.25fr) minmax(0, 0.7fr) 28px"
+        ? "minmax(0, 1.25fr) minmax(0, 1.25fr) minmax(0, 0.7fr) 32px"
         : "minmax(0, 1.25fr) minmax(0, 1.25fr) minmax(0, 0.7fr)"
       : canRemove
-        ? "minmax(0, 1fr) 28px"
+        ? "minmax(0, 1fr) 32px"
         : "minmax(0, 1fr)";
   return (
     <div className="pstack-route-row" style={{ gridTemplateColumns: columns }}>
@@ -453,6 +625,25 @@ function RouteRow(props: {
   );
 }
 
+function draftOf(role: RoleView): RoleDraft {
+  const routes = routesOf(role);
+  return { routes, baseline: signature(routes), busy: false };
+}
+
+function routesOf(role: RoleView): RouteView[] {
+  return role.routes.length === 0
+    ? [{ kind: "inherit", alias: "inherit-parent" }]
+    : role.routes.map((route) => ({ ...route }));
+}
+
+function isDirty(draft: RoleDraft): boolean {
+  return signature(draft.routes) !== draft.baseline;
+}
+
+function signature(routes: readonly RouteView[]): string {
+  return JSON.stringify(routes);
+}
+
 function statusPresentation(
   snapshot: RoleFileSnapshot,
   t: PstackTranslations["roles"],
@@ -462,16 +653,6 @@ function statusPresentation(
   }
   if (snapshot.status === "missing") return { label: t("statusMissing"), tone: "warn" };
   return { label: t("statusLoaded"), tone: "success" };
-}
-
-function routesOf(role: RoleView): RouteView[] {
-  return role.routes.length === 0
-    ? [{ kind: "inherit", alias: "inherit-parent" }]
-    : role.routes.map((route) => ({ ...route }));
-}
-
-function signature(routes: readonly RouteView[]): string {
-  return JSON.stringify(routes);
 }
 
 function modelChoices(
@@ -500,8 +681,4 @@ function effortChoices(
 
 function messageOf(reason: unknown): string {
   return reason instanceof Error ? reason.message : String(reason);
-}
-
-function fileName(path: string): string {
-  return path.split(/[\\/]/).pop() ?? path;
 }

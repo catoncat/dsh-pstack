@@ -9,7 +9,7 @@ import { IconClose, IconSettings } from "./icons.tsx";
 import { RecommendedPluginsView, type PluginManagerApi } from "./RecommendedPluginsPage.tsx";
 import { RoleSettingsView, type RoleSettingsApi } from "./RoleSettingsPage.tsx";
 import { ensurePstackStyles } from "./styles.ts";
-import { IconButton, SegmentedTabs } from "./ui.tsx";
+import { Button, IconButton, SegmentedTabs } from "./ui.tsx";
 import type { PstackTranslations } from "./locales/index.ts";
 
 ensurePstackStyles();
@@ -60,7 +60,12 @@ export function PstackConfigDialog(props: PstackConfigDialogProps): ReactElement
               {translations.config("dialogTitle")}
             </h2>
           </div>
-          <IconButton label={translations.common("close")} onClick={onClose} autoFocus>
+          <IconButton
+            label={translations.common("close")}
+            className="pstack-icon-btn-plain"
+            onClick={onClose}
+            autoFocus
+          >
             <IconClose size={14} />
           </IconButton>
         </header>
@@ -116,14 +121,14 @@ export function createPstackConfigAction(
     if (props.subject.kind !== "bundle" || props.subject.pkg.name !== "dsh-pstack") return null;
     return (
       <>
-        <button
-          type="button"
-          className="pstack-btn pstack-btn-outline"
+        <Button
+          variant="outline"
+          size="sm"
+          icon={<IconSettings size={13} />}
           onClick={() => setOpen(true)}
         >
-          <IconSettings size={14} />
-          <span>{translations.config("configureAction")}</span>
-        </button>
+          {translations.config("configureAction")}
+        </Button>
         {open ? (
           <PstackConfigDialog
             roleApi={roleApi}

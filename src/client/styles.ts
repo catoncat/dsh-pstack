@@ -128,6 +128,10 @@ const CSS = `
   gap: 16px;
   margin-bottom: 14px;
 }
+.pstack-section-head > div:first-child {
+  flex: 1;
+  min-width: 0;
+}
 .pstack-section-title {
   margin: 0;
   font-size: 16px;
@@ -143,6 +147,8 @@ const CSS = `
 .pstack-section-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 8px;
   flex: none;
 }
@@ -192,6 +198,7 @@ const CSS = `
 }
 .pstack-btn-sm {
   height: 28px;
+  gap: 4px;
   padding: 0 10px;
   border-radius: var(--dsw-radius-sm);
   font-size: 12px;
@@ -206,11 +213,14 @@ const CSS = `
   width: 28px;
   height: 28px;
   padding: 0;
-  border: 0;
-  border-radius: var(--dsw-radius-sm);
+  border: 0.5px solid var(--dsw-alias-border-l3);
+  border-radius: var(--dsw-radius-md);
   background: transparent;
-  color: var(--dsw-alias-label-tertiary);
+  color: var(--dsw-alias-label-secondary);
   cursor: pointer;
+}
+.pstack-icon-btn-plain {
+  border-color: transparent;
 }
 .pstack-icon-btn:hover:not(:disabled) {
   background: var(--dsw-alias-interactive-bg-hover);
@@ -219,6 +229,10 @@ const CSS = `
 .pstack-icon-btn:disabled {
   cursor: default;
   opacity: 0.4;
+}
+.pstack-icon-btn-danger {
+  border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary) 45%, transparent);
+  color: var(--dsw-alias-state-error-primary);
 }
 .pstack-icon-btn-danger:hover:not(:disabled) {
   background: var(--dsw-alias-interactive-bg-hover-danger);
@@ -295,6 +309,35 @@ const CSS = `
 .pstack-switch[aria-checked="false"] .pstack-switch-thumb {
   background: var(--dsw-alias-switch-thumb);
 }
+.pstack-plugin-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.pstack-plugin-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pstack-plugin-group-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 2px;
+}
+.pstack-plugin-group-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 20px;
+}
+.pstack-plugin-group-desc {
+  margin: 2px 0 0;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  line-height: 18px;
+}
 .pstack-plugin-list,
 .pstack-role-list {
   display: flex;
@@ -312,6 +355,13 @@ const CSS = `
   border: 0.5px solid var(--dsw-alias-settings-card-stroke);
   border-radius: var(--dsw-radius-xl);
   background: var(--dsw-alias-settings-card-fill);
+}
+.pstack-plugin-card[data-conflict="true"] {
+  border-color: color-mix(
+    in srgb,
+    var(--dsw-alias-state-error-primary) 35%,
+    var(--dsw-alias-settings-card-stroke)
+  );
 }
 .pstack-plugin-icon {
   display: grid;
@@ -370,6 +420,13 @@ const CSS = `
   border: 0.5px solid var(--dsw-alias-settings-card-stroke);
   border-radius: var(--dsw-radius-xl);
   background: var(--dsw-alias-settings-card-fill);
+}
+.pstack-role-card[data-dirty="true"] {
+  border-color: color-mix(
+    in srgb,
+    var(--dsw-alias-state-warn-primary) 32%,
+    var(--dsw-alias-settings-card-stroke)
+  );
 }
 .pstack-role-head {
   display: flex;
@@ -454,6 +511,11 @@ const CSS = `
   padding: 10px 10px 10px 12px;
   border-radius: var(--dsw-radius-lg);
   background: var(--dsw-alias-bg-module-platform);
+}
+.pstack-route-row > .pstack-icon-btn {
+  width: 32px;
+  height: 32px;
+  align-self: end;
 }
 .pstack-field {
   display: flex;
