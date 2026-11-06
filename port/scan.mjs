@@ -70,6 +70,7 @@ const TERMS = [
   ["tailscale", "platform", /\btailscale\b/i],
   ["Pele", "platform", /\bPele\b|pele@|pele\.run/],
   ["plan mode", "platform", /plan mode|Plan mode/],
+  ["Custom Mode", "platform", /Custom Modes?/i],
   ["MCP", "platform", /\bMCP\b|\.mcp\.json/],
   ["webhook", "platform", /webhook/],
   // 依赖的其他 Cursor 插件

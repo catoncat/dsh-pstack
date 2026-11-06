@@ -21,27 +21,29 @@
 
 | 指标 | 数值 |
 |:--|:--|
-| 已审核的 Cursor 能力 | **67** |
+| 已审核的 Cursor 能力 | **68** |
 | 生成的 pstack 技能 | **58** |
 | 内置 pstack 工具 | **5** |
+| Agent 预设 | **4**（1 个根预设，3 个子代理预设） |
 | 角色定义 | **17** |
-| 审核结果 | **39 项直接映射 · 2 项官方插件 · 17 项插件实现 · 9 项有意舍弃** |
+| 审核结果 | **39 项直接映射 · 2 项官方插件 · 18 项插件实现 · 9 项有意舍弃** |
 
 完整能力审核见 [`port/audit.md`](./port/audit.md)，运行时映射见 [`port/dsh.md`](./port/dsh.md)。
 
 ## 主要能力
 
-### 按角色路由的子代理
+### 预设与按角色路由的子代理
 
 `pstack_subagent` 把工作派发给全新的子代理。一次调用可以选择一个 pstack 角色、一个自动面板，或用 `roleIndex` 选择列表角色中的某一项；`reasoningEffort` 可以调整所选路由的起始推理强度。每次结果都会返回子会话 id 和解析出的真实路由。
 
-随包提供三个子代理预设：
+随包提供一个根预设和三个子代理预设：
 
-| 预设 | 用途 |
-|---|---|
-| `poteto-agent` | 实现型子代理，注入 pstack 人格和 `poteto-mode` 指令。 |
-| `comment-sicko` | 只读评论评审子代理，报告删除目标和 `MUST KILL` 符号。 |
-| `readonly` | 带只读沙箱策略的研究子代理，用于检查和取证。 |
+| 预设 | 范围 | 用途 |
+|---|---|---|
+| `poteto-mode` | 根 | 把完整 `poteto-mode` 技能常驻系统提示直到会话结束。 |
+| `poteto-agent` | 子代理 | 实现型子代理，注入 pstack 人格和 `poteto-mode` 指令。 |
+| `comment-sicko` | 子代理 | 只读评论评审子代理，报告删除目标和 `MUST KILL` 符号。 |
+| `readonly` | 子代理 | 带只读沙箱策略的研究子代理，用于检查和取证。 |
 
 ### 明确的技能加载
 
@@ -85,7 +87,7 @@ dsh plugin --profile <profile> add dsh-pstack
 1. 如果插件管理器要求，重启 profile。
 2. 打开 `dsh-pstack` 插件页，选择 **pstack 设置**。
 3. 用 **角色模型** 标签页设置角色路由，或运行 `/setup-pstack`。
-4. 用 `/poteto-mode` 开始任务。
+4. 新建会话时选择 `poteto-mode` 预设以获得持久模式，或在其它预设里用 `/poteto-mode` 处理单个任务。
 
 本地开发和完整验证环境见 [`playground/README.md`](./playground/README.md)。
 
@@ -157,7 +159,7 @@ node port/generate.mjs --check
 | 文档 | 内容 |
 |---|---|
 | [`port/README.md`](./port/README.md) | 移植规则、审核流程、生成树和维护边界。 |
-| [`port/audit.md`](./port/audit.md) | 67 项能力的证据、处置、剩余缺口和推荐方案。 |
+| [`port/audit.md`](./port/audit.md) | 68 项能力的证据、处置、剩余缺口和推荐方案。 |
 | [`port/dsh.md`](./port/dsh.md) | Cursor/pstack 名称到 DSH 工具、字段、路径和本地替代的运行时映射。 |
 | [`playground/README.md`](./playground/README.md) | 浏览器和无头验证环境。 |
 

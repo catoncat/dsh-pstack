@@ -4,7 +4,7 @@
 
 ## 处置状态
 
-本轮已确认处置 67 项。
+本轮已确认处置 68 项。
 
 - `直接映射`：DSH 标准模式已经提供。
 - `官方插件`：启用 DSH 随附的官方插件即可。
@@ -17,15 +17,15 @@
 
 | 指标 | 数值 |
 |:--|--:|
-| 能力总数 | 67 |
-| 已确认处置 | 67 |
+| 能力总数 | 68 |
+| 已确认处置 | 68 |
 | 待确认处置 | 0 |
 | 技能 | 58 |
 | 脚本入口 | 7 |
-| 引用校验 | 230 |
+| 引用校验 | 234 |
 | 🟢 直接映射 | 39 |
 | 🔵 官方插件 | 2 |
-| 🟠 插件实现 | 17 |
+| 🟠 插件实现 | 18 |
 | 🔴 舍弃 | 9 |
 
 | 分类 | 能力 | 推荐分布 |
@@ -34,7 +34,7 @@
 | [B 子代理字段](#cat-b) | 10 | 🟢 直接映射 6 · 🟠 插件实现 4 |
 | [C 模型与角色](#cat-c) | 7 | 🟢 直接映射 2 · 🟠 插件实现 5 |
 | [D 路径与历史](#cat-d) | 5 | 🟢 直接映射 4 · 🔴 舍弃 1 |
-| [E Cursor 平台](#cat-e) | 13 | 🟢 直接映射 7 · 🔵 官方插件 1 · 🔴 舍弃 5 |
+| [E Cursor 平台](#cat-e) | 14 | 🟢 直接映射 7 · 🔵 官方插件 1 · 🟠 插件实现 1 · 🔴 舍弃 5 |
 | [F 其他 Cursor 插件](#cat-f) | 6 | 🔵 官方插件 1 · 🟠 插件实现 3 · 🔴 舍弃 2 |
 | [G 运行时与脚本](#cat-g) | 14 | 🟢 直接映射 12 · 🟠 插件实现 2 |
 
@@ -44,7 +44,7 @@
 |:--|--:|:--|
 | 🟢 直接映射 | 39 | [CAP-002](#cap-002) [CAP-003](#cap-003) [CAP-005](#cap-005) [CAP-006](#cap-006) [CAP-007](#cap-007) [CAP-008](#cap-008) [CAP-009](#cap-009) [CAP-010](#cap-010) [CAP-014](#cap-014) [CAP-018](#cap-018) [CAP-019](#cap-019) [CAP-020](#cap-020) [CAP-021](#cap-021) [CAP-022](#cap-022) [CAP-026](#cap-026) [CAP-027](#cap-027) [CAP-030](#cap-030) [CAP-031](#cap-031) [CAP-032](#cap-032) [CAP-034](#cap-034) [CAP-037](#cap-037) [CAP-038](#cap-038) [CAP-040](#cap-040) [CAP-042](#cap-042) [CAP-043](#cap-043) [CAP-044](#cap-044) [CAP-045](#cap-045) [CAP-054](#cap-054) [CAP-055](#cap-055) [CAP-056](#cap-056) [CAP-057](#cap-057) [CAP-058](#cap-058) [CAP-059](#cap-059) [CAP-060](#cap-060) [CAP-061](#cap-061) [CAP-062](#cap-062) [CAP-063](#cap-063) [CAP-064](#cap-064) [CAP-067](#cap-067) |
 | 🔵 官方插件 | 2 | [CAP-041](#cap-041) [CAP-050](#cap-050) |
-| 🟠 插件实现 | 17 | [CAP-001](#cap-001) [CAP-004](#cap-004) [CAP-011](#cap-011) [CAP-013](#cap-013) [CAP-015](#cap-015) [CAP-016](#cap-016) [CAP-017](#cap-017) [CAP-023](#cap-023) [CAP-024](#cap-024) [CAP-025](#cap-025) [CAP-028](#cap-028) [CAP-029](#cap-029) [CAP-048](#cap-048) [CAP-049](#cap-049) [CAP-051](#cap-051) [CAP-065](#cap-065) [CAP-066](#cap-066) |
+| 🟠 插件实现 | 18 | [CAP-001](#cap-001) [CAP-004](#cap-004) [CAP-011](#cap-011) [CAP-013](#cap-013) [CAP-015](#cap-015) [CAP-016](#cap-016) [CAP-017](#cap-017) [CAP-023](#cap-023) [CAP-024](#cap-024) [CAP-025](#cap-025) [CAP-028](#cap-028) [CAP-029](#cap-029) [CAP-048](#cap-048) [CAP-049](#cap-049) [CAP-051](#cap-051) [CAP-065](#cap-065) [CAP-066](#cap-066) [CAP-068](#cap-068) |
 | 🔴 舍弃 | 9 | [CAP-012](#cap-012) [CAP-033](#cap-033) [CAP-035](#cap-035) [CAP-036](#cap-036) [CAP-039](#cap-039) [CAP-046](#cap-046) [CAP-047](#cap-047) [CAP-052](#cap-052) [CAP-053](#cap-053) |
 
 ## 字段说明
@@ -141,6 +141,7 @@
 | [CAP-065](#cap-065) | Pele 图表渲染 | 🟠 插件实现 | 宿主默认没有安装 `pele@1.9.0` | 插件实现 | |
 | [CAP-066](#cap-066) | 视频渲染 | 🟠 插件实现 | 本机没有 ffmpeg、convert 或 magick | 插件实现 | |
 | [CAP-067](#cap-067) | 性能测量 工具链 | 🟢 直接映射 | 本机缺少 `py-spy` | 直接映射 | |
+| [CAP-068](#cap-068) | Custom Mode 自定义模式 | 🟠 插件实现 | 标准模式没有常驻技能的根 preset | 插件实现 | |
 
 ## 本轮基线
 
@@ -827,7 +828,7 @@
 
 <a id="cat-e"></a>
 
-## E Cursor 平台　🟢 直接映射 7 · 🔵 官方插件 1 · 🔴 舍弃 5
+## E Cursor 平台　🟢 直接映射 7 · 🔵 官方插件 1 · 🟠 插件实现 1 · 🔴 舍弃 5
 
 <a id="cap-035"></a>
 
@@ -1060,6 +1061,25 @@
 | 🚧 最终遗留 | 本机未安装 Tailscale，且需要 sudo 登录，不作为插件能力提供。 |
 | 💡 推荐 | 🔴 舍弃。Tailscale 暴露不实现，页面发布不纳入插件能力。 |
 | ✅ 处置 | 舍弃 |
+
+[返回审核清单](#审核清单)
+
+<a id="cap-068"></a>
+
+### CAP-068 Custom Mode 自定义模式　🟠 插件实现
+
+| 维度 | 内容 |
+|:--|:--|
+| 📍 使用位置 | `README.md:106`、`docs/guide/01-setup.md:64`、`docs/guide/02-poteto-mode.md:93`、`skills/poteto-help/SKILL.md:57` |
+| 🖱️ Cursor 行为 | Cursor 支持把技能设为 Custom Mode：用 Option+Enter 或 Use as Mode 进入后，`/poteto-mode` 常驻上下文，每一轮都在，直到用户退出。 |
+| 🧰 标准模式 | 标准模式把技能当作单轮或按需显式加载的内容，没有常驻技能 section；`poteto-agent` preset 只给委派子代理用。 |
+| 🧩 官方插件 | 无。 |
+| 🕳️ 剩余缺口 | 标准模式没有持久根 preset，无法在一整段会话里保留完整 `poteto-mode` 技能正文。 |
+| 🛠️ 插件要求与验收 | 插件提供根 `poteto-mode` preset，由 `pstack-poteto-mode` 行以 `systemPrompt` section 注入完整 `SKILL.md` 正文（去掉 frontmatter）与 agent harness 适配文档的绝对路径，并告诉模型每会话读一次 `docs/harness/dsh.md`；section 用 `interpolate: false` 保留正文里的 `{{...}}`。preset 保留标准工具面，不裁剪 Web 工具。`poteto-agent` 仍是只给委派子代理的 preset，两者分开。验收：新会话选择 `poteto-mode`，系统提示包含 `# Poteto mode` 与 `Non-negotiables`；第二轮仍在模式内且不需要再次加载 `pstack-skill`；询问当前持久模式时回答 `poteto-mode`。 |
+| ⚔️ 冲突 | `poteto-agent` preset 也注入 `poteto-mode` 指令路径，但只用于子代理；根 preset 与它同名概念不同，二者不能互相替代。 |
+| 🚧 最终遗留 | 只有选择该 preset 的新会话才有持久技能；已有会话或其它 preset 需要每个任务调用 `/poteto-mode`。headless 一次性 runner 不组合 agent preset，验证必须在 Web 会话进行。 |
+| 💡 推荐 | 🟠 插件实现。新增根 `poteto-mode` preset 与 `pstack-poteto-mode` section 插件，把完整技能常驻系统提示，保留标准工具面，与只给委派用的 `poteto-agent` 分开。 |
+| ✅ 处置 | 插件实现 |
 
 [返回审核清单](#审核清单)
 
@@ -1479,7 +1499,7 @@
 | maintain-verification-skill | CAP-004 CAP-030 CAP-043 | 见上方能力小节 |
 | make-bot-ui | CAP-035 CAP-036 CAP-046 CAP-047 | 见上方能力小节 |
 | no-comments | CAP-001 CAP-004 CAP-013 CAP-016 | 见上方能力小节 |
-| poteto-help | CAP-003 CAP-004 CAP-005 CAP-011 CAP-013 CAP-015 CAP-026 CAP-027 CAP-028 CAP-029 CAP-031 CAP-038 CAP-039 CAP-041 CAP-042 CAP-043 CAP-046 CAP-048 CAP-049 CAP-050 CAP-051 CAP-056 CAP-063 | 见上方能力小节 |
+| poteto-help | CAP-003 CAP-004 CAP-005 CAP-011 CAP-013 CAP-015 CAP-026 CAP-027 CAP-028 CAP-029 CAP-031 CAP-038 CAP-039 CAP-041 CAP-042 CAP-043 CAP-046 CAP-048 CAP-049 CAP-050 CAP-051 CAP-056 CAP-063 CAP-068 | 见上方能力小节 |
 | poteto-mode | CAP-001 CAP-002 CAP-003 CAP-004 CAP-005 CAP-011 CAP-013 CAP-015 CAP-018 CAP-020 CAP-023 CAP-024 CAP-026 CAP-027 CAP-029 CAP-034 CAP-036 CAP-038 CAP-039 CAP-040 CAP-041 CAP-045 CAP-046 CAP-048 CAP-049 CAP-050 CAP-051 CAP-052 CAP-053 CAP-054 CAP-058 CAP-059 CAP-060 CAP-061 CAP-064 CAP-066 CAP-067 | 见上方能力小节 |
 | principle-attack-the-premise | 无命中 | 无专门接口要求，使用通用 Bash 与文件工具 |
 | principle-boundary-discipline | 无命中 | 无专门接口要求，使用通用 Bash 与文件工具 |
