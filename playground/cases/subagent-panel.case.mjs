@@ -29,8 +29,8 @@ export default {
       },
       cleanup: restoreRoleFile,
       prompt: [
-        "请用 pstack 的 `arena runners` 角色启动两个普通的、非只读子代理，让它们分别简单说明当前仓库的包导出配置。",
-        "必须使用该角色的自动面板，不要自己回答；只报告启动结果和每个子代理的路由。",
+        "请使用 pstack 的 `arena runners` 角色做一次子代理调用，让它的自动面板启动两个普通的、非只读子代理，分别简单说明当前仓库的包导出配置。",
+        "只发起一次子代理调用，不要拆成多次；只报告启动结果和每个子代理的路由。",
       ].join("\n"),
       verify({ calls }) {
         const subagentCalls = calls.filter((call) => call.tool === "pstack_subagent");
