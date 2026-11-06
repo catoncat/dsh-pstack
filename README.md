@@ -105,8 +105,8 @@ The package ships two root presets and three child presets.
 
 | Preset | Scope | Use |
 |---|---|---|
-| `poteto-mode` | Root | Keeps the full `poteto-mode` skill in the system prompt with the standard tools and `pstack_subagent` as the only direct delegation path. |
-| `poteto-mode-creator` | Root | Same persistent skill with the Creator mode tools, `tool-cordis`, agent-preset skills, and `pstack_subagent` as the only direct delegation path. |
+| `poteto-mode` | Root | Based on Standard mode, with the same capabilities plus the persistent `poteto-mode` workflow. |
+| `poteto-mode-creator` | Root | Based on Creator mode, with the same capabilities plus the persistent `poteto-mode` workflow. |
 | `poteto-agent` | Child | Handles implementation delegation with the pstack persona and `poteto-mode` instructions. |
 | `comment-sicko` | Child | Handles read-only comment review and reports deletion targets and `MUST KILL` symbols. |
 | `readonly` | Child | Provides sandbox-enforced read-only research for inspection and evidence gathering. |

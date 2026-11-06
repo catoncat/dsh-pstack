@@ -13,11 +13,12 @@ const EN: Record<string, PresetCopy> = {
   "poteto-mode": {
     name: "Poteto mode",
     description:
-      "Keep the full poteto-mode workflow in the system prompt for sustained, disciplined work.",
+      "Based on Standard mode, with the same capabilities plus the persistent poteto-mode workflow.",
   },
   "poteto-mode-creator": {
     name: "Poteto Creator mode",
-    description: "Keep the poteto-mode workflow in Creator mode while extending DSH.",
+    description:
+      "Based on Creator mode, with the same capabilities plus the persistent poteto-mode workflow.",
   },
   "poteto-agent": {
     name: "Implementation agent",
@@ -36,11 +37,11 @@ const EN: Record<string, PresetCopy> = {
 const ZH: Record<string, PresetCopy> = {
   "poteto-mode": {
     name: "Poteto 模式",
-    description: "把完整的 poteto-mode 工作流常驻系统提示，适合需要持续遵循同一套纪律的任务。",
+    description: "基于标准模式，能力与标准模式一致，额外常驻 poteto-mode 工作流。",
   },
   "poteto-mode-creator": {
     name: "Poteto 创造模式",
-    description: "在创造模式中常驻 poteto-mode 工作流，适合需要同时扩展 DSH 的任务。",
+    description: "基于创造模式，能力与创造模式一致，额外常驻 poteto-mode 工作流。",
   },
   "poteto-agent": {
     name: "实现代理",

@@ -1,6 +1,0 @@
-{
-  "meta": {
-    "title": "子代理委派",
-    "description": "按角色路由启动一个或多个 pstack 子代理。"
-  }
-}

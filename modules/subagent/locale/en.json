@@ -1,6 +1,0 @@
-{
-  "meta": {
-    "title": "Subagent delegation",
-    "description": "Start one or more pstack subagents with role routing."
-  }
-}

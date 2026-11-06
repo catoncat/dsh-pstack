@@ -1,6 +1,0 @@
-{
-  "meta": {
-    "title": "图表渲染",
-    "description": "通过本地渲染器生成 Mermaid 图和幻灯片视频。"
-  }
-}

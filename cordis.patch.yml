@@ -48,7 +48,7 @@
       config:
         id: poteto-mode
         name: Poteto mode
-        description: Keep the full poteto-mode workflow in the system prompt for sustained, disciplined work.
+        description: Based on Standard mode, with the same capabilities plus the persistent poteto-mode workflow.
         order: 5
         plugins:
           - id: persona
@@ -174,7 +174,7 @@
       config:
         id: poteto-mode-creator
         name: Poteto Creator mode
-        description: Keep the poteto-mode workflow in Creator mode while extending DSH.
+        description: Based on Creator mode, with the same capabilities plus the persistent poteto-mode workflow.
         order: 6
         plugins:
           - id: persona

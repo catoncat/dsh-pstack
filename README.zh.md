@@ -105,8 +105,8 @@
 
 | 预设 | 范围 | 用途 |
 |---|---|---|
-| `poteto-mode` | 根 | 把完整 `poteto-mode` 技能常驻系统提示，使用标准工具，并以 `pstack_subagent` 作为唯一直接派发入口。 |
-| `poteto-mode-creator` | 根 | 同一套持久技能，使用创造模式工具，包含 `tool-cordis`、agent-preset 技能，并以 `pstack_subagent` 作为唯一直接派发入口。 |
+| `poteto-mode` | 根 | 基于标准模式，能力与标准模式一致，额外常驻 `poteto-mode` 工作流。 |
+| `poteto-mode-creator` | 根 | 基于创造模式，能力与创造模式一致，额外常驻 `poteto-mode` 工作流。 |
 | `poteto-agent` | 子代理 | 实现型子代理，注入 pstack 人格和 `poteto-mode` 指令。 |
 | `comment-sicko` | 子代理 | 只读评论评审子代理，报告删除目标和 `MUST KILL` 符号。 |
 | `readonly` | 子代理 | 带只读沙箱策略的研究子代理，用于检查和取证。 |
