@@ -54,6 +54,12 @@
     "./subagent": "./dist/subagent.mjs",
     "./package.json": "./package.json",
     "./locale/*.json": "./locale/*.json",
+    "./models/locale/*.json": "./locale/models/*.json",
+    "./role-service/locale/*.json": "./locale/role-service/*.json",
+    "./role-catalog/locale/*.json": "./locale/role-catalog/*.json",
+    "./subagent/locale/*.json": "./locale/subagent/*.json",
+    "./render/locale/*.json": "./locale/render/*.json",
+    "./preset/locale/*.json": "./locale/preset/*.json",
     "./client": "./dist/client.mjs"
   },
   "scripts": {
@@ -73,7 +79,6 @@
     "@deepseek-ai/dsh-client-ui-renderer": "catalog:types",
     "@deepseek-ai/dsh-client-ui-settings": "catalog:types",
     "@deepseek-ai/dsh-client-ui-slots": "catalog:types",
-    "@deepseek-ai/dsh-client-ui-tool": "catalog:types",
     "@deepseek-ai/dsh-llm": "catalog:types",
     "@deepseek-ai/dsh-sandbox-policy": "catalog:types",
     "@deepseek-ai/dsh-skill": "catalog:types",

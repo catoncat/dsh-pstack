@@ -47,8 +47,8 @@
       name: "dsh-pstack/preset"
       config:
         id: poteto-mode
-        name: pstack poteto-mode
-        description: Root pstack preset. Keeps the full poteto-mode skill in the system prompt with the standard tools and pstack_subagent as the only direct spawn path.
+        name: Poteto mode
+        description: Keep the full poteto-mode workflow in the system prompt for sustained, disciplined work.
         order: 5
         plugins:
           - id: persona
@@ -173,8 +173,8 @@
       name: "dsh-pstack/preset"
       config:
         id: poteto-mode-creator
-        name: pstack poteto-mode creator
-        description: Root pstack preset based on Creator mode. Keeps the full poteto-mode skill in the system prompt with tool-cordis, agent-preset skills, and pstack_subagent as the only direct spawn path.
+        name: Poteto Creator mode
+        description: Keep the poteto-mode workflow in Creator mode while extending DSH.
         order: 6
         plugins:
           - id: persona
@@ -304,8 +304,8 @@
       name: "dsh-pstack/preset"
       config:
         id: poteto-agent
-        name: pstack poteto-agent
-        description: pstack implementation delegate. Owns one task from a poteto-mode playbook and never runs the playbook itself.
+        name: Implementation agent
+        description: Implementation delegate that follows poteto-mode discipline for one task.
         order: 100
         plugins:
           - id: persona
@@ -347,8 +347,8 @@
       name: "dsh-pstack/preset"
       config:
         id: comment-sicko
-        name: pstack comment-sicko
-        description: Comment reviewer. Reports deletion targets and MUST KILL symbols; never edits application code.
+        name: Comment review
+        description: Review comments and report deletion targets and symbols that need refactoring.
         order: 101
         plugins:
           - id: persona
@@ -401,8 +401,8 @@
       name: "dsh-pstack/preset"
       config:
         id: readonly
-        name: pstack readonly
-        description: Read-only research delegate. Reads, searches, and runs read-only commands; never edits files.
+        name: Read-only research
+        description: Read-only research delegate that gathers evidence without editing files.
         order: 102
         plugins:
           - id: persona

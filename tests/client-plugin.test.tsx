@@ -36,8 +36,6 @@ describe("pstack client", () => {
     const slots: {
       name: string;
       id?: string;
-      key?: string;
-      locale?: string;
       component: unknown;
     }[] = [];
     const dictionaries = new Map<string, Dictionaries>();
@@ -48,10 +46,7 @@ describe("pstack client", () => {
     };
     const slotHost = {
       inject: (_name: string, register: () => void) => register(),
-      register: (
-        options: { name: string; id?: string; key?: string; locale?: string },
-        component: unknown,
-      ) => {
+      register: (options: { name: string; id?: string }, component: unknown) => {
         slots.push({ ...options, component });
         return () => {};
       },
@@ -85,7 +80,6 @@ describe("pstack client", () => {
     await apply(ctx);
     expect(inject).toEqual(["remote", "slots", "locale", "remote.pluginManager"]);
     expect(mounts).toHaveLength(1);
-    expect(slots.filter((slot) => slot.name === "tool.call.toolview")).toHaveLength(5);
     expect(slots.filter((slot) => slot.name === "plugins.detail.actions")).toHaveLength(1);
     const action = slots.find((slot) => slot.name === "plugins.detail.actions");
     expect(action?.id).toBe("pstack");

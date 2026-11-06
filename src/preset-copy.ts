@@ -11,55 +11,48 @@ export interface PresetCopy {
 
 const EN: Record<string, PresetCopy> = {
   "poteto-mode": {
-    name: "pstack poteto-mode",
+    name: "Poteto mode",
     description:
-      "Root pstack preset. Keeps the full poteto-mode skill in the system prompt with the standard tools and pstack_subagent as the only direct spawn path.",
+      "Keep the full poteto-mode workflow in the system prompt for sustained, disciplined work.",
   },
   "poteto-mode-creator": {
-    name: "pstack poteto-mode creator",
-    description:
-      "Root pstack preset based on Creator mode. Keeps the full poteto-mode skill in the system prompt with tool-cordis, agent-preset skills, and pstack_subagent as the only direct spawn path.",
+    name: "Poteto Creator mode",
+    description: "Keep the poteto-mode workflow in Creator mode while extending DSH.",
   },
   "poteto-agent": {
-    name: "pstack poteto-agent",
-    description:
-      "pstack implementation delegate. Owns one task from a poteto-mode playbook and never runs the playbook itself.",
+    name: "Implementation agent",
+    description: "Implementation delegate that follows poteto-mode discipline for one task.",
   },
   "comment-sicko": {
-    name: "pstack comment-sicko",
-    description:
-      "Comment reviewer. Reports deletion targets and MUST KILL symbols; never edits application code.",
+    name: "Comment review",
+    description: "Review comments and report deletion targets and symbols that need refactoring.",
   },
   readonly: {
-    name: "pstack readonly",
-    description:
-      "Read-only research delegate. Reads, searches, and runs read-only commands; never edits files.",
+    name: "Read-only research",
+    description: "Read-only research delegate that gathers evidence without editing files.",
   },
 };
 
 const ZH: Record<string, PresetCopy> = {
   "poteto-mode": {
-    name: "pstack Poteto 模式",
-    description:
-      "pstack 根预设。把完整的 poteto-mode 技能常驻系统提示，使用标准工具，并以 pstack_subagent 作为唯一直接派发入口。",
+    name: "Poteto 模式",
+    description: "把完整的 poteto-mode 工作流常驻系统提示，适合需要持续遵循同一套纪律的任务。",
   },
   "poteto-mode-creator": {
-    name: "pstack Poteto 创造模式",
-    description:
-      "基于创造模式的 pstack 根预设。把完整的 poteto-mode 技能常驻系统提示，使用 tool-cordis、agent-preset 技能，并以 pstack_subagent 作为唯一直接派发入口。",
+    name: "Poteto 创造模式",
+    description: "在创造模式中常驻 poteto-mode 工作流，适合需要同时扩展 DSH 的任务。",
   },
   "poteto-agent": {
-    name: "pstack Poteto 实现代理",
-    description:
-      "pstack 实现型委派代理。负责 poteto-mode playbook 中的一个任务，不运行 playbook 本身。",
+    name: "实现代理",
+    description: "实现型子代理，按 poteto-mode 的纪律完成单个任务。",
   },
   "comment-sicko": {
-    name: "pstack 评论审查代理",
-    description: "评论审查代理。报告删除目标和 MUST KILL 符号，绝不修改应用代码。",
+    name: "评论审查",
+    description: "审查评论，报告删除目标和需要重构的符号。",
   },
   readonly: {
-    name: "pstack 只读研究代理",
-    description: "只读研究委派代理。读取、搜索并运行只读命令，绝不修改文件。",
+    name: "只读研究",
+    description: "只读研究代理，收集证据但不修改文件。",
   },
 };
 

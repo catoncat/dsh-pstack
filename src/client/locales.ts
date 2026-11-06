@@ -63,21 +63,6 @@ const en = {
   recommendedTerminalDescription: "Keep PTY terminals alive for CLI and TUI verification.",
   recommendedRalphTitle: "Ralph loop",
   recommendedRalphDescription: "Run a foreground fresh-agent loop with structured handoff.",
-  toolSubagent: "pstack delegation",
-  toolSubagentDescription:
-    "Delegate work to one or more fresh child agents with pstack role routing.",
-  toolSkill: "pstack skill loader",
-  toolSkillDescription: "Load a hidden pstack skill and its relative resources by name.",
-  toolModels: "pstack model catalogue",
-  toolModelsDescription:
-    "List the providers, models, and reasoning efforts this deployment serves.",
-  toolRoles: "pstack role catalogue",
-  toolRolesDescription: "Show pstack role shapes and automatic-panel status for delegation.",
-  toolRender: "pstack renderer",
-  toolRenderDescription: "Render Mermaid diagrams and slide videos through local renderers.",
-  toolGeneric: "Tool",
-  toolArguments: "Arguments",
-  toolResult: "Result",
 } as const;
 
 export type PstackLocaleKey = keyof typeof en;
@@ -149,18 +134,5 @@ export const catalogs = {
     recommendedTerminalDescription: "保留 PTY 终端，用于 CLI 和 TUI 验证。",
     recommendedRalphTitle: "Ralph 循环",
     recommendedRalphDescription: "运行带结构化交接的前台 fresh-agent 循环。",
-    toolSubagent: "pstack 子代理委派",
-    toolSubagentDescription: "把任务按 pstack 角色路由给一个或多个新的子代理。",
-    toolSkill: "pstack 技能加载",
-    toolSkillDescription: "按名称加载隐藏的 pstack 技能及其相对资源。",
-    toolModels: "pstack 模型目录",
-    toolModelsDescription: "列出当前部署提供的 provider、模型和推理强度。",
-    toolRoles: "pstack 角色目录",
-    toolRolesDescription: "展示 pstack 角色 shape 与自动面板状态，辅助委派。",
-    toolRender: "pstack 渲染",
-    toolRenderDescription: "通过本地渲染器生成 Mermaid 图和幻灯片视频。",
-    toolGeneric: "工具",
-    toolArguments: "参数",
-    toolResult: "结果",
   },
 } as const;

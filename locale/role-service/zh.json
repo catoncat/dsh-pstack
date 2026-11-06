@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "角色服务",
+    "description": "读取和保存 pstack-models.mdc 中的角色路由配置。"
+  }
+}

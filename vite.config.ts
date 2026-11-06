@@ -23,6 +23,12 @@ export default defineConfig({
       exports: {
         customExports: {
           "./locale/*.json": "./locale/*.json",
+          "./models/locale/*.json": "./locale/models/*.json",
+          "./role-service/locale/*.json": "./locale/role-service/*.json",
+          "./role-catalog/locale/*.json": "./locale/role-catalog/*.json",
+          "./subagent/locale/*.json": "./locale/subagent/*.json",
+          "./render/locale/*.json": "./locale/render/*.json",
+          "./preset/locale/*.json": "./locale/preset/*.json",
           "./client": "./dist/client.mjs",
         },
       },
