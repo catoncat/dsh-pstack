@@ -1,15 +1,17 @@
 /** Copy for the pstack plugin configuration dialog. */
 
 const en = {
-  configureAction: "pstack settings",
-  dialogTitle: "pstack configuration",
+  configureAction: "Configure",
+  dialogTitle: "Configure pstack workflow",
+  tabsLabel: "Configuration sections",
   tabPlugins: "Recommended plugins",
   tabRoles: "Role models",
 } as const;
 
 const zh = {
-  configureAction: "pstack 设置",
-  dialogTitle: "pstack 配置",
+  configureAction: "配置",
+  dialogTitle: "配置 pstack 工作流",
+  tabsLabel: "配置分区",
   tabPlugins: "推荐插件",
   tabRoles: "角色模型",
 } as const;

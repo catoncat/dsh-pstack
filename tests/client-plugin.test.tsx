@@ -4,6 +4,8 @@ import { describe, expect, it } from "vite-plus/test";
 import type { Context } from "@deepseek-ai/cordis";
 
 import { apply, inject } from "../src/client/index.ts";
+import { ROLE_COPY } from "../src/client/role-copy.ts";
+import { ROLE_MANIFEST } from "../src/role-manifest.ts";
 import type { PstackRolesNamespace } from "../src/role-remote.ts";
 import type { BundleView } from "../src/client/RecommendedPluginsPage.tsx";
 import { RecommendedPluginsView } from "../src/client/RecommendedPluginsPage.tsx";
@@ -109,7 +111,7 @@ describe("pstack client", () => {
         subject: { kind: "bundle", pkg: { name: "dsh-pstack" } },
       }),
     );
-    expect(html).toContain("pstack settings");
+    expect(html).toContain("Configure");
     expect(
       renderToStaticMarkup(
         createElement(Component as never, {
@@ -128,5 +130,23 @@ describe("pstack client", () => {
     expect(html).toContain(catalogs.plugins.zh.recommendedForgeDescription);
     expect(html).not.toContain(catalogs.plugins.en.recommendedForgeTitle);
     expect(html).not.toContain(catalogs.plugins.en.recommendedForgeDescription);
+  });
+
+  it("has a localized name and scenario for every pstack role", () => {
+    const dictionaries = catalogs.roles as unknown as Dictionaries;
+    for (const role of ROLE_MANIFEST) {
+      const copy = ROLE_COPY[role.key];
+      expect(copy, role.key).toBeDefined();
+      for (const language of ["en", "zh"]) {
+        expect(
+          dictionaries[language]?.[copy!.nameKey],
+          `${role.key} name ${language}`,
+        ).toBeTruthy();
+        expect(
+          dictionaries[language]?.[copy!.descriptionKey],
+          `${role.key} description ${language}`,
+        ).toBeTruthy();
+      }
+    }
   });
 });

@@ -10,13 +10,7 @@ import type {} from "@deepseek-ai/dsh-client-ui-plugin-manager/client";
 
 import type { CatalogueResult } from "../models.ts";
 import { pstackRolesRemote } from "../role-remote.ts";
-import type {
-  RoleFileSnapshot,
-  SaveBudgetRequest,
-  SaveBudgetResult,
-  SaveRoleRequest,
-  SaveRoleResult,
-} from "../role-wire.ts";
+import type { RoleFileSnapshot, SaveRoleRequest, SaveRoleResult } from "../role-wire.ts";
 import { createPstackConfigAction } from "./PstackConfigDialog.tsx";
 import { NS, catalogs } from "./locales/index.ts";
 import type { BundleView, PluginManagerApi } from "./RecommendedPluginsPage.tsx";
@@ -35,7 +29,6 @@ interface PstackRolesNamespace {
   status(): Promise<Result<RoleFileSnapshot>>;
   catalogue(signal?: AbortSignal): Promise<Result<CatalogueResult>>;
   save(request: SaveRoleRequest, signal?: AbortSignal): Promise<Result<SaveRoleResult>>;
-  saveBudget(request: SaveBudgetRequest): Promise<Result<SaveBudgetResult>>;
 }
 
 interface PluginManagerNamespace {
@@ -73,7 +66,6 @@ export async function apply(ctx: Context): Promise<() => Promise<void>> {
       status: async () => unwrap(await pstack.status()),
       catalogue: async () => unwrap(await pstack.catalogue()),
       save: async (request) => unwrap(await pstack.save(request)),
-      saveBudget: async (request) => unwrap(await pstack.saveBudget(request)),
     };
     const pluginManager = (ctx.remote as unknown as { pluginManager?: PluginManagerNamespace })
       .pluginManager;
