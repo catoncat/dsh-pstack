@@ -31,6 +31,10 @@ export default {
         const input = renderCalls[0].input ?? {};
         if (input.kind !== "pele")
           return bad(`pstack_render kind=${JSON.stringify(input.kind)}，期望 pele`);
+        if (typeof input.input !== "string" || !input.input.includes("render-case.mmd"))
+          return bad(`pstack_render input=${JSON.stringify(input.input)}，期望 render-case.mmd`);
+        if (typeof input.output !== "string" || !input.output.includes("render-case.svg"))
+          return bad(`pstack_render output=${JSON.stringify(input.output)}，期望 render-case.svg`);
         const text = resultText(renderCalls[0]);
         if (text.length === 0) return bad("pstack_render 没有返回结果说明");
         return ok(`pstack_render 一次处理 Mermaid 渲染请求：${text.slice(0, 200)}`);

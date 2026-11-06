@@ -29,7 +29,7 @@ export default {
       cleanup: restoreRoleFile,
       prompt: [
         "请用 pstack 的 `bug-fix` 角色把一个简单任务交给一个普通子代理：读取 playground/README.md，并用一句话总结其中的准备步骤。",
-        "这次请使用该模型支持的最高思考等级；必须由子代理完成，不要自己阅读。",
+        "使用当前会话目录即可，不需要另行指定工作目录；这次请使用该模型支持的最高思考等级。必须由子代理完成，不要自己阅读。",
       ].join("\n"),
       verify({ calls }) {
         const subagentCalls = calls.filter((call) => call.tool === "pstack_subagent");

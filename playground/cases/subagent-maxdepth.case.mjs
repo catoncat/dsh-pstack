@@ -4,7 +4,7 @@ export default {
   build() {
     return {
       prompt: [
-        "请用 pstack 的普通子代理完成这个任务：读取 playground/README.md，并用一句话总结其中的准备步骤。",
+        "请用 pstack 的普通子代理（不要使用只读代理）完成这个任务：读取 playground/README.md，并用一句话总结其中的准备步骤。",
         "必须由子代理完成，不要自己阅读；拿到子代理结果后再给我最终回答。",
       ].join("\n"),
       verify({ calls }) {
