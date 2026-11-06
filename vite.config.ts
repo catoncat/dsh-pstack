@@ -23,8 +23,7 @@ export default defineConfig({
       exports: {
         customExports: {
           "./locale/*.json": "./locale/*.json",
-          "./*/locale/en.json": "./locale/*/en.json",
-          "./*/locale/zh.json": "./locale/*/zh.json",
+          "./*": "./modules/*",
           "./client": "./dist/client.mjs",
         },
       },

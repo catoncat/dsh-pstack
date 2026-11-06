@@ -29,6 +29,7 @@
     "assets",
     "cordis.patch.yml",
     "locale",
+    "modules",
     "README.md",
     "README.zh.md"
   ],
@@ -54,8 +55,7 @@
     "./subagent": "./dist/subagent.mjs",
     "./package.json": "./package.json",
     "./locale/*.json": "./locale/*.json",
-    "./*/locale/en.json": "./locale/*/en.json",
-    "./*/locale/zh.json": "./locale/*/zh.json",
+    "./*": "./modules/*",
     "./client": "./dist/client.mjs"
   },
   "scripts": {

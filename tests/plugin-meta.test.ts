@@ -9,7 +9,7 @@ const MANIFEST = JSON.parse(readFileSync("package.json", "utf8")) as {
 };
 
 function meta(module: string, language: "en" | "zh"): Record<string, string> {
-  const path = join("locale", module, `${language}.json`);
+  const path = join("modules", module, "locale", `${language}.json`);
   const parsed = JSON.parse(readFileSync(path, "utf8")) as { meta?: Record<string, string> };
   return parsed.meta ?? {};
 }
@@ -27,8 +27,8 @@ describe("plugin component metadata", () => {
     }
   });
 
-  it("exports one wildcard locale pair for every module", () => {
-    expect(MANIFEST.exports["./*/locale/en.json"]).toBe("./locale/*/en.json");
-    expect(MANIFEST.exports["./*/locale/zh.json"]).toBe("./locale/*/zh.json");
+  it("exports one wildcard locale path for every module and language", () => {
+    expect(MANIFEST.exports["./locale/*.json"]).toBe("./locale/*.json");
+    expect(MANIFEST.exports["./*"]).toBe("./modules/*");
   });
 });
