@@ -6,7 +6,9 @@ import type { Context } from "@deepseek-ai/cordis";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 
 import {
+  AGENT_TEAMS_CONFLICT,
   apply,
+  assertNoAgentTeams,
   createPotetoModeSection,
   SECTION_NAME,
   SECTION_ORDER,
@@ -77,6 +79,9 @@ describe("poteto-mode root preset", () => {
     expect(block).toContain("id: compaction");
     expect(block).toContain("id: delegation");
     expect(block).toContain("id: tool-todo");
+    expect(block).toContain("id: tool-subagent-control");
+    expect(block).not.toMatch(/^\s+- id: tool-subagent$/m);
+    expect(block).not.toMatch(/^\s+- id: tool-subagent-fork$/m);
   });
 });
 
@@ -94,6 +99,21 @@ describe("poteto-mode creator root preset", () => {
     expect(block).toContain("id: tool-cordis");
     expect(block).toContain("customSkillDirs");
     expect(block).toContain("@deepseek-ai/dsh-agent-preset");
+    expect(block).toContain("id: tool-subagent-control");
+    expect(block).not.toMatch(/^\s+- id: tool-subagent$/m);
+    expect(block).not.toMatch(/^\s+- id: tool-subagent-fork$/m);
+  });
+});
+
+describe("Agent Teams guard", () => {
+  it("rejects a profile with the Agent Teams service", () => {
+    const ctx = {
+      get(name: string) {
+        return name === "agentTeams" ? {} : undefined;
+      },
+    } as unknown as Context;
+
+    expect(() => assertNoAgentTeams(ctx)).toThrow(AGENT_TEAMS_CONFLICT);
   });
 });
 
@@ -101,8 +121,14 @@ describe("apply", () => {
   it("registers exactly one section", () => {
     const captured: PromptSectionLike[] = [];
     const ctx = {
+      get() {
+        return undefined;
+      },
       effect(fn: () => () => void) {
         fn();
+        return () => {};
+      },
+      on() {
         return () => {};
       },
       systemPrompt: {

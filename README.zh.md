@@ -40,11 +40,13 @@
 
 | 预设 | 范围 | 用途 |
 |---|---|---|
-| `poteto-mode` | 根 | 把完整 `poteto-mode` 技能常驻系统提示，使用标准工具面。 |
-| `poteto-mode-creator` | 根 | 同一套持久技能，使用创造模式工具面，包含 `tool-cordis` 与 agent-preset 技能。 |
+| `poteto-mode` | 根 | 把完整 `poteto-mode` 技能常驻系统提示，使用标准工具，并以 `pstack_subagent` 作为唯一直接派发入口。 |
+| `poteto-mode-creator` | 根 | 同一套持久技能，使用创造模式工具，包含 `tool-cordis`、agent-preset 技能，并以 `pstack_subagent` 作为唯一直接派发入口。 |
 | `poteto-agent` | 子代理 | 实现型子代理，注入 pstack 人格和 `poteto-mode` 指令。 |
 | `comment-sicko` | 子代理 | 只读评论评审子代理，报告删除目标和 `MUST KILL` 符号。 |
 | `readonly` | 子代理 | 带只读沙箱策略的研究子代理，用于检查和取证。 |
+
+不要在任一 pstack 根预设下启用 Agent Teams。两者都拥有派发和任务协调能力。检测到 Agent Teams 服务时，pstack 根预设会直接启动失败。
 
 ### 明确的技能加载
 

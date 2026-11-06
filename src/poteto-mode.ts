@@ -24,6 +24,16 @@ export const SECTION_NAME = "pstack:poteto-mode";
 /** Section order. */
 export const SECTION_ORDER = 10;
 
+/** Error used when Agent Teams would compete with pstack delegation. */
+export const AGENT_TEAMS_CONFLICT =
+  "pstack root presets cannot be used with Agent Teams. Disable @deepseek-ai/dsh-experimental-agent-team-profile in this profile, or use the standard or Creator preset for Agent Teams.";
+
+/** Refuse to mount a pstack root preset when Agent Teams owns delegation. */
+export function assertNoAgentTeams(ctx: Context): void {
+  const host = ctx as unknown as { get(name: string): unknown };
+  if (host.get("agentTeams") !== undefined) throw new Error(AGENT_TEAMS_CONFLICT);
+}
+
 /** The prompt section shape accepted by the system prompt registry. */
 export interface PromptSectionLike {
   readonly name: string;
@@ -69,7 +79,16 @@ export function createPotetoModeSection(
 
 /** Register the persistent section on this row. */
 export function apply(ctx: Context): void {
+  assertNoAgentTeams(ctx);
   const host = ctx as unknown as SystemPromptHost;
   const section = createPotetoModeSection();
   ctx.effect(() => host.systemPrompt.section(section), "pstack.poteto-mode.section()");
+  ctx.effect(
+    () =>
+      ctx.on("agent/created", ({ agent }) => {
+        const preset = agent.session.header.agentPreset;
+        if (preset === "poteto-mode" || preset === "poteto-mode-creator") assertNoAgentTeams(ctx);
+      }),
+    "pstack.poteto-mode.team-guard()",
+  );
 }

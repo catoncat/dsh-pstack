@@ -48,7 +48,7 @@
       config:
         id: poteto-mode
         name: pstack poteto-mode
-        description: Root pstack preset. Keeps the full poteto-mode skill in the system prompt for the whole session with the standard tool surface.
+        description: Root pstack preset. Keeps the full poteto-mode skill in the system prompt with the standard tools and pstack_subagent as the only direct spawn path.
         order: 5
         plugins:
           - id: persona
@@ -134,18 +134,6 @@
             config:
               - id: tool-subagent-control
                 name: "@deepseek-ai/dsh-tool-subagent-control"
-              - id: tool-subagent
-                name: "@deepseek-ai/dsh-tool-subagent"
-                config:
-                  provider: spawn
-                  toolName: subagent
-                  modelSelection: true
-                  modelDiscovery: true
-              - id: tool-subagent-fork
-                name: "@deepseek-ai/dsh-tool-subagent"
-                config:
-                  provider: fork
-                  toolName: subagent_fork
               - id: workflow-ptc
                 name: "@deepseek-ai/dsh-workflow-ptc"
                 config:
@@ -186,7 +174,7 @@
       config:
         id: poteto-mode-creator
         name: pstack poteto-mode creator
-        description: Root pstack preset based on Creator mode. Keeps the full poteto-mode skill in the system prompt with tool-cordis and the agent-preset skills.
+        description: Root pstack preset based on Creator mode. Keeps the full poteto-mode skill in the system prompt with tool-cordis, agent-preset skills, and pstack_subagent as the only direct spawn path.
         order: 6
         plugins:
           - id: persona
@@ -275,18 +263,6 @@
             config:
               - id: tool-subagent-control
                 name: "@deepseek-ai/dsh-tool-subagent-control"
-              - id: tool-subagent
-                name: "@deepseek-ai/dsh-tool-subagent"
-                config:
-                  provider: spawn
-                  toolName: subagent
-                  modelSelection: true
-                  modelDiscovery: true
-              - id: tool-subagent-fork
-                name: "@deepseek-ai/dsh-tool-subagent"
-                config:
-                  provider: fork
-                  toolName: subagent_fork
               - id: workflow-ptc
                 name: "@deepseek-ai/dsh-workflow-ptc"
                 config:

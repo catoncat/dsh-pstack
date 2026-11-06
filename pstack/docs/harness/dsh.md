@@ -91,5 +91,5 @@ The following DSH plugins are disabled by default. Enable a package through the 
 | `@deepseek-ai/dsh-experimental-terminal-bundle` | Persistent PTY tools for CLI and TUI verification. | Run foreground commands or background jobs through `bash`. |
 | `@deepseek-ai/dsh-experimental-session-search` | Session history search and event inspection. | Use a resume note or evidence supplied by the user. |
 | `@deepseek-ai/dsh-mcp-client` | Configured MCP tools. | Inspect local files and use standard search or fetch tools. |
-| `@deepseek-ai/dsh-experimental-agent-team-profile` | Lead and teammate roles and a shared task board. | Use `pstack_subagent`, `workflow`, and `todo_write`; do not enable Agent Teams and `pstack_subagent` in one profile. |
+| `@deepseek-ai/dsh-experimental-agent-team-profile` | Lead and teammate roles and a shared task board. | Do not enable Agent Teams in a profile that offers the pstack root presets. Both own delegation and task coordination; the pstack root preset fails at startup when the Agent Teams service is present. |
 | `@deepseek-ai/dsh-experimental-ralph-bundle` | A foreground `ralph` loop with a structured handoff. | Use `create_goal` with `schedule_create` or a background `bash` watcher. |

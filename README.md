@@ -40,11 +40,13 @@ The package ships two root presets and three child presets:
 
 | Preset | Scope | Use |
 |---|---|---|
-| `poteto-mode` | Root | Keeps the full `poteto-mode` skill in the system prompt with the standard tool surface. |
-| `poteto-mode-creator` | Root | Same persistent skill with the Creator mode surface, including `tool-cordis` and agent-preset skills. |
+| `poteto-mode` | Root | Keeps the full `poteto-mode` skill in the system prompt with the standard tools and `pstack_subagent` as the only direct spawn path. |
+| `poteto-mode-creator` | Root | Same persistent skill with the Creator mode tools, `tool-cordis`, agent-preset skills, and `pstack_subagent` as the only direct spawn path. |
 | `poteto-agent` | Child | Implementation delegate with the pstack persona and the `poteto-mode` instructions. |
 | `comment-sicko` | Child | Read-only comment reviewer that reports deletion targets and `MUST KILL` symbols. |
 | `readonly` | Child | Sandbox-enforced read-only researcher for inspection and evidence gathering. |
+
+Do not enable Agent Teams with either pstack root preset. Both own delegation and task coordination. The pstack root preset fails at startup when the Agent Teams service is present.
 
 ### Skills with explicit loading
 
