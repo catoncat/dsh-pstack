@@ -97,7 +97,7 @@ For local development and the full verification environment, see [`playground/RE
 | `pstack_subagent` | Starts role-routed child agents, including automatic panels and selected list entries. |
 | `pstack_models` | Reports the live provider, model, and reasoning-effort catalogue. |
 | `pstack_roles` | Reports role shape, auto-panel behavior, and `roleIndex` applicability. |
-| `pstack_render` | Renders optional Mermaid/SVG or video artifacts when the required local tools exist. |
+| `pstack_render` | Renders optional Mermaid diagrams and SVG or video artifacts when the required local tools exist. |
 
 The plugin also contributes its presets and the skill filesystem roots used by the tools above.
 

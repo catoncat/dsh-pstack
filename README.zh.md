@@ -97,7 +97,7 @@ dsh plugin --profile <profile> add dsh-pstack
 | `pstack_subagent` | 启动按角色路由的子代理，包括自动面板和列表角色中的指定条目。 |
 | `pstack_models` | 报告实时的 provider、model 和推理强度目录。 |
 | `pstack_roles` | 报告角色形态、自动面板行为和 `roleIndex` 适用性。 |
-| `pstack_render` | 在本地工具存在时渲染可选的 Mermaid/SVG 或视频产物。 |
+| `pstack_render` | 在本地工具存在时渲染可选的 Mermaid 图、SVG 或视频产物。 |
 
 插件还提供子代理预设和上述工具使用的技能文件系统根目录。
 
