@@ -1075,10 +1075,10 @@
 | 🧰 标准模式 | 标准模式把技能当作单轮或按需显式加载的内容，没有常驻技能 section；`poteto-agent` preset 只给委派子代理用。 |
 | 🧩 官方插件 | 无。 |
 | 🕳️ 剩余缺口 | 标准模式没有持久根 preset，无法在一整段会话里保留完整 `poteto-mode` 技能正文。 |
-| 🛠️ 插件要求与验收 | 插件提供根 `poteto-mode` preset，由 `pstack-poteto-mode` 行以 `systemPrompt` section 注入完整 `SKILL.md` 正文（去掉 frontmatter）与 agent harness 适配文档的绝对路径，并告诉模型每会话读一次 `docs/harness/dsh.md`；section 用 `interpolate: false` 保留正文里的 `{{...}}`。preset 保留标准工具面，不裁剪 Web 工具。`poteto-agent` 仍是只给委派子代理的 preset，两者分开。验收：新会话选择 `poteto-mode`，系统提示包含 `# Poteto mode` 与 `Non-negotiables`；第二轮仍在模式内且不需要再次加载 `pstack-skill`；询问当前持久模式时回答 `poteto-mode`。 |
-| ⚔️ 冲突 | `poteto-agent` preset 也注入 `poteto-mode` 指令路径，但只用于子代理；根 preset 与它同名概念不同，二者不能互相替代。 |
-| 🚧 最终遗留 | 只有选择该 preset 的新会话才有持久技能；已有会话或其它 preset 需要每个任务调用 `/poteto-mode`。headless 一次性 runner 不组合 agent preset，验证必须在 Web 会话进行。 |
-| 💡 推荐 | 🟠 插件实现。新增根 `poteto-mode` preset 与 `pstack-poteto-mode` section 插件，把完整技能常驻系统提示，保留标准工具面，与只给委派用的 `poteto-agent` 分开。 |
+| 🛠️ 插件要求与验收 | 插件提供两个根 preset：`poteto-mode` 复制标准工具面，`poteto-mode-creator` 复制创造模式工具面并加入 `tool-cordis` 与 agent-preset 技能目录。两者都由 `pstack-poteto-mode` 行以 `systemPrompt` section 注入完整 `SKILL.md` 正文（去掉 frontmatter）与 agent harness 适配文档的绝对路径，并告诉模型每会话读一次 `docs/harness/dsh.md`；section 用 `interpolate: false` 保留正文里的 `{{...}}`。`poteto-agent` 仍是只给委派子代理的 preset，三者分开。验收：新会话选择任一 `poteto-mode` 根 preset，系统提示包含 `# Poteto mode` 与 `Non-negotiables`；第二轮仍在模式内且不需要再次加载 `pstack-skill`；询问当前持久模式时回答对应 preset 名称。 |
+| ⚔️ 冲突 | `poteto-agent` preset 也注入 `poteto-mode` 指令路径，但只用于子代理；两个根 preset 与它同名概念不同，不能互相替代。 |
+| 🚧 最终遗留 | 只有选择两个根 preset 之一的新会话才有持久技能；已有会话或其它 preset 需要每个任务调用 `/poteto-mode`。headless 一次性 runner 不组合 agent preset，验证必须在 Web 会话进行。 |
+| 💡 推荐 | 🟠 插件实现。新增 `poteto-mode` 与 `poteto-mode-creator` 两个根 preset 与 `pstack-poteto-mode` section 插件，分别保留标准与创造模式工具面，把完整技能常驻系统提示，与只给委派用的 `poteto-agent` 分开。 |
 | ✅ 处置 | 插件实现 |
 
 [返回审核清单](#审核清单)

@@ -80,6 +80,23 @@ describe("poteto-mode root preset", () => {
   });
 });
 
+describe("poteto-mode creator root preset", () => {
+  it("declares the Creator variant with tool-cordis and agent-preset skills", () => {
+    const patch = readFileSync("cordis.patch.yml", "utf8");
+    const start = patch.indexOf("- id: preset-poteto-mode-creator");
+    const end = patch.indexOf("- id: preset-poteto-agent", start);
+    expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
+
+    const block = patch.slice(start, end);
+    expect(block).toContain("id: poteto-mode-creator");
+    expect(block).toContain("name: dsh-pstack/poteto-mode");
+    expect(block).toContain("id: tool-cordis");
+    expect(block).toContain("customSkillDirs");
+    expect(block).toContain("@deepseek-ai/dsh-agent-preset");
+  });
+});
+
 describe("apply", () => {
   it("registers exactly one section", () => {
     const captured: PromptSectionLike[] = [];

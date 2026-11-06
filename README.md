@@ -24,7 +24,7 @@ It is built for work where the process matters as much as the answer: planning b
 | Audited Cursor-facing capabilities | **68** |
 | Generated pstack skills | **58** |
 | Built-in pstack tools | **5** |
-| Agent presets | **4** (1 root, 3 child) |
+| Agent presets | **5** (2 root, 3 child) |
 | Role definitions | **17** |
 | Audit outcome | **39 direct mappings · 2 official plugins · 18 plugin implementations · 9 deliberately dropped** |
 
@@ -36,11 +36,12 @@ The complete capability review is in [`port/audit.md`](./port/audit.md). The run
 
 `pstack_subagent` delegates work to fresh child agents. A call can select a pstack role, a panel of routes, or one entry from a list role with `roleIndex`; `reasoningEffort` can raise or lower the selected route's starting effort. Every result includes the child id and the exact route it resolved.
 
-The package ships one root preset and three child presets:
+The package ships two root presets and three child presets:
 
 | Preset | Scope | Use |
 |---|---|---|
-| `poteto-mode` | Root | Keeps the full `poteto-mode` skill in the system prompt for the whole session. |
+| `poteto-mode` | Root | Keeps the full `poteto-mode` skill in the system prompt with the standard tool surface. |
+| `poteto-mode-creator` | Root | Same persistent skill with the Creator mode surface, including `tool-cordis` and agent-preset skills. |
 | `poteto-agent` | Child | Implementation delegate with the pstack persona and the `poteto-mode` instructions. |
 | `comment-sicko` | Child | Read-only comment reviewer that reports deletion targets and `MUST KILL` symbols. |
 | `readonly` | Child | Sandbox-enforced read-only researcher for inspection and evidence gathering. |
@@ -87,7 +88,7 @@ Then:
 1. Restart the profile if the plugin manager asks for it.
 2. Open the `dsh-pstack` plugin page and select **pstack settings**.
 3. Set role routes with the **Role models** tab, or run `/setup-pstack`.
-4. Start a session with the `poteto-mode` preset for persistent mode, or invoke `/poteto-mode` for one task in another preset.
+4. Start a session with the `poteto-mode` or `poteto-mode-creator` preset for persistent mode, or invoke `/poteto-mode` for one task in another preset.
 
 For local development and the full verification environment, see [`playground/README.md`](./playground/README.md).
 
