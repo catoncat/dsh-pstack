@@ -62,35 +62,39 @@
 
 2. **重启对应的 profile，或新开一个 Session。**
 
-## 🖥️ 可视化使用步骤
+## 🧭 使用步骤
+
+选择一种方式，点击展开查看完整步骤。
+
+<details>
+<summary><strong>🖥️ 可视化使用步骤</strong></summary>
 
 需要配置相关插件或角色路由时，使用插件界面。
 
-1. 打开 **插件 → 已安装插件**，选择 **pstack 工作流**。
-
-   ![插件列表](./assets/plugin-list.png)
-
-2. 在插件详情页点击 **配置**。
+1. 打开 **插件 → 已安装插件**，选择 **pstack 工作流**，然后点击 **配置**。
 
    ![配置入口](./assets/plugin-configure.png)
 
-3. 在 **推荐插件** 中查看 **推荐**、**可选**、**冲突** 三组。**全部启用** 只会启用推荐组。
+2. 在 **推荐插件** 中查看 **推荐**、**可选**、**冲突** 三组。**全部启用** 只会启用推荐组。
 
    ![推荐插件](./assets/plugin-recommended.png)
 
-4. 打开 **角色模型**，为每个角色设置提供方、模型和推理强度，然后保存单行或点击 **全部保存**。
+3. 打开 **角色模型**，为每个角色设置提供方、模型和推理强度，然后保存单行或点击 **全部保存**。
 
    ![角色模型](./assets/plugin-roles.png)
 
-5. 打开 **设置 → Agent 预设**，选择 **Poteto 模式** 或 **Poteto 创造模式**，点击 **默认预设**。
+4. 打开 **设置 → Agent 预设**，选择 **Poteto 模式** 或 **Poteto 创造模式**，点击 **默认预设**。
 
    ![Agent 预设](./assets/agent-presets.png)
 
-6. 新建会话时保留默认预设，或手动选择 **Poteto 模式**。
+5. 新建会话时保留默认预设，或手动选择 **Poteto 模式**。
 
    ![会话预设](./assets/session-preset.png)
 
-## 🧠 技能使用步骤
+</details>
+
+<details>
+<summary><strong>🧠 技能使用步骤</strong></summary>
 
 需要从会话直接启动 pstack 工作流时，使用技能命令。
 
@@ -98,10 +102,13 @@
 2. **通过技能启动。** 直接输入 `/poteto-mode`。不需要先切换预设。
 3. **使用针对性命令。** 从[常用命令](#️-常用命令)中选择命令。
 
+</details>
+
 ## ⌨️ 常用命令
 
 | 工作流 | 命令 |
 |---|---|
+| 帮助 | `/poteto-help` |
 | 规划与实现 | `/poteto-mode`、`/architect`、`/arena`、`/swarm` |
 | 理解与调查 | `/how`、`/why`、`/teach` |
 | 验证 | `/create-verification-skill`、`/statechart` |
@@ -131,25 +138,23 @@
 | `comment-sicko` | 子代理 | 只读评论评审子代理，报告删除目标和 `MUST KILL` 符号。 |
 | `readonly` | 子代理 | 带只读沙箱策略的研究子代理，用于检查和取证。 |
 
-预设名称和描述跟随「设置 → 通用 → 语言」里选择的语言，在 Host 启动时读取。没有选择 Web UI 语言时回退到默认语言。切换语言后，预设标签会在下次重启时更新。
-
-不要在任一 pstack 根预设下启用 Agent Teams。两者都拥有派发和任务协调能力。检测到 Agent Teams 服务时，pstack 根预设会直接启动失败。
+在 **设置 → Agent 预设** 中可以点击 **默认预设**，让新建会话自动使用该预设。
 
 ### 📚 额外技能
 
-随包提供九个独立于 pstack 维护的技能。
+这些技能补足 pstack 在真实项目中的缺口。它们不属于上游 pstack 技能树，主要覆盖技能编写、项目文档、证据采集、决策记录和清理流程。
 
-| 技能 | 来源 | 作用 |
+| 技能 | 来源 | 补足场景 |
 |---|---|---|
-| `writing-for-agents` | `vendored` | 编写技能与清晰的 agent 文档。 |
-| `retro` | `vendored` | 只读复盘 agent 环境，不修改仓库。 |
-| `deslop` | `vendored` | 清理 diff 中的 AI 代码噪声。 |
-| `control-ui` | `vendored` | 驱动和检查本地 Web、IDE 或 Electron UI，产出证据。 |
-| `control-cli` | `vendored` | 驱动和检查交互式 CLI 或 TUI，产出证据。 |
-| `decision-write` | `authored` | 创建、落地和取代决策记录。 |
-| `decision-audit` | `authored` | 审计决策记录状态与关联关系。 |
-| `setup-project-docs` | `authored` | 搭建可持续维护的项目文档。 |
-| `docs-drift` | `authored` | 检查文档漂移并修复获批项。 |
+| `writing-for-agents` | `vendored` | 把实践沉淀成可复用技能或清晰的 agent 文档，替代上游 `create-skill`。 |
+| `retro` | `vendored` | 对 agent 环境做只读复盘，补上 pstack 缺少的项目级回顾环节。 |
+| `deslop` | `vendored` | 在提交或评审前清理 diff 中的 AI 代码噪声。 |
+| `control-ui` | `vendored` | 驱动真实本地 Web、IDE 或 Electron UI，补上 pstack 需要的浏览器级证据。 |
+| `control-cli` | `vendored` | 驱动交互式 CLI 或 TUI，补上 pstack 需要的终端级证据。 |
+| `decision-write` | `authored` | 把容易埋在对话里的决策记录成可追踪文档。 |
+| `decision-audit` | `authored` | 在项目积累设计历史后，检查决策记录的状态与关联。 |
+| `setup-project-docs` | `authored` | 仓库没有文档体系时，先搭建可持续维护的项目文档。 |
+| `docs-drift` | `authored` | 代码变化后检查和修复文档漂移。 |
 
 vendored 技能的来源与哈希记录在 [`skills/skills-lock.json`](./skills/skills-lock.json)。
 
@@ -171,10 +176,14 @@ vendored 技能的来源与哈希记录在 [`skills/skills-lock.json`](./skills/
 | 桌面验证 | `@deepseek-ai/dsh-cua-bundle` | 仅支持 macOS PTC Session，Windows 支持尚不完整，不支持录屏。 |
 | 持久终端 | `@deepseek-ai/dsh-experimental-terminal-bundle` | 六个持久 shell 与 REPL 工具，不支持 GUI 控制或录屏。 |
 | MCP 集成 | `@deepseek-ai/dsh-mcp-client` | 默认无 server，需要显式配置；不会自动发现证据类别。 |
-| Agent Teams | `@deepseek-ai/dsh-experimental-agent-team-profile` | 与 pstack 根 preset 和 `pstack_subagent` 冲突；检测到 Agent Teams 时 pstack 根 preset 会启动失败。 |
 | 自主循环 | `@deepseek-ai/dsh-experimental-ralph-bundle` | 每轮使用新子代理，不提供同一 Session 的常驻循环或事件 watcher。 |
 
 多数包随 DSH 提供，`@deepseek-ai/dsh-cua-bundle` 按需安装。除 MCP client 外，以上插件均为实验性插件。
+
+### ⚠️ Agent Teams 冲突
+
+> [!WARNING]
+> **不要在任一 pstack 根预设下启用 Agent Teams。** Agent Teams 与 `pstack_subagent` 只能二选一。启用 Agent Teams 会导致 pstack 根预设启动失败，并禁用 DSH 原生子代理工具。
 
 ### 🌐 浏览器 provider
 
@@ -186,10 +195,7 @@ vendored 技能的来源与哈希记录在 [`skills/skills-lock.json`](./skills/
 
 不同 provider 的工具名与 selector 不同。浏览器和桌面控制各自使用一个 provider 槽。
 
-配置页默认推荐 Change requests & worktrees 和会话搜索，不会自动启用任何插件。Agent Teams 仅作为冲突警告，不属于推荐项。
-
-> [!WARNING]
-> Agent Teams 与 `pstack_subagent` 只能二选一。Agent Teams 会禁用 DSH 原生子代理工具。
+配置页默认推荐 Change requests & worktrees 和会话搜索，不会自动启用任何插件。
 
 未启用可选插件时，依赖它的步骤会标记为 skipped 或 blocked，不会标记为通过。没有 forge bundle 时通过 `bash` 使用 `gh` 与 `git worktree add`。安装与降级方案见 [DSH 适配文档](./pstack/docs/harness/dsh.md#optional-plugins)。
 

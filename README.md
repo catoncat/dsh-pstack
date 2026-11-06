@@ -62,35 +62,39 @@ The current review covers 68 Cursor-facing capabilities: 39 direct mappings, 2 o
 
 2. **Restart the profile or open a new Session.**
 
-## 🖥️ Visual setup
+## 🧭 Usage
+
+Choose one of the two paths and expand it for the full steps.
+
+<details>
+<summary><strong>🖥️ Visual setup</strong></summary>
 
 Use the plugin UI when you want to configure related plugins and role routes.
 
-1. Open **Plugins → Installed plugins** and select **pstack workflow**.
-
-   ![Plugin list](./assets/plugin-list.png)
-
-2. Click **Configure** on the plugin detail page.
+1. Open **Plugins → Installed plugins**, select **pstack workflow**, then click **Configure**.
 
    ![Configure entry](./assets/plugin-configure.png)
 
-3. In **Recommended plugins**, review the **Recommended**, **Optional**, and **Conflicts** groups. **Enable all** enables only the recommended group.
+2. In **Recommended plugins**, review the **Recommended**, **Optional**, and **Conflicts** groups. **Enable all** enables only the recommended group.
 
    ![Recommended plugins](./assets/plugin-recommended.png)
 
-4. Open **Role models**, set the provider, model, and reasoning effort for each role, then save the changed row or use **Save all**.
+3. Open **Role models**, set the provider, model, and reasoning effort for each role, then save the changed row or use **Save all**.
 
    ![Role models](./assets/plugin-roles.png)
 
-5. Open **Settings → Agent presets**, select **Poteto mode** or **Poteto Creator mode**, and click **Set as default**.
+4. Open **Settings → Agent presets**, select **Poteto mode** or **Poteto Creator mode**, and click **Set as default**.
 
    ![Agent presets](./assets/agent-presets.png)
 
-6. When creating a Session, keep the default preset or select **Poteto mode** manually.
+5. When creating a Session, keep the default preset or select **Poteto mode** manually.
 
    ![Session preset](./assets/session-preset.png)
 
-## 🧠 Skill usage
+</details>
+
+<details>
+<summary><strong>🧠 Skill usage</strong></summary>
 
 Use pstack skills when you want to start workflows directly from a Session.
 
@@ -98,10 +102,13 @@ Use pstack skills when you want to start workflows directly from a Session.
 2. **Start through skills.** Type `/poteto-mode` directly. A preset switch is not required first.
 3. **Use targeted commands.** Pick a command from [Common commands](#️-common-commands).
 
+</details>
+
 ## ⌨️ Common commands
 
 | Task | Commands |
 |---|---|
+| Help | `/poteto-help` |
 | Plan and build | `/poteto-mode`, `/architect`, `/arena`, `/swarm` |
 | Understand and investigate | `/how`, `/why`, `/teach` |
 | Verify | `/create-verification-skill`, `/statechart` |
@@ -131,25 +138,23 @@ The package ships two root presets and three child presets.
 | `comment-sicko` | Child | Handles read-only comment review and reports deletion targets and `MUST KILL` symbols. |
 | `readonly` | Child | Provides sandbox-enforced read-only research for inspection and evidence gathering. |
 
-Preset names and descriptions follow the language selected in Settings → General → Language, read when the Host starts. Without a Web UI language selection they fall back to the default locale. Changing the language updates preset labels after a restart.
-
-Do not enable Agent Teams with either pstack root preset. Both own delegation and task coordination. The pstack root preset fails at startup when the Agent Teams service is present.
+Open **Settings → Agent presets** and click **Set as default** on the preset new Sessions should use.
 
 ### 📚 Additional skills
 
-The package includes nine skills maintained independently of pstack.
+These skills fill gaps that pstack leaves in real projects. They are not part of the upstream pstack skill tree. They cover skill authoring, project documentation, evidence capture, decision records, and cleanup workflows.
 
-| Skill | Source | Purpose |
+| Skill | Source | Gap it fills |
 |---|---|---|
-| `writing-for-agents` | `vendored` | Write skills and clear agent-facing documentation. |
-| `retro` | `vendored` | Review the agent environment without modifying the repository. |
-| `deslop` | `vendored` | Remove AI-generated code slop from a diff. |
-| `control-ui` | `vendored` | Drive and inspect a local web, IDE, or Electron UI with evidence. |
-| `control-cli` | `vendored` | Drive and inspect an interactive CLI or TUI with evidence. |
-| `decision-write` | `authored` | Create, land, and supersede decision records. |
-| `decision-audit` | `authored` | Audit decision-record status and relationships. |
-| `setup-project-docs` | `authored` | Set up sustainable project documentation. |
-| `docs-drift` | `authored` | Detect documentation drift and repair approved findings. |
+| `writing-for-agents` | `vendored` | Turns a working practice into a reusable skill or clear agent-facing document, replacing upstream `create-skill`. |
+| `retro` | `vendored` | Runs a read-only retrospective on the agent environment when pstack has no project-level review pass. |
+| `deslop` | `vendored` | Cleans AI-generated noise from a diff before commit or review. |
+| `control-ui` | `vendored` | Drives a real local Web, IDE, or Electron UI when pstack needs browser-level evidence. |
+| `control-cli` | `vendored` | Drives interactive CLI or TUI sessions when pstack needs terminal-level evidence. |
+| `decision-write` | `authored` | Records decisions that would otherwise stay buried in chat. |
+| `decision-audit` | `authored` | Checks decision-record status and links when a project accumulates design history. |
+| `setup-project-docs` | `authored` | Bootstraps durable project documentation when the repository has none. |
+| `docs-drift` | `authored` | Finds and repairs documentation drift as code changes. |
 
 [`skills/skills-lock.json`](./skills/skills-lock.json) records the sources and hashes of vendored skills.
 
@@ -171,10 +176,14 @@ To enable a plugin, open **Plugins → Add plugin**, select the package, and res
 | Desktop verification | `@deepseek-ai/dsh-cua-bundle` | macOS PTC Sessions only. Windows support is incomplete. No video recording. |
 | Persistent terminals | `@deepseek-ai/dsh-experimental-terminal-bundle` | Six persistent shell and REPL tools. No GUI control or video recording. |
 | MCP integrations | `@deepseek-ai/dsh-mcp-client` | No server configured by default. No automatic evidence-category discovery. |
-| Agent teams | `@deepseek-ai/dsh-experimental-agent-team-profile` | Conflicts with pstack root presets and `pstack_subagent`. The pstack root preset fails at startup when Agent Teams is present. |
 | Autonomous loops | `@deepseek-ai/dsh-experimental-ralph-bundle` | Starts a fresh child each round. No persistent loop or event watcher. |
 
 Most packages ship with DSH. `@deepseek-ai/dsh-cua-bundle` installs on demand. Except for the MCP client, these plugins are experimental.
+
+### ⚠️ Agent Teams conflict
+
+> [!WARNING]
+> **Do not enable Agent Teams with either pstack root preset.** Use either Agent Teams or `pstack_subagent`, not both. Enabling Agent Teams makes the pstack root preset fail at startup and disables DSH native subagent tools.
 
 ### 🌐 Browser providers
 
@@ -186,10 +195,7 @@ Choose one provider for `@deepseek-ai/dsh-browser-use`:
 
 Providers have different tool names and selectors. Browser and computer use share separate single-provider slots.
 
-The configuration page recommends Change requests & worktrees and session search. It never enables plugins automatically. Agent Teams is a conflict warning, not a recommendation.
-
-> [!WARNING]
-> Use either Agent Teams or `pstack_subagent`, not both. Agent Teams disables DSH's native subagent tools.
+The configuration page recommends Change requests & worktrees and session search. It never enables plugins automatically.
 
 When a plugin is disabled, dependent steps report skipped or blocked. They never report passed. Without the forge bundle, use `gh` and `git worktree add` through `bash`. See the [DSH adaptation guide](./pstack/docs/harness/dsh.md#optional-plugins) for setup details and fallbacks.
 
