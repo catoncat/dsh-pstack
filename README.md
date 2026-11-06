@@ -1,7 +1,8 @@
 <div align="center">
   <img src="./assets/logo.png" width="144" alt="dsh-pstack logo" />
   <h1>dsh-pstack</h1>
-  <p><strong>pstack for DeepSeek Harness</strong></p>
+  <p><strong>Rigorous agent workflows, natively in DeepSeek Harness.</strong></p>
+  <p>A community port of <a href="https://github.com/cursor/plugins/tree/main/pstack">pstack</a> for <a href="https://github.com/deepseek-ai/deepseek-harness">DeepSeek Harness</a>.</p>
   <p>English · <a href="./README.zh.md">中文</a></p>
   <p>
     <a href="https://npmx.dev/package/dsh-pstack"><img src="https://img.shields.io/npm/v/dsh-pstack?style=flat-square&colorA=080f12&colorB=1fa669" alt="npm version" /></a>
@@ -9,27 +10,103 @@
   </p>
 </div>
 
-`dsh-pstack` is a community port of [pstack](https://github.com/cursor/plugins/tree/main/pstack) for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness).
+> [!NOTE]
+> This is a community port, not an official Cursor or DeepSeek release. The current preview is `0.3.0-beta.1`.
 
-> [!IMPORTANT]
-> This branch contains development infrastructure. Published releases provide the installable plugin.
+## Overview
 
-## Development
+`dsh-pstack` brings pstack's disciplined agent workflow to DeepSeek Harness. It packages the pstack skills, role-aware delegation, role model configuration, and the supporting tools as a normal DSH plugin bundle.
 
-Install the pinned submodule and dependencies.
+It is built for work where the process matters as much as the answer: planning before implementation, isolated subagents for parallel work, explicit model routes per role, and verification against the real artifact before declaring done.
+
+| Metric | Value |
+|:--|:--|
+| Audited Cursor-facing capabilities | **67** |
+| Generated pstack skills | **58** |
+| Built-in pstack tools | **5** |
+| Role definitions | **17** |
+| Audit outcome | **39 direct mappings · 2 official plugins · 17 plugin implementations · 9 deliberately dropped** |
+
+The complete capability review is in [`port/audit.md`](./port/audit.md). The runtime mapping is in [`port/dsh.md`](./port/dsh.md).
+
+## What you get
+
+### Role-aware subagents
+
+`pstack_subagent` delegates work to fresh child agents. A call can select a pstack role, a panel of routes, or one entry from a list role with `roleIndex`; `reasoningEffort` can raise or lower the selected route's starting effort. Every result includes the child id and the exact route it resolved.
+
+The package ships three child presets:
+
+| Preset | Use |
+|---|---|
+| `poteto-agent` | Implementation delegate with the pstack persona and the `poteto-mode` instructions. |
+| `comment-sicko` | Read-only comment reviewer that reports deletion targets and `MUST KILL` symbols. |
+| `readonly` | Sandbox-enforced read-only researcher for inspection and evidence gathering. |
+
+### Skills with explicit loading
+
+The generated pstack tree contains 58 skills. Most use `disable-model-invocation: true` so they stay out of the model catalog and are loaded by exact name through `pstack_skill`. Visible bundled skills use the normal `skill` tool.
+
+The package also exposes both vendored skills and the skills authored in this repository. Relative resources such as `references/` and `playbooks/` are read beside `SKILL.md`; `../` is allowed only while it stays inside the skill directory.
+
+### Live model and role discovery
+
+- `pstack_models` lists the model routes the current DSH deployment actually serves, including each route's reasoning-effort tokens.
+- `pstack_roles` lists every pstack role with its `shape`, `autoPanel`, and whether `roleIndex` applies.
+- `$DSH_HOME/pstack-models.mdc` stores role routes. `pstack_subagent` re-reads it on every delegation, so edits affect the next child without a restart.
+
+### Web plugin configuration
+
+Open the `dsh-pstack` plugin page and choose **pstack settings**. The dialog has two tabs:
+
+- **Recommended plugins** — inspect and manage official DSH plugins that complement pstack.
+- **Role models** — view and edit role routes and the role budget, with live model choices.
+
+### Optional rendering
+
+`pstack_render` handles pstack visualization requests without silently installing tools. It renders Mermaid diagrams through Pele when `pele@1.9.0` is installed, and slide videos through ffmpeg and ImageMagick when those commands are available. A missing renderer produces a clear `status: missing` result and an install hint.
+
+## Quick start
+
+Install the plugin into a DSH profile:
 
 ```sh
-git submodule update --init --recursive
-vp install
+dsh plugin --profile web add dsh-pstack
 ```
 
-The porting baseline is in [`port/README.md`](./port/README.md). It defines capability review, the generated `pstack/` tree, package skills, and verification.
+Use another profile name when needed:
 
-The [playground guide](./playground/README.md) covers browser and headless verification.
+```sh
+dsh plugin --profile <profile> add dsh-pstack
+```
 
-## Package skills
+Then:
 
-The `skills/` workspace includes independently maintained skills. `skills/authored/` contains local skills. `skills/.agents/skills/` contains vendored skills loaded from the `skills` declarations in [`skills/package.json`](./skills/package.json), with sources and hashes in [`skills/skills-lock.json`](./skills/skills-lock.json).
+1. Restart the profile if the plugin manager asks for it.
+2. Open the `dsh-pstack` plugin page and select **pstack settings**.
+3. Set role routes with the **Role models** tab, or run `/setup-pstack`.
+4. Start a task with `/poteto-mode`.
+
+For local development and the full verification environment, see [`playground/README.md`](./playground/README.md).
+
+## Tools
+
+| Tool | Purpose |
+|---|---|
+| `pstack_skill` | Loads a pstack, vendored, or authored skill by exact name, including skills hidden from the model catalog. Accepts an optional `resource` relative to the skill directory. |
+| `pstack_subagent` | Starts role-routed child agents, including automatic panels and selected list entries. |
+| `pstack_models` | Reports the live provider, model, and reasoning-effort catalogue. |
+| `pstack_roles` | Reports role shape, auto-panel behavior, and `roleIndex` applicability. |
+| `pstack_render` | Renders optional Mermaid/SVG or video artifacts when the required local tools exist. |
+
+The plugin also contributes its presets and the skill filesystem roots used by the tools above.
+
+## Skills directory
+
+The `skills/` workspace contains independently maintained skills.
+
+- `skills/authored/` contains skills maintained in this repository.
+- `skills/.agents/skills/` contains vendored skills loaded from the declarations in [`skills/package.json`](./skills/package.json), with sources and hashes in [`skills/skills-lock.json`](./skills/skills-lock.json).
 
 | Skill | Source | Purpose |
 |---|---|---|
@@ -43,20 +120,58 @@ The `skills/` workspace includes independently maintained skills. `skills/author
 | `setup-project-docs` | authored | Set up sustainable project documentation. |
 | `docs-drift` | authored | Detect documentation drift and repair approved findings. |
 
+## Repository layout
+
+| Path | Purpose |
+|---|---|
+| [`src/`](./src) | Plugin implementation: tools, subagent routing, role configuration, rendering, and the Web client. |
+| [`pstack/`](./pstack) | Generated pstack skill tree and adapter documentation. Do not edit generated files by hand. |
+| [`port/`](./port) | Porting baseline: audit records, generator, adapter docs, and maintenance rules. |
+| [`skills/`](./skills) | Authored and vendored skill workspace. |
+| [`playground/`](./playground) | Real-profile browser and headless verification environment. |
+| `upstream/cursor-plugins/` | Pinned pstack upstream submodule. |
+
+## Development
+
+Initialize the pinned upstream sources and install dependencies:
+
+```sh
+git submodule update --init --recursive
+vp install
+```
+
+Common commands:
+
+```sh
+vp run build             # build the plugin and generated package files
+vp test                  # unit and behavior tests
+vp run playground        # start the Web playground
+vp run cases             # run the headless verification suite
+node port/generate.mjs --check
+```
+
+Read [`port/README.md`](./port/README.md) before changing the port, the audit, or the generated tree. It defines the capability-review order, generation rules, local extensions, and regression notes.
+
+## Documentation
+
+| Document | What it covers |
+|---|---|
+| [`port/README.md`](./port/README.md) | Porting rules, audit workflow, generated tree, and maintenance boundaries. |
+| [`port/audit.md`](./port/audit.md) | All 67 capabilities with evidence, disposition, remaining gaps, and recommendations. |
+| [`port/dsh.md`](./port/dsh.md) | Runtime mapping from Cursor/pstack names to DSH tools, fields, paths, and local replacements. |
+| [`playground/README.md`](./playground/README.md) | Browser and headless verification setup. |
+
 ## Compatibility
 
-Each row identifies a published release and its dependency baseline. Add a row when a DSH or pstack breaking change requires a new baseline.
-
-| Dependency | Compatible range | dsh-pstack release |
-|---|---|---|
-| DSH | `<=0.2.2-alpha.2` | `v0.2.1` |
-| pstack | `0.15.36` | `v0.2.1` |
+| Component | Baseline |
+|---|---|
+| DSH | `>=0.2.2-rc.1`; audited against `0.2.2-rc.1` |
+| pstack upstream | `ae5650febf4320793844c12c4adaa937f417f8da` (`0.15.36`) |
+| dsh-pstack | `0.3.0-beta.1` |
 
 ## Credits
 
 [pstack](https://github.com/cursor/plugins/tree/main/pstack) is designed and open-sourced by Lauren Tan and the Cursor team. [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) is provided by the DeepSeek team. [cursor/plugins `cursor-team-kit`](https://github.com/cursor/plugins/tree/main/cursor-team-kit) provides the vendored `deslop`, `control-ui`, and `control-cli` skills. [mattpocock/skills](https://github.com/mattpocock/skills) provides the vendored `writing-for-agents` and `retro` skills.
-
-This project is a community port, not an official Cursor or DeepSeek release.
 
 ## License
 
