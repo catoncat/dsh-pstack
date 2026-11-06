@@ -35,45 +35,23 @@
   "type": "module",
   "types": "./dist/index.d.mts",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.mts",
-      "import": "./dist/index.mjs"
-    },
-    "./models": {
-      "types": "./dist/models.d.mts",
-      "import": "./dist/models.mjs"
-    },
-    "./readonly": {
-      "types": "./dist/readonly.d.mts",
-      "import": "./dist/readonly.mjs"
-    },
-    "./render": {
-      "types": "./dist/render.d.mts",
-      "import": "./dist/render.mjs"
-    },
-    "./role-catalog": {
-      "types": "./dist/role-catalog.d.mts",
-      "import": "./dist/role-catalog.mjs"
-    },
-    "./role-service": {
-      "types": "./dist/role-service.d.mts",
-      "import": "./dist/role-service.mjs"
-    },
-    "./skill": {
-      "types": "./dist/skill.d.mts",
-      "import": "./dist/skill.mjs"
-    },
-    "./subagent": {
-      "types": "./dist/subagent.d.mts",
-      "import": "./dist/subagent.mjs"
-    },
+    ".": "./dist/index.mjs",
+    "./models": "./dist/models.mjs",
+    "./paths": "./dist/paths.mjs",
+    "./readonly": "./dist/readonly.mjs",
+    "./render": "./dist/render.mjs",
+    "./role-catalog": "./dist/role-catalog.mjs",
+    "./role-config": "./dist/role-config.mjs",
+    "./role-editor": "./dist/role-editor.mjs",
+    "./role-manifest": "./dist/role-manifest.mjs",
+    "./role-remote": "./dist/role-remote.mjs",
+    "./role-service": "./dist/role-service.mjs",
+    "./role-wire": "./dist/role-wire.mjs",
+    "./skill": "./dist/skill.mjs",
+    "./subagent": "./dist/subagent.mjs",
     "./package.json": "./package.json",
-    "./client": "./dist/client.mjs",
-    "./roles": {
-      "types": "./dist/role-catalog.d.mts",
-      "import": "./dist/role-catalog.mjs"
-    },
-    "./locale/*.json": "./locale/*.json"
+    "./locale/*.json": "./locale/*.json",
+    "./client": "./dist/client.mjs"
   },
   "scripts": {
     "prepare": "vp config && skills experimental_sync -y -a universal --copy",

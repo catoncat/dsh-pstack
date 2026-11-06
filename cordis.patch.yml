@@ -28,7 +28,7 @@
     - id: pstack-roles
       name: dsh-pstack/role-service
     - id: pstack-role-catalog
-      name: dsh-pstack/roles
+      name: dsh-pstack/role-catalog
     - id: pstack-subagent
       name: dsh-pstack/subagent
       config:
