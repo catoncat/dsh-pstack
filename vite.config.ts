@@ -1,11 +1,26 @@
 import { defineConfig } from "vite-plus";
 
+/**
+ * Every `@deepseek-ai/*` module is provided by the running DSH, so no bundle may carry
+ * its own copy. Matched by namespace instead of enumerating packages: a newly added DSH
+ * dependency stays external without touching this file. The published manifest declares
+ * them under `devDependencies` only, so a profile install resolves them through the host
+ * installation while a linked checkout resolves the local development copies.
+ */
+const dshProvided = /^@deepseek-ai\//;
+
 export default defineConfig({
   pack: [
     {
       entry: ["./src/*.ts"],
       dts: {
         generator: "tsgo",
+      },
+      deps: {
+        neverBundle: [dshProvided],
+        dts: {
+          neverBundle: [dshProvided],
+        },
       },
       copy: [
         "pstack/dist/pstack",
@@ -31,18 +46,16 @@ export default defineConfig({
       sourcemap: true,
       exports: false,
       deps: {
+        // Browser modules the host module loader supplies. `dshProvided` covers the whole
+        // `@deepseek-ai/*` namespace, including the packages named by `dsh.client.inject`.
         neverBundle: [
           "react",
           "react/jsx-runtime",
           "react-dom",
           "react-dom/client",
-          "@deepseek-ai/cordis",
           "zod",
           "@tanstack/react-virtual",
-          "@deepseek-ai/dsh-client-store",
-          "@deepseek-ai/dsh-client-ui-slots",
-          "@deepseek-ai/dsh-client-ui-primitives",
-          "@deepseek-ai/dsh-client-ui-dockkit",
+          dshProvided,
         ],
       },
       outputOptions: {
