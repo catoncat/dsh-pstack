@@ -8,11 +8,15 @@ import type { PstackRolesNamespace } from "../src/role-remote.ts";
 import type { BundleView } from "../src/client/RecommendedPluginsPage.tsx";
 import { RecommendedPluginsView } from "../src/client/RecommendedPluginsPage.tsx";
 import { catalogs } from "../src/client/locales.ts";
+import { FALLBACK_LOCALE } from "../src/preset-copy.ts";
 
 type Dictionaries = Record<string, Record<string, string>>;
 
-function translateFrom(dictionaries: Dictionaries, language = "en"): (key: string) => string {
-  return (key) => dictionaries[language]?.[key] ?? dictionaries["en"]?.[key] ?? key;
+function translateFrom(
+  dictionaries: Dictionaries,
+  language = FALLBACK_LOCALE,
+): (key: string) => string {
+  return (key) => dictionaries[language]?.[key] ?? dictionaries[FALLBACK_LOCALE]?.[key] ?? key;
 }
 
 function roleApi() {

@@ -6,9 +6,9 @@ import { EntryGroup } from "@deepseek-ai/cordis-plugin-loader";
 import type { PresetDefinition } from "@deepseek-ai/dsh-agent-preset-registry";
 import z from "@deepseek-ai/schemastery";
 
-import { presetCopyFor, presetLanguage, type PstackLanguage } from "./preset-copy.ts";
+import { presetCopyFor } from "./preset-copy.ts";
 
-/** The slice of the Host settings service used to read the Web UI language. */
+/** The slice of the Host settings service used to read the Web UI locale. */
 interface SettingsHost {
   describe(): readonly {
     readonly ns: string;
@@ -16,7 +16,7 @@ interface SettingsHost {
   }[];
 }
 
-/** Read the explicit Web UI language from `locale.preference`. */
+/** Read the explicit Web UI locale from `locale.preference`. */
 export function readWebUiLocale(ctx: Context): string | undefined {
   const host = ctx as unknown as { get(name: string): unknown };
   const settings = host.get("settings") as SettingsHost | undefined;
@@ -30,25 +30,14 @@ export function readWebUiLocale(ctx: Context): string | undefined {
   }
 }
 
-/** Resolve the preset display language without making it follow later UI switches. */
-export function readPresetLanguage(ctx: Context): PstackLanguage {
-  return presetLanguage(readWebUiLocale(ctx));
-}
-
-/** Replace one preset's name and description with its copy for the active language. */
+/** Replace one preset's name and description with its copy for the active locale. */
 export function localizePresetConfig(ctx: Context, config: PresetDefinition): PresetDefinition {
-  const copy = presetCopyFor(config.id, readPresetLanguage(ctx));
+  const copy = presetCopyFor(config.id, readWebUiLocale(ctx));
   if (copy === undefined) return config;
   return { ...config, name: copy.name, description: copy.description };
 }
 
-/**
- * Drop-in replacement for `@deepseek-ai/dsh-agent-preset`.
- *
- * Preset rows are registered during Host startup, before a browser connects.
- * The language therefore comes from the persisted Web UI preference, not from
- * a live locale subscription. A missing preference falls back to English.
- */
+/** Drop-in replacement for `@deepseek-ai/dsh-agent-preset`. */
 export default class LocalizedAgentPreset {
   static inject = ["agentPresets"];
 

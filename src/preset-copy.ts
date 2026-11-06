@@ -1,7 +1,7 @@
-/** Display copy for dsh-pstack presets, chosen once from the Web UI language. */
+/** Display copy for dsh-pstack presets. */
 
-/** Languages dsh-pstack ships copy for. Every other locale falls back to English. */
-export type PstackLanguage = "en" | "zh";
+/** Fallback locale for a missing catalog or preset entry. */
+export const FALLBACK_LOCALE = "en";
 
 /** One preset's display name and description. */
 export interface PresetCopy {
@@ -56,19 +56,21 @@ const ZH: Record<string, PresetCopy> = {
   },
 };
 
-/** Preset copy keyed by language, then preset id. */
-export const PRESET_COPY: Record<PstackLanguage, Record<string, PresetCopy>> = {
+/** Preset copy keyed by locale, then preset id. */
+export const PRESET_COPY: Record<string, Record<string, PresetCopy>> = {
   en: EN,
   zh: ZH,
 };
 
-/** Map one BCP 47 locale to the supported display language. */
-export function presetLanguage(locale: string | undefined): PstackLanguage {
-  const primary = locale?.trim().toLowerCase().split("-")[0];
-  return primary === "zh" ? "zh" : "en";
-}
-
-/** Read one preset's copy, or undefined when the id is not shipped by this package. */
-export function presetCopyFor(id: string, language: PstackLanguage): PresetCopy | undefined {
-  return PRESET_COPY[language][id];
+/** Read one preset's copy for a BCP 47 locale. */
+export function presetCopyFor(id: string, locale: string | undefined): PresetCopy | undefined {
+  const tag = locale?.trim().toLowerCase();
+  if (tag !== undefined && tag !== "") {
+    const exact = PRESET_COPY[tag]?.[id];
+    if (exact !== undefined) return exact;
+    const primary = tag.split("-")[0];
+    const primaryCopy = primary === undefined ? undefined : PRESET_COPY[primary]?.[id];
+    if (primaryCopy !== undefined) return primaryCopy;
+  }
+  return PRESET_COPY[FALLBACK_LOCALE]?.[id];
 }

@@ -111,7 +111,7 @@ The package ships two root presets and three child presets.
 | `comment-sicko` | Child | Handles read-only comment review and reports deletion targets and `MUST KILL` symbols. |
 | `readonly` | Child | Provides sandbox-enforced read-only research for inspection and evidence gathering. |
 
-Preset names and descriptions follow the language selected in Settings → General → Language, read when the Host starts. Without a Web UI language selection they fall back to English. Changing the language updates preset labels after a restart.
+Preset names and descriptions follow the language selected in Settings → General → Language, read when the Host starts. Without a Web UI language selection they fall back to the default locale. Changing the language updates preset labels after a restart.
 
 Do not enable Agent Teams with either pstack root preset. Both own delegation and task coordination. The pstack root preset fails at startup when the Agent Teams service is present.
 

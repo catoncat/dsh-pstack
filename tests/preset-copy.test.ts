@@ -4,7 +4,7 @@ import type { Context } from "@deepseek-ai/cordis";
 import type { PresetDefinition } from "@deepseek-ai/dsh-agent-preset-registry";
 import { describe, expect, it } from "vite-plus/test";
 
-import { PRESET_COPY, presetCopyFor, presetLanguage } from "../src/preset-copy.ts";
+import { FALLBACK_LOCALE, PRESET_COPY, presetCopyFor } from "../src/preset-copy.ts";
 import { localizePresetConfig, readWebUiLocale } from "../src/preset.ts";
 
 const PATCH = readFileSync("cordis.patch.yml", "utf8");
@@ -59,32 +59,38 @@ function preset(id: string): PresetDefinition {
   };
 }
 
-describe("presetLanguage", () => {
-  it("maps Chinese and everything else to the two shipped languages", () => {
-    expect(presetLanguage("zh")).toBe("zh");
-    expect(presetLanguage("zh-CN")).toBe("zh");
-    expect(presetLanguage("en-US")).toBe("en");
-    expect(presetLanguage("ja")).toBe("en");
-    expect(presetLanguage(undefined)).toBe("en");
+describe("presetCopyFor", () => {
+  it("resolves an exact tag, a primary tag, and the fallback locale", () => {
+    expect(presetCopyFor("poteto-mode", "zh-CN")?.name).toBe(PRESET_COPY.zh["poteto-mode"]?.name);
+    expect(presetCopyFor("poteto-mode", "en-US")?.name).toBe(
+      PRESET_COPY[FALLBACK_LOCALE]?.["poteto-mode"]?.name,
+    );
+    expect(presetCopyFor("poteto-mode", "ja")?.name).toBe(
+      PRESET_COPY[FALLBACK_LOCALE]?.["poteto-mode"]?.name,
+    );
+    expect(presetCopyFor("poteto-mode", undefined)?.name).toBe(
+      PRESET_COPY[FALLBACK_LOCALE]?.["poteto-mode"]?.name,
+    );
   });
 });
 
 describe("preset copy", () => {
-  it("ships English and Chinese copy for every preset", () => {
-    for (const id of PRESET_IDS) {
-      expect(PRESET_COPY.en[id]?.name).not.toBe("");
-      expect(PRESET_COPY.en[id]?.description).not.toBe("");
-      expect(PRESET_COPY.zh[id]?.name).not.toBe("");
-      expect(PRESET_COPY.zh[id]?.description).not.toBe("");
-      expect(presetCopyFor(id, "zh")?.name).toBe(PRESET_COPY.zh[id]?.name);
+  it("ships copy for every preset in every catalog", () => {
+    for (const catalog of Object.values(PRESET_COPY)) {
+      for (const id of PRESET_IDS) {
+        expect(catalog[id]?.name).not.toBe("");
+        expect(catalog[id]?.description).not.toBe("");
+      }
     }
   });
 
-  it("keeps the English copy in sync with the preset declarations", () => {
+  it("keeps the fallback copy in sync with the preset declarations", () => {
     for (const id of PRESET_IDS) {
       const block = presetBlock(id);
-      expect(PRESET_COPY.en[id]?.name).toBe(configField(block, "name"));
-      expect(PRESET_COPY.en[id]?.description).toBe(configField(block, "description"));
+      expect(PRESET_COPY[FALLBACK_LOCALE]?.[id]?.name).toBe(configField(block, "name"));
+      expect(PRESET_COPY[FALLBACK_LOCALE]?.[id]?.description).toBe(
+        configField(block, "description"),
+      );
     }
   });
 
@@ -100,22 +106,20 @@ describe("localizePresetConfig", () => {
     expect(readWebUiLocale({ get: () => undefined } as unknown as Context)).toBeUndefined();
   });
 
-  it("replaces the preset copy when the preference is Chinese", () => {
+  it("uses the matching locale catalog", () => {
     const localized = localizePresetConfig(contextWithLocale("zh"), preset("poteto-mode"));
     expect(localized.name).toBe(PRESET_COPY.zh["poteto-mode"]?.name);
     expect(localized.description).toBe(PRESET_COPY.zh["poteto-mode"]?.description);
   });
 
-  it("uses English copy when the preference is absent or English", () => {
+  it("uses the fallback copy when the preference is absent or unknown", () => {
     const expected = {
       ...preset("poteto-mode"),
-      name: PRESET_COPY.en["poteto-mode"]?.name,
-      description: PRESET_COPY.en["poteto-mode"]?.description,
+      name: PRESET_COPY[FALLBACK_LOCALE]?.["poteto-mode"]?.name,
+      description: PRESET_COPY[FALLBACK_LOCALE]?.["poteto-mode"]?.description,
     };
     expect(localizePresetConfig(contextWithLocale(), preset("poteto-mode"))).toEqual(expected);
-    expect(localizePresetConfig(contextWithLocale("en-US"), preset("poteto-mode"))).toEqual(
-      expected,
-    );
+    expect(localizePresetConfig(contextWithLocale("ja"), preset("poteto-mode"))).toEqual(expected);
   });
 
   it("leaves unknown preset ids untouched", () => {
