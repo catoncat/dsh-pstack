@@ -25,6 +25,14 @@ const TOOL_TITLES: Record<PstackToolName, PstackLocaleKey> = {
   pstack_render: "toolRender",
 };
 
+const TOOL_DESCRIPTIONS: Record<PstackToolName, PstackLocaleKey> = {
+  pstack_subagent: "toolSubagentDescription",
+  pstack_skill: "toolSkillDescription",
+  pstack_models: "toolModelsDescription",
+  pstack_roles: "toolRolesDescription",
+  pstack_render: "toolRenderDescription",
+};
+
 const ARGUMENT_KEYS: Record<string, readonly string[]> = {
   pstack_subagent: ["description", "prompt"],
   pstack_skill: ["name", "resource"],
@@ -41,13 +49,16 @@ export function PstackToolRow(props: PstackToolRowProps): ReactElement {
   const output = props.phase === "result" ? contentText(props.block.content) : undefined;
   const summary = argumentSummary(props.toolName, raw);
   const titleKey = TOOL_TITLES[props.toolName as PstackToolName] ?? "toolGeneric";
+  const descriptionKey = TOOL_DESCRIPTIONS[props.toolName as PstackToolName];
   return (
     <div data-tool={props.toolName} data-state={state} style={cardStyle}>
       <div style={rowStyle}>
         <span aria-hidden="true" style={dotStyle(state)} />
         <span style={titleStyle}>{props.t(titleKey)}</span>
+        <code style={nameStyle}>{props.toolName}</code>
         {summary === "" ? null : <span style={summaryStyle}>{summary}</span>}
       </div>
+      <div style={descriptionStyle}>{props.t(descriptionKey)}</div>
       {raw === "" ? null : (
         <details style={detailsStyle}>
           <summary style={summaryLinkStyle}>{props.t("toolArguments")}</summary>
@@ -140,6 +151,19 @@ const titleStyle: CSSProperties = {
   fontSize: 13,
   fontWeight: 600,
   flex: "none",
+};
+
+const nameStyle: CSSProperties = {
+  color: "var(--dsw-alias-label-tertiary)",
+  fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+  fontSize: 11,
+  flex: "none",
+};
+
+const descriptionStyle: CSSProperties = {
+  color: "var(--dsw-alias-label-secondary)",
+  fontSize: 12,
+  lineHeight: "18px",
 };
 
 const summaryStyle: CSSProperties = {
