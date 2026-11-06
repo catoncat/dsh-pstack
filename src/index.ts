@@ -21,3 +21,4 @@ export { apply as applyRoleCatalog, createPstackRolesTool } from "./role-catalog
 export { apply as applySubagent, createPstackSubagentTool } from "./subagent.ts";
 export { apply as applyReadonly } from "./readonly.ts";
 export { apply as applyRender, createPstackRenderTool } from "./render.ts";
+export { apply as applyPotetoMode, createPotetoModeSection } from "./poteto-mode.ts";

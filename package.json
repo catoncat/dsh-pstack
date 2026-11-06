@@ -38,6 +38,7 @@
     ".": "./dist/index.mjs",
     "./models": "./dist/models.mjs",
     "./paths": "./dist/paths.mjs",
+    "./poteto-mode": "./dist/poteto-mode.mjs",
     "./readonly": "./dist/readonly.mjs",
     "./render": "./dist/render.mjs",
     "./role-catalog": "./dist/role-catalog.mjs",

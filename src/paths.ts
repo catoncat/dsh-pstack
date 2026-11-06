@@ -26,7 +26,10 @@ export const SKILLS_ROOT = join(PORT_ROOT, "skills");
 /** The vendored skills. */
 export const VENDORED_SKILLS_ROOT = join(DIST_ROOT, "skills", "vendored");
 
-/** The `poteto-mode` instruction path injected into a poteto-agent brief. */
+/**
+ * The `poteto-mode` instruction path used by the root `poteto-mode` preset and
+ * the `poteto-agent` delegate brief.
+ */
 export const POTETO_MODE_SKILL_PATH = join(SKILLS_ROOT, "poteto-mode", "SKILL.md");
 
 /** The shipped DSH adapter document. */
