@@ -401,6 +401,8 @@ function RoleCard(props: {
     (route) =>
       route.kind === "route" && (route.provider.trim() === "" || route.model.trim() === ""),
   );
+  const canClearRole = draft.routes.some((route) => !isInheritParent(route));
+  const clearRole = (): void => onRoutesChange([inheritRoute()]);
   const status =
     role.issues.length > 0
       ? { tone: "error" as StatusTone, label: t("roleInvalid") }
@@ -452,12 +454,6 @@ function RoleCard(props: {
             catalogue={catalogue}
             disabled={controlsDisabled}
             canRemove={role.shape === "list" && draft.routes.length > 1}
-            canClear={!isInheritParent(route)}
-            onClear={() =>
-              onRoutesChange(
-                draft.routes.map((item, position) => (position === index ? inheritRoute() : item)),
-              )
-            }
             onChange={(next) =>
               onRoutesChange(
                 draft.routes.map((item, position) => (position === index ? next : item)),
@@ -500,6 +496,15 @@ function RoleCard(props: {
           <Button
             variant="outline"
             size="sm"
+            icon={<IconEraser size={13} />}
+            disabled={controlsDisabled || !canClearRole}
+            onClick={clearRole}
+          >
+            {t("clearRole")}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             icon={<IconUndo size={13} />}
             disabled={controlsDisabled || !dirty}
             onClick={onReset}
@@ -527,24 +532,12 @@ function RouteRow(props: {
   catalogue: CatalogueResult | undefined;
   disabled: boolean;
   canRemove: boolean;
-  canClear: boolean;
-  onClear: () => void;
   onChange: (route: RouteView) => void;
   onRemove: () => void;
   translations: PstackTranslations;
 }): ReactElement {
-  const {
-    roleName,
-    route,
-    catalogue,
-    disabled,
-    canRemove,
-    canClear,
-    onClear,
-    onChange,
-    onRemove,
-    translations,
-  } = props;
+  const { roleName, route, catalogue, disabled, canRemove, onChange, onRemove, translations } =
+    props;
   const t = translations.roles;
   const providerValue = route.kind === "inherit" ? `__inherit__:${route.alias}` : route.provider;
   const providers = catalogue?.providers ?? [];
@@ -559,8 +552,7 @@ function RouteRow(props: {
     route.kind === "route"
       ? "minmax(0, 1.25fr) minmax(0, 1.25fr) minmax(0, 0.7fr)"
       : "minmax(0, 1fr)";
-  const actionCount = 1 + (canRemove ? 1 : 0);
-  const columns = `${fields} ${actionCount * 32 + (actionCount - 1) * 6}px`;
+  const columns = canRemove ? `${fields} 32px` : fields;
   return (
     <div className="pstack-route-row" style={{ gridTemplateColumns: columns }}>
       <label className="pstack-field">
@@ -665,11 +657,8 @@ function RouteRow(props: {
           </label>
         </>
       ) : null}
-      <div className="pstack-route-actions">
-        <IconButton label={t("clearRoute")} disabled={disabled || !canClear} onClick={onClear}>
-          <IconEraser size={14} />
-        </IconButton>
-        {canRemove ? (
+      {canRemove ? (
+        <div className="pstack-route-actions">
           <IconButton
             danger
             label={`${t("removeRoute")} ${roleName}`}
@@ -678,8 +667,8 @@ function RouteRow(props: {
           >
             <IconTrash size={14} />
           </IconButton>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
     </div>
   );
 }
