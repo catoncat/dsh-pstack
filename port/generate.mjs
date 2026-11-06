@@ -113,6 +113,9 @@ for (const [skill, { terms, wrap, name }] of classes) {
   for (const key of terms) users.set(key, [...(users.get(key) ?? []), skill]);
 }
 const adapterText = readFileSync(join(ROOT, ADAPTER_SOURCE), "utf8");
+if (/^\|\s*OPT-\d+\s*\|/m.test(adapterText)) {
+  problems.push("port/dsh.md optional plugin table uses OPT-xx IDs; use package-name rows");
+}
 for (const [key, using] of users) {
   if (!adapterText.includes(key))
     problems.push(`port/dsh.md has no row for ${key}, used by ${using.join(", ")}`);

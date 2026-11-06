@@ -83,13 +83,13 @@ DeepSeek Harness has no Cursor Automations, Bugbot, Cursor cloud agents, or buil
 
 The following DSH plugins are disabled by default. Enable a package through the Plugins page or `dsh plugin --profile <profile> add <package>`, then restart the profile if required. A disabled plugin does not make a dependent step pass.
 
-| ID | Plugin packages | Capability when enabled | When not enabled |
-| --- | --- | --- | --- |
-| OPT-02 | `@deepseek-ai/dsh-experimental-forge-bundle` | PR panels, checks, reviews, ready state, merge, Session binding, and the model-side `create_worktree` tool. | Use `gh` or `git worktree add` through `bash`. |
-| OPT-03 | `@deepseek-ai/dsh-browser-use` and one browser provider | Browser navigation, input, screenshots, and ARIA snapshots. | Use project-owned browser scripts; otherwise mark browser evidence as skipped. |
-| OPT-04 | `@deepseek-ai/dsh-cua-bundle` | macOS desktop application control and screenshots. | Use a project-owned desktop driver; otherwise mark desktop evidence as skipped. |
-| OPT-05 | `@deepseek-ai/dsh-experimental-terminal-bundle` | Persistent PTY tools for CLI and TUI verification. | Run foreground commands or background jobs through `bash`. |
-| OPT-06 | `@deepseek-ai/dsh-experimental-session-search` | Session history search and event inspection. | Use a resume note or evidence supplied by the user. |
-| OPT-07 | `@deepseek-ai/dsh-mcp-client` | Configured MCP tools. | Inspect local files and use standard search or fetch tools. |
-| OPT-08 | `@deepseek-ai/dsh-experimental-agent-team-profile` | Lead and teammate roles and a shared task board. | Use `pstack_subagent`, `workflow`, and `todo_write`; do not enable Agent Teams and `pstack_subagent` in one profile. |
-| OPT-09 | `@deepseek-ai/dsh-experimental-ralph-bundle` | A foreground `ralph` loop with a structured handoff. | Use `create_goal` with `schedule_create` or a background `bash` watcher. |
+| Plugin packages | Capability when enabled | When not enabled |
+| --- | --- | --- |
+| `@deepseek-ai/dsh-experimental-forge-bundle` | PR panels, checks, reviews, ready state, merge, Session binding, and the model-side `create_worktree` tool. | Use `gh` or `git worktree add` through `bash`. |
+| `@deepseek-ai/dsh-browser-use` and one browser provider | Browser navigation, input, screenshots, and ARIA snapshots. | Use project-owned browser scripts; otherwise mark browser evidence as skipped. |
+| `@deepseek-ai/dsh-cua-bundle` | macOS desktop application control and screenshots. | Use a project-owned desktop driver; otherwise mark desktop evidence as skipped. |
+| `@deepseek-ai/dsh-experimental-terminal-bundle` | Persistent PTY tools for CLI and TUI verification. | Run foreground commands or background jobs through `bash`. |
+| `@deepseek-ai/dsh-experimental-session-search` | Session history search and event inspection. | Use a resume note or evidence supplied by the user. |
+| `@deepseek-ai/dsh-mcp-client` | Configured MCP tools. | Inspect local files and use standard search or fetch tools. |
+| `@deepseek-ai/dsh-experimental-agent-team-profile` | Lead and teammate roles and a shared task board. | Use `pstack_subagent`, `workflow`, and `todo_write`; do not enable Agent Teams and `pstack_subagent` in one profile. |
+| `@deepseek-ai/dsh-experimental-ralph-bundle` | A foreground `ralph` loop with a structured handoff. | Use `create_goal` with `schedule_create` or a background `bash` watcher. |

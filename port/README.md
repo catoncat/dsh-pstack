@@ -6,6 +6,7 @@
 
 - 根 `pstack/` 只放生成的插件树。生成器可以整体替换该目录，不允许把手工文件放在其中。
 - 根 `port/` 保存生成器、扫描器、审核记录、`audit.lock.json`、本文件、`dsh.md` 和仅供审核的 `dsh.zh.md`。英文适配文档进入生成树，中文版本不被生成树引用。
+- `port/dsh.md` 是当前适配文案的唯一手写来源，必须按 `port/audit.md` 的处置、当前 `cordis.patch.yml` 和实现维护；不得沿用旧版适配表。可选插件表以包名为主键，不使用没有审计来源的 `OPT-xx` 编号。
 - 插件源码、测试、扩展登记和回归记录都在生成树之外。生成器不会修改这些内容。
 - 根 `package.json` 的 `exports` 由根 `vite.config.ts` 生成，不手工维护。主 pack 的 `entry` 使用 `./src/*.ts`，`customExports` 只补 `./locale/*.json` 和字符串形式的 `./client`；client pack 使用 `exports: false`。`./client` 保持字符串导出，供 `dsh-client-modules` 扫描。
 - `upstream/cursor-plugins` 提供 pstack 源文件。DSH 的基线来自目标运行时及其随附文档和 API。

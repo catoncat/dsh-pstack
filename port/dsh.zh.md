@@ -83,13 +83,13 @@ DeepSeek Harness 没有 Cursor Automations、Bugbot、Cursor 云代理或内置 
 
 以下 DSH 插件默认关闭。通过插件页或 `dsh plugin --profile <profile> add <package>` 启用，必要时重启 profile。插件未启用不代表依赖它的步骤通过。
 
-| 编号 | 插件包 | 启用后的能力 | 未启用时 |
-| --- | --- | --- | --- |
-| OPT-02 | `@deepseek-ai/dsh-experimental-forge-bundle` | PR 面板、检查、评审、ready、合并、会话绑定和模型侧 `create_worktree`。 | 用 `bash` 调 `gh` 或 `git worktree add`。 |
-| OPT-03 | `@deepseek-ai/dsh-browser-use` 加一个浏览器 provider | 浏览器导航、输入、截图和 ARIA 快照。 | 用项目自带浏览器脚本；否则标记浏览器证据跳过。 |
-| OPT-04 | `@deepseek-ai/dsh-cua-bundle` | macOS 桌面应用控制和截图。 | 用项目自带桌面驱动；否则标记桌面证据跳过。 |
-| OPT-05 | `@deepseek-ai/dsh-experimental-terminal-bundle` | CLI 与 TUI 验证所需的持久 PTY 工具。 | 用 `bash` 前台命令或后台 job。 |
-| OPT-06 | `@deepseek-ai/dsh-experimental-session-search` | 会话历史搜索和事件检查。 | 用用户提供的 resume note 或证据。 |
-| OPT-07 | `@deepseek-ai/dsh-mcp-client` | 已配置的 MCP 工具。 | 检查本地文件，使用标准搜索或 fetch 工具。 |
-| OPT-08 | `@deepseek-ai/dsh-experimental-agent-team-profile` | Lead/teammate 角色和共享任务板。 | 用 `pstack_subagent`、`workflow`、`todo_write`；不要在同一个 profile 同时启用 Agent Teams 和 `pstack_subagent`。 |
-| OPT-09 | `@deepseek-ai/dsh-experimental-ralph-bundle` | 带结构化交接的前台 `ralph` 循环。 | 用 `create_goal` 配 `schedule_create` 或后台 `bash` watcher。 |
+| 插件包 | 启用后的能力 | 未启用时 |
+| --- | --- | --- |
+| `@deepseek-ai/dsh-experimental-forge-bundle` | PR 面板、检查、评审、ready、合并、会话绑定和模型侧 `create_worktree`。 | 用 `bash` 调 `gh` 或 `git worktree add`。 |
+| `@deepseek-ai/dsh-browser-use` 加一个浏览器 provider | 浏览器导航、输入、截图和 ARIA 快照。 | 用项目自带浏览器脚本；否则标记浏览器证据跳过。 |
+| `@deepseek-ai/dsh-cua-bundle` | macOS 桌面应用控制和截图。 | 用项目自带桌面驱动；否则标记桌面证据跳过。 |
+| `@deepseek-ai/dsh-experimental-terminal-bundle` | CLI 与 TUI 验证所需的持久 PTY 工具。 | 用 `bash` 前台命令或后台 job。 |
+| `@deepseek-ai/dsh-experimental-session-search` | 会话历史搜索和事件检查。 | 用用户提供的 resume note 或证据。 |
+| `@deepseek-ai/dsh-mcp-client` | 已配置的 MCP 工具。 | 检查本地文件，使用标准搜索或 fetch 工具。 |
+| `@deepseek-ai/dsh-experimental-agent-team-profile` | Lead/teammate 角色和共享任务板。 | 用 `pstack_subagent`、`workflow`、`todo_write`；不要在同一个 profile 同时启用 Agent Teams 和 `pstack_subagent`。 |
+| `@deepseek-ai/dsh-experimental-ralph-bundle` | 带结构化交接的前台 `ralph` 循环。 | 用 `create_goal` 配 `schedule_create` 或后台 `bash` watcher。 |
