@@ -157,6 +157,8 @@ node port/generate.mjs --check
 
 修改移植、审核或生成树前先读 [`port/README.md`](./port/README.md)。它定义能力审核顺序、生成规则、本地扩展和回归记录。
 
+测试套件包含 [`tests/preset-parity.test.ts`](./tests/preset-parity.test.ts) 的 preset 对比检查。审核基线更新时同步刷新 [`tests/fixtures/dsh-0.2.2-rc.1`](./tests/fixtures/dsh-0.2.2-rc.1)。
+
 ## 文档
 
 | 文档 | 内容 |

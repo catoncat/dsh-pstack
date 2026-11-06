@@ -157,6 +157,8 @@ node port/generate.mjs --check
 
 Read [`port/README.md`](./port/README.md) before changing the port, the audit, or the generated tree. It defines the capability-review order, generation rules, local extensions, and regression notes.
 
+The test suite includes a preset parity check in [`tests/preset-parity.test.ts`](./tests/preset-parity.test.ts). Refresh [`tests/fixtures/dsh-0.2.2-rc.1`](./tests/fixtures/dsh-0.2.2-rc.1) when the audited DSH baseline changes.
+
 ## Documentation
 
 | Document | What it covers |

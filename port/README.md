@@ -111,3 +111,4 @@ DSH 升级后从标准模式开始重新检查。标准能力已经满足时，�
 
 | 编号 | 问题与触发条件 | 根因 | 预防或验证 | 状态 |
 |---|---|---|---|---|
+| RG-001 | DSH 升级后根 preset 工具集漂移 | 根 preset 手工复制标准与创造模式的工具行 | `tests/preset-parity.test.ts` 对 `tests/fixtures/dsh-<version>/` 的基线做完整插件行对比；升级基线时刷新 fixture | 已覆盖 |
