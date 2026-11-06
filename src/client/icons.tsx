@@ -163,3 +163,10 @@ export const IconUsers = icon(
     <path d="M10.4 3.5a2 2 0 0 1 0 3.7M11.4 8.6a3.2 3.2 0 0 1 2.2 3V13" />
   </>,
 );
+
+export const IconEraser = icon(
+  <>
+    <path d="M3.1 10.6l5.2-5.2a1.7 1.7 0 0 1 2.4 0l1 1a1.7 1.7 0 0 1 0 2.4l-4.4 4.4H5.1z" />
+    <path d="M6.6 6.1l3.3 3.3M3.1 10.6h6.3" />
+  </>,
+);

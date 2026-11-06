@@ -13,6 +13,7 @@ import type {
 import {
   IconAlert,
   IconCheck,
+  IconEraser,
   IconInfo,
   IconPlus,
   IconRefresh,
@@ -119,6 +120,9 @@ export function RoleSettingsView(props: {
         route.kind === "route" && (route.provider.trim() === "" || route.model.trim() === ""),
     ),
   );
+  const canClearAll = Object.values(drafts).some((draft) =>
+    draft.routes.some((route) => !isInheritParent(route)),
+  );
   const fileStatus = statusPresentation(snapshot, t);
 
   const updateRoutes = (key: string, routes: RouteView[]): void => {
@@ -165,6 +169,21 @@ export function RoleSettingsView(props: {
       ),
     );
     setBulkMessage(undefined);
+  };
+
+  const clearAll = (): void => {
+    setBulkMessage(undefined);
+    setDrafts((current) =>
+      Object.fromEntries(
+        snapshot.roles.map((role) => {
+          const draft = current[role.key] ?? draftOf(role);
+          return [
+            role.key,
+            { ...draft, routes: [inheritRoute()], message: undefined, busy: false },
+          ];
+        }),
+      ),
+    );
   };
 
   const saveRole = async (key: string): Promise<boolean> => {
@@ -262,9 +281,15 @@ export function RoleSettingsView(props: {
           </div>
         </div>
         <div className="pstack-section-actions">
-          {dirtyCount === 0 ? null : (
-            <Status tone="warn" label={t("unsavedCount", { count: dirtyCount })} />
-          )}
+          <Button
+            variant="outline"
+            size="sm"
+            icon={<IconEraser size={13} />}
+            disabled={!canClearAll || bulkBusy !== undefined || anyBusy || loading}
+            onClick={clearAll}
+          >
+            {t("clearAll")}
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -419,44 +444,31 @@ function RoleCard(props: {
         </div>
       )}
       <div className="pstack-route-list">
-        {draft.routes.map((route, index) => {
-          const baseline = draft.baseline[index];
-          const resetRoute =
-            role.shape !== "list"
-              ? undefined
-              : (): void => {
-                  if (baseline === undefined) {
-                    onRoutesChange(draft.routes.filter((_item, position) => position !== index));
-                    return;
-                  }
-                  onRoutesChange(
-                    draft.routes.map((item, position) =>
-                      position === index ? { ...baseline } : item,
-                    ),
-                  );
-                };
-          return (
-            <RouteRow
-              key={`${role.key}-${index}`}
-              roleName={name}
-              route={route}
-              catalogue={catalogue}
-              disabled={controlsDisabled}
-              canRemove={role.shape === "list" && draft.routes.length > 1}
-              canReset={baseline === undefined || signature([route]) !== signature([baseline])}
-              onReset={resetRoute}
-              onChange={(next) =>
-                onRoutesChange(
-                  draft.routes.map((item, position) => (position === index ? next : item)),
-                )
-              }
-              onRemove={() =>
-                onRoutesChange(draft.routes.filter((_item, position) => position !== index))
-              }
-              translations={translations}
-            />
-          );
-        })}
+        {draft.routes.map((route, index) => (
+          <RouteRow
+            key={`${role.key}-${index}`}
+            roleName={name}
+            route={route}
+            catalogue={catalogue}
+            disabled={controlsDisabled}
+            canRemove={role.shape === "list" && draft.routes.length > 1}
+            canClear={!isInheritParent(route)}
+            onClear={() =>
+              onRoutesChange(
+                draft.routes.map((item, position) => (position === index ? inheritRoute() : item)),
+              )
+            }
+            onChange={(next) =>
+              onRoutesChange(
+                draft.routes.map((item, position) => (position === index ? next : item)),
+              )
+            }
+            onRemove={() =>
+              onRoutesChange(draft.routes.filter((_item, position) => position !== index))
+            }
+            translations={translations}
+          />
+        ))}
       </div>
       <footer className="pstack-role-foot">
         <div className="pstack-role-foot-actions">
@@ -515,8 +527,8 @@ function RouteRow(props: {
   catalogue: CatalogueResult | undefined;
   disabled: boolean;
   canRemove: boolean;
-  canReset: boolean;
-  onReset?: () => void;
+  canClear: boolean;
+  onClear: () => void;
   onChange: (route: RouteView) => void;
   onRemove: () => void;
   translations: PstackTranslations;
@@ -527,8 +539,8 @@ function RouteRow(props: {
     catalogue,
     disabled,
     canRemove,
-    canReset,
-    onReset,
+    canClear,
+    onClear,
     onChange,
     onRemove,
     translations,
@@ -543,13 +555,12 @@ function RouteRow(props: {
     route.kind === "route" && route.effort !== undefined && !efforts.includes(route.effort)
       ? [route.effort, ...efforts]
       : efforts;
-  const actionCount = (onReset === undefined ? 0 : 1) + (canRemove ? 1 : 0);
-  const actionWidth = actionCount === 0 ? 0 : actionCount * 32 + (actionCount - 1) * 6;
   const fields =
     route.kind === "route"
       ? "minmax(0, 1.25fr) minmax(0, 1.25fr) minmax(0, 0.7fr)"
       : "minmax(0, 1fr)";
-  const columns = actionWidth === 0 ? fields : `${fields} ${actionWidth}px`;
+  const actionCount = 1 + (canRemove ? 1 : 0);
+  const columns = `${fields} ${actionCount * 32 + (actionCount - 1) * 6}px`;
   return (
     <div className="pstack-route-row" style={{ gridTemplateColumns: columns }}>
       <label className="pstack-field">
@@ -654,25 +665,21 @@ function RouteRow(props: {
           </label>
         </>
       ) : null}
-      {actionCount === 0 ? null : (
-        <div className="pstack-route-actions">
-          {onReset === undefined ? null : (
-            <IconButton label={t("resetRoute")} disabled={disabled || !canReset} onClick={onReset}>
-              <IconUndo size={14} />
-            </IconButton>
-          )}
-          {canRemove ? (
-            <IconButton
-              danger
-              label={`${t("removeRoute")} ${roleName}`}
-              disabled={disabled}
-              onClick={onRemove}
-            >
-              <IconTrash size={14} />
-            </IconButton>
-          ) : null}
-        </div>
-      )}
+      <div className="pstack-route-actions">
+        <IconButton label={t("clearRoute")} disabled={disabled || !canClear} onClick={onClear}>
+          <IconEraser size={14} />
+        </IconButton>
+        {canRemove ? (
+          <IconButton
+            danger
+            label={`${t("removeRoute")} ${roleName}`}
+            disabled={disabled}
+            onClick={onRemove}
+          >
+            <IconTrash size={14} />
+          </IconButton>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -683,9 +690,15 @@ function draftOf(role: RoleView): RoleDraft {
 }
 
 function routesOf(role: RoleView): RouteView[] {
-  return role.routes.length === 0
-    ? [{ kind: "inherit", alias: "inherit-parent" }]
-    : role.routes.map((route) => ({ ...route }));
+  return role.routes.length === 0 ? [inheritRoute()] : role.routes.map((route) => ({ ...route }));
+}
+
+function inheritRoute(): RouteView {
+  return { kind: "inherit", alias: "inherit-parent" };
+}
+
+function isInheritParent(route: RouteView): boolean {
+  return route.kind === "inherit" && route.alias === "inherit-parent";
 }
 
 function isDirty(draft: RoleDraft): boolean {
