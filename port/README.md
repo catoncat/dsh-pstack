@@ -8,7 +8,7 @@
 - 根 `port/` 保存生成器、扫描器、审核记录、`audit.lock.json`、本文件、`dsh.md` 和仅供审核的 `dsh.zh.md`。英文适配文档进入生成树，中文版本不被生成树引用。
 - `port/dsh.md` 是当前适配文案的唯一手写来源，必须按 `port/audit.md` 的处置、当前 `cordis.patch.yml` 和实现维护。可选插件表以包名为主键，不另外维护编号。
 - 插件源码、测试、扩展登记和回归记录都在生成树之外。生成器不会修改这些内容。
-- 根 `package.json` 的 `exports` 由根 `vite.config.ts` 生成。主 pack 的 `entry` 为 `./src/*.ts`；仅第一个 pack 的 `customExports` 补齐非源码入口（当前为 `./locale/*.json`、`./client`）。client pack 使用 `exports: false`，`./client` 保持字符串导出。
+- 根 `package.json` 的 `exports` 由根 `vite.config.ts` 生成。主 pack 的 `entry` 为 `./src/*.ts`；仅第一个 pack 的 `customExports` 补齐非源码入口。其他 pack 使用 `exports: false`。
 - `upstream/cursor-plugins` 提供 pstack 源文件。DSH 的基线来自目标运行时及其随附文档和 API。
 - DSH 适配以 Web profile 的标准模式为基线。headless 只用于 playground 自动化。
 - 上游 `claude-code.md` 明确排除的 Cursor 云服务和平台能力同样舍弃。通用本地能力可以独立适配，但不宣称其等价于云服务。

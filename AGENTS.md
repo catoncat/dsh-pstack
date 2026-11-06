@@ -36,7 +36,7 @@ release. Add a tool name to select part of the graph. For example, run
 
 - 移植或升级 pstack、DSH 前读 `port/README.md`。其中保存能力审核、扩展保留目标和重建回归规则。
 - 根 `pstack/` 只由生成器写入。手工内容放 `port/`、插件源码或测试目录。
-- 根 `package.json` 的 `exports` 由根 `vite.config.ts` 生成。主 pack 的 `entry` 为 `./src/*.ts`；仅第一个 pack 的 `customExports` 补齐非源码入口（当前为 `./locale/*.json`、`./client`）。client pack 使用 `exports: false`，`./client` 保持字符串导出。
+- 根 `package.json` 的 `exports` 由根 `vite.config.ts` 生成。主 pack 的 `entry` 为 `./src/*.ts`；仅第一个 pack 的 `customExports` 补齐非源码入口。其他 pack 使用 `exports: false`。
 - 上游脚本保持原样，不另写 Node 替代实现。
 
 ## Commits
