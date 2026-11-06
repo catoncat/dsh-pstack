@@ -62,34 +62,41 @@ The current review covers 68 Cursor-facing capabilities: 39 direct mappings, 2 o
 
 2. **Restart the profile or open a new Session.**
 
-### 🖥️ Visual setup
+## 🖥️ Visual setup
 
 Use the plugin UI when you want to configure related plugins and role routes.
 
-1. Open **Plugins → Installed plugins → dsh-pstack** and click **Configure**.
+1. Open **Plugins → Installed plugins** and select **pstack workflow**.
+
+   ![Plugin list](./assets/plugin-list.png)
+
+2. Click **Configure** on the plugin detail page.
 
    ![Configure entry](./assets/plugin-configure.png)
 
-2. In **Recommended plugins**, review the **Recommended**, **Optional**, and **Conflicts** groups. **Enable all** enables only the recommended group.
+3. In **Recommended plugins**, review the **Recommended**, **Optional**, and **Conflicts** groups. **Enable all** enables only the recommended group.
 
    ![Recommended plugins](./assets/plugin-recommended.png)
 
-3. Open **Role models**, set the provider, model, and reasoning effort for each role, then save the changed row or use **Save all**.
+4. Open **Role models**, set the provider, model, and reasoning effort for each role, then save the changed row or use **Save all**.
 
    ![Role models](./assets/plugin-roles.png)
 
-4. Open **Settings → Agent presets** and confirm **Poteto mode** and **Poteto Creator mode** are available.
+5. Open **Settings → Agent presets**, select **Poteto mode** or **Poteto Creator mode**, and click **Set as default**.
 
    ![Agent presets](./assets/agent-presets.png)
 
-### 🧠 Skill usage
+6. When creating a Session, keep the default preset or select **Poteto mode** manually.
 
-Use presets and commands when you want to run pstack workflows from a Session.
+   ![Session preset](./assets/session-preset.png)
+
+## 🧠 Skill usage
+
+Use pstack skills when you want to start workflows directly from a Session.
 
 1. **Initialize role routes.** Run `/setup-pstack` once. It writes available routes to `$DSH_HOME/pstack-models.mdc`. Without this file, roles inherit the parent model.
-2. **Choose a preset.** Create a Session with **Poteto mode** or **Poteto Creator mode** for a persistent workflow.
-3. **Run a one-off workflow.** In another preset, type `/poteto-mode` for a single task.
-4. **Use targeted commands.** Pick a command from [Common commands](#️-common-commands).
+2. **Start through skills.** Type `/poteto-mode` directly. A preset switch is not required first.
+3. **Use targeted commands.** Pick a command from [Common commands](#️-common-commands).
 
 ## ⌨️ Common commands
 
