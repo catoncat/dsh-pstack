@@ -37,8 +37,14 @@ export default {
         if (subagentCalls.length > 1)
           return bad(`pstack_subagent 调用了 ${subagentCalls.length} 次，期望一次成功`);
         const input = subagentCalls[0].input ?? {};
+        if (typeof input.description !== "string" || input.description.trim() === "")
+          return bad("pstack_subagent description 缺失");
+        if (typeof input.prompt !== "string" || input.prompt.trim() === "")
+          return bad("pstack_subagent prompt 缺失");
         if (input.role !== "bug-fix")
           return bad(`pstack_subagent role=${JSON.stringify(input.role)}，期望 bug-fix`);
+        if (input.roleIndex !== null)
+          return bad(`pstack_subagent roleIndex=${JSON.stringify(input.roleIndex)}，期望 null`);
         if (input.agent !== "general")
           return bad(`pstack_subagent agent=${JSON.stringify(input.agent)}，期望 general`);
         if (input.reasoningEffort !== "max")
