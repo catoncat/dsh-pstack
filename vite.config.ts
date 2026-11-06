@@ -1,18 +1,16 @@
+import { existsSync } from "node:fs";
 import { defineConfig } from "vite-plus";
 
-/**
- * Every `@deepseek-ai/*` module is provided by the running DSH, so no bundle may carry
- * its own copy. Matched by namespace instead of enumerating packages: a newly added DSH
- * dependency stays external without touching this file. The published manifest declares
- * them under `devDependencies` only, so a profile install resolves them through the host
- * installation while a linked checkout resolves the local development copies.
- */
+/** DSH provides its own runtime packages; never bundle them. */
 const dshProvided = /^@deepseek-ai\//;
+
+/** The generated tree is present for release builds and absent before step 5 of a fresh port. */
+const generatedTree = existsSync("pstack") ? ["pstack"] : [];
 
 export default defineConfig({
   pack: [
     {
-      entry: ["./src/*.ts"],
+      entry: "./src/*.ts",
       dts: {
         generator: "tsgo",
       },
@@ -22,17 +20,17 @@ export default defineConfig({
           neverBundle: [dshProvided],
         },
       },
-      copy: [
-        "pstack/dist/pstack",
-        { from: "skills/authored", to: "dist/skills" },
-        { from: "skills/.agents/skills", to: "dist/skills", rename: "vendored" },
-      ],
       exports: {
         customExports: {
-          "./client": "./dist/client.mjs",
           "./locale/*.json": "./locale/*.json",
+          "./client": "./dist/client.mjs",
         },
       },
+      copy: [
+        ...generatedTree,
+        { from: "skills/.agents/skills", to: "dist/skills", rename: "vendored" },
+        { from: "skills/authored", to: "dist/skills", rename: "authored" },
+      ],
     },
     {
       name: "dsh-pstack/client",
@@ -46,17 +44,7 @@ export default defineConfig({
       sourcemap: true,
       exports: false,
       deps: {
-        // Browser modules the host module loader supplies. `dshProvided` covers the whole
-        // `@deepseek-ai/*` namespace, including the packages named by `dsh.client.inject`.
-        neverBundle: [
-          "react",
-          "react/jsx-runtime",
-          "react-dom",
-          "react-dom/client",
-          "zod",
-          "@tanstack/react-virtual",
-          dshProvided,
-        ],
+        neverBundle: ["react", "react/jsx-runtime", "react-dom", "react-dom/client", dshProvided],
       },
       outputOptions: {
         entryFileNames: "client.mjs",
@@ -68,23 +56,23 @@ export default defineConfig({
   ],
   test: {
     include: ["tests/**/*.test.{ts,tsx}"],
+    passWithNoTests: true,
   },
   run: {
     tasks: {
-      test: {
-        command: "vp test",
-      },
-      dev: {
-        command: "vp pack --watch",
-        dependsOn: ["@internal/pstack#build"],
-        cache: false,
-      },
       build: {
         command: "vp pack",
-        dependsOn: ["@internal/pstack#build"],
       },
       typecheck: {
         command: "tsc --noEmit -p tsconfig.json",
+      },
+      generate: {
+        command: "node port/generate.mjs",
+        cache: false,
+      },
+      "generate:check": {
+        command: "node port/generate.mjs --check",
+        cache: false,
       },
       playground: {
         command: "node playground/start.mjs",
@@ -123,10 +111,10 @@ export default defineConfig({
       typeAware: true,
       typeCheck: true,
     },
-    ignorePatterns: ["upstream", "**/*.md", "pstack/pstack", "pstack/runtime"],
+    ignorePatterns: ["upstream", "**/*.md", "pstack"],
   },
   fmt: {
-    ignorePatterns: ["upstream", "**/*.md", "pstack/pstack", "pstack/runtime"],
+    ignorePatterns: ["upstream", "**/*.md", "pstack"],
   },
   staged: {
     "*": "vp check --fix",

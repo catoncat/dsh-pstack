@@ -1,627 +1,738 @@
-/** Role configuration section inside the bundle configuration dialog for `$DSH_HOME/pstack-models.mdc`. */
+/** Role model configuration page for the pstack plugin dialog. */
 
-import { useEffect, useState, type CSSProperties, type ReactElement } from "react";
-import type { PropsLocale } from "@deepseek-ai/dsh-client-ui-slots";
-import type {} from "@deepseek-ai/dsh-client-ui-plugin-manager/client";
+import { useEffect, useState, type ReactElement } from "react";
 
-import type { CatalogueResult } from "../models.ts";
-import type { RoleFileSnapshot, RoleView, SaveRoleRequest } from "../internal/role-wire.ts";
+import type { CatalogueResult, ModelEntry } from "../models.ts";
+import type {
+  RoleFileSnapshot,
+  RoleView,
+  RouteView,
+  SaveRoleRequest,
+  SaveRoleResult,
+} from "../role-wire.ts";
 import {
-  appendRoute,
-  draftIssues,
-  draftsFromSnapshot,
-  effortChoices,
-  formatRoute,
-  inheritRoute,
-  modelChoices,
-  providerChoices,
-  removeRoute,
-  replaceRoute,
-  saveRequestFor,
-  type DraftRoute,
-} from "./state.ts";
-import { NS, rolePresentation, type PstackRolesLocaleKey } from "./locales.ts";
+  IconAlert,
+  IconCheck,
+  IconEraser,
+  IconInfo,
+  IconPlus,
+  IconRefresh,
+  IconRoute,
+  IconSave,
+  IconTrash,
+  IconUndo,
+} from "./icons.tsx";
+import { ROLE_COPY } from "./role-copy.ts";
+import { ensurePstackStyles } from "./styles.ts";
+import { Button, IconButton, Spinner, Status, type StatusTone } from "./ui.tsx";
+import type { PstackTranslations } from "./locales/index.ts";
 
-/** Translation function supplied by the slot locale. */
-export type Translate = (
-  key: PstackRolesLocaleKey,
-  vars?: Record<string, string | number>,
-) => string;
+ensurePstackStyles();
 
-/** Narrow bridge over the mounted Remote namespace. */
-export interface PstackRolesApi {
+export interface RoleSettingsApi {
   status(): Promise<RoleFileSnapshot>;
   catalogue(): Promise<CatalogueResult>;
-  save(
-    request: SaveRoleRequest,
-  ): Promise<{ ok: true; snapshot: RoleFileSnapshot } | { ok: false; reason: string }>;
+  save(request: SaveRoleRequest): Promise<SaveRoleResult>;
 }
 
-/** Props of the pure view used by tests and the slot container. */
-export interface RoleSettingsViewProps {
-  readonly snapshot: RoleFileSnapshot | null;
-  readonly catalogue: CatalogueResult | undefined;
-  readonly drafts: Readonly<Record<string, readonly DraftRoute[]>>;
-  readonly busyKey?: string | undefined;
-  readonly messages: Readonly<
-    Record<string, { readonly tone: "ok" | "error"; readonly text: string }>
-  >;
-  readonly loadError?: string | undefined;
-  readonly onRetry: () => void;
-  readonly onRouteChange: (key: string, index: number, route: DraftRoute) => void;
-  readonly onAddRoute: (key: string) => void;
-  readonly onRemoveRoute: (key: string, index: number) => void;
-  readonly onSave: (key: string) => void;
-  readonly onReset: (key: string) => void;
-  readonly t: Translate;
+interface RoleDraft {
+  readonly routes: RouteView[];
+  readonly baseline: readonly RouteView[];
+  readonly busy: boolean;
+  readonly message?: { readonly tone: "success" | "error"; readonly text: string };
 }
 
-const COLOR_TEXT = "var(--dsw-alias-label-primary)";
-const COLOR_SECONDARY = "var(--dsw-alias-label-secondary)";
-const COLOR_CAPTION = "var(--dsw-alias-label-caption)";
-const COLOR_BORDER = "var(--dsw-alias-border-l3)";
-const COLOR_SURFACE = "var(--dsw-alias-bg-layer-1)";
-const COLOR_ERROR = "var(--dsw-alias-state-error-primary)";
-const COLOR_SUCCESS = "var(--dsw-alias-state-success-primary)";
-const COLOR_WARN = "var(--dsw-alias-state-warn-primary)";
-const FONT_CODE = "var(--dsh-font-family-code)";
+type DraftMap = Readonly<Record<string, RoleDraft>>;
 
-function statusColor(status: RoleFileSnapshot["status"]): string {
-  if (status === "loaded") return COLOR_SUCCESS;
-  if (status === "unreadable") return COLOR_ERROR;
-  return COLOR_WARN;
+interface BulkMessage {
+  readonly tone: "success" | "error";
+  readonly text: string;
 }
 
-function buttonStyle(primary = false): CSSProperties {
-  return {
-    border: `1px solid ${primary ? "transparent" : COLOR_BORDER}`,
-    borderRadius: 8,
-    padding: "5px 12px",
-    cursor: "pointer",
-    font: "inherit",
-    background: primary ? "var(--dsw-alias-brand-primary)" : "transparent",
-    color: primary ? "var(--dsw-alias-label-primary-foreground)" : COLOR_TEXT,
-  };
-}
-
-function dangerButtonStyle(): CSSProperties {
-  return {
-    border: `1px solid color-mix(in srgb, ${COLOR_ERROR} 55%, transparent)`,
-    borderRadius: 8,
-    padding: "5px 12px",
-    cursor: "pointer",
-    font: "inherit",
-    background: `color-mix(in srgb, ${COLOR_ERROR} 10%, transparent)`,
-    color: COLOR_ERROR,
-  };
-}
-
-function fieldStyle(basis: number, fullWidth = false): CSSProperties {
-  return {
-    flex: fullWidth ? "1 1 auto" : `1 1 ${basis}px`,
-    width: fullWidth ? "100%" : 0,
-    minWidth: 0,
-    height: 34,
-    padding: "5px 8px",
-    boxSizing: "border-box",
-    border: `1px solid ${COLOR_BORDER}`,
-    borderRadius: 8,
-    background: COLOR_SURFACE,
-    color: COLOR_TEXT,
-    font: "inherit",
-    lineHeight: "22px",
-    textOverflow: "ellipsis",
-  };
-}
-
-function statusLabel(t: Translate, status: RoleFileSnapshot["status"]): string {
-  if (status === "loaded") return t("statusLoaded");
-  if (status === "unreadable") return t("statusUnreadable");
-  return t("statusMissing");
-}
-
-function routeSelection(route: DraftRoute): string {
-  return route.kind === "inherit" ? `__inherit__:${route.alias}` : route.provider;
-}
-
-function fromSelection(selection: string): DraftRoute {
-  if (selection === "__inherit__:inherit-parent") return inheritRoute("inherit-parent");
-  if (selection === "__inherit__:auto") return inheritRoute("auto");
-  return { kind: "route", provider: selection, model: "" };
-}
-
-function RoleRouteRow(props: {
-  readonly role: RoleView;
-  readonly index: number;
-  readonly route: DraftRoute;
-  readonly routes: readonly DraftRoute[];
-  readonly catalogue: CatalogueResult | undefined;
-  readonly readOnly: boolean;
-  readonly onChange: (index: number, route: DraftRoute) => void;
-  readonly onRemove: (index: number) => void;
-  readonly t: Translate;
+export function RoleSettingsView(props: {
+  api: RoleSettingsApi;
+  translations: PstackTranslations;
 }): ReactElement {
-  const { role, index, route, routes, catalogue, readOnly, onChange, onRemove, t } = props;
-  const providers = providerChoices(catalogue);
-  const models = route.kind === "route" ? modelChoices(catalogue, route.provider) : [];
-  const efforts =
-    route.kind === "route" ? effortChoices(catalogue, route.provider, route.model) : [];
-  const providerMissing =
-    route.kind === "route" && !providers.some((entry) => entry.provider === route.provider);
-  const modelMissing =
-    route.kind === "route" &&
-    !models.some((entry) => entry.id === route.model) &&
-    route.model !== "";
-  const effortMissing =
-    route.kind === "route" &&
-    route.effort !== undefined &&
-    route.effort !== "" &&
-    !efforts.includes(route.effort);
+  const { api, translations } = props;
+  const t = translations.roles;
+  const common = translations.common;
+  const [snapshot, setSnapshot] = useState<RoleFileSnapshot | undefined>();
+  const [catalogue, setCatalogue] = useState<CatalogueResult | undefined>();
+  const [drafts, setDrafts] = useState<DraftMap>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | undefined>();
+  const [bulkBusy, setBulkBusy] = useState<"save" | undefined>();
+  const [bulkMessage, setBulkMessage] = useState<BulkMessage | undefined>();
+
+  const applySnapshot = (next: RoleFileSnapshot): void => {
+    setSnapshot(next);
+    setDrafts(Object.fromEntries(next.roles.map((role) => [role.key, draftOf(role)])));
+  };
+
+  const load = async (): Promise<void> => {
+    setLoading(true);
+    setError(undefined);
+    setBulkMessage(undefined);
+    try {
+      const [nextSnapshot, nextCatalogue] = await Promise.all([api.status(), api.catalogue()]);
+      applySnapshot(nextSnapshot);
+      setCatalogue(nextCatalogue);
+    } catch (reason) {
+      setError(t("rolesLoadFailed", { message: messageOf(reason) }));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void load();
+  }, [api, t]);
+
+  if (loading && snapshot === undefined) {
+    return (
+      <div className="pstack-loading">
+        <Spinner />
+        <span>{t("rolesLoading")}</span>
+      </div>
+    );
+  }
+  if (snapshot === undefined) {
+    return (
+      <div className="pstack-notice" data-tone="error">
+        <IconAlert size={14} />
+        <span>{error}</span>
+        <Button variant="outline" size="sm" onClick={() => void load()}>
+          {common("retry")}
+        </Button>
+      </div>
+    );
+  }
+
+  const draftFor = (role: RoleView): RoleDraft => drafts[role.key] ?? draftOf(role);
+  const dirtyKeys = snapshot.roles
+    .filter((role) => isDirty(draftFor(role)))
+    .map((role) => role.key);
+  const dirtyCount = dirtyKeys.length;
+  const anyBusy = Object.values(drafts).some((draft) => draft.busy);
+  const anyIncomplete = Object.values(drafts).some((draft) =>
+    draft.routes.some(
+      (route) =>
+        route.kind === "route" && (route.provider.trim() === "" || route.model.trim() === ""),
+    ),
+  );
+  const canClearAll = Object.values(drafts).some((draft) =>
+    draft.routes.some((route) => !isInheritParent(route)),
+  );
+  const fileStatus = statusPresentation(snapshot, t);
+
+  const updateRoutes = (key: string, routes: RouteView[]): void => {
+    setBulkMessage(undefined);
+    setDrafts((current) => {
+      const draft = current[key];
+      if (draft === undefined) return current;
+      return { ...current, [key]: { ...draft, routes, message: undefined } };
+    });
+  };
+
+  const resetRole = (key: string): void => {
+    setBulkMessage(undefined);
+    setDrafts((current) => {
+      const draft = current[key];
+      if (draft === undefined) return current;
+      return {
+        ...current,
+        [key]: {
+          ...draft,
+          routes: draft.baseline.map((route) => ({ ...route })),
+          message: undefined,
+          busy: false,
+        },
+      };
+    });
+  };
+
+  const resetAll = (): void => {
+    setDrafts((current) =>
+      Object.fromEntries(
+        snapshot.roles.map((role) => {
+          const draft = current[role.key] ?? draftOf(role);
+          return [
+            role.key,
+            {
+              ...draft,
+              routes: draft.baseline.map((route) => ({ ...route })),
+              message: undefined,
+              busy: false,
+            },
+          ];
+        }),
+      ),
+    );
+    setBulkMessage(undefined);
+  };
+
+  const clearAll = (): void => {
+    setBulkMessage(undefined);
+    setDrafts((current) =>
+      Object.fromEntries(
+        snapshot.roles.map((role) => {
+          const draft = current[role.key] ?? draftOf(role);
+          return [
+            role.key,
+            { ...draft, routes: [inheritRoute()], message: undefined, busy: false },
+          ];
+        }),
+      ),
+    );
+  };
+
+  const saveRole = async (key: string): Promise<boolean> => {
+    const draft = drafts[key];
+    if (draft === undefined) return true;
+    setDrafts((current) => {
+      const currentDraft = current[key];
+      if (currentDraft === undefined) return current;
+      return {
+        ...current,
+        [key]: { ...currentDraft, busy: true, message: undefined },
+      };
+    });
+    try {
+      const result = await api.save({ key, routes: draft.routes });
+      if (result.ok) {
+        const savedRole = result.snapshot.roles.find((entry) => entry.key === key);
+        setSnapshot(result.snapshot);
+        setDrafts((current) => {
+          const currentDraft = current[key];
+          if (currentDraft === undefined) return current;
+          const routes = savedRole === undefined ? draft.routes : routesOf(savedRole);
+          return {
+            ...current,
+            [key]: {
+              ...currentDraft,
+              routes,
+              baseline: routes,
+              busy: false,
+              message: { tone: "success", text: common("saved") },
+            },
+          };
+        });
+        return true;
+      }
+      setDrafts((current) => {
+        const currentDraft = current[key];
+        if (currentDraft === undefined) return current;
+        return {
+          ...current,
+          [key]: {
+            ...currentDraft,
+            busy: false,
+            message: { tone: "error", text: t("saveRejected", { reason: result.reason }) },
+          },
+        };
+      });
+      return false;
+    } catch (reason) {
+      setDrafts((current) => {
+        const currentDraft = current[key];
+        if (currentDraft === undefined) return current;
+        return {
+          ...current,
+          [key]: {
+            ...currentDraft,
+            busy: false,
+            message: { tone: "error", text: t("saveRejected", { reason: messageOf(reason) }) },
+          },
+        };
+      });
+      return false;
+    }
+  };
+
+  const saveAll = async (): Promise<void> => {
+    if (dirtyCount === 0 || bulkBusy !== undefined || anyBusy || anyIncomplete) return;
+    setBulkBusy("save");
+    setBulkMessage(undefined);
+    let saved = 0;
+    let failed = 0;
+    for (const key of dirtyKeys) {
+      if (await saveRole(key)) saved += 1;
+      else failed += 1;
+    }
+    setBulkBusy(undefined);
+    setBulkMessage(
+      failed === 0
+        ? { tone: "success", text: t("saveAllDone", { count: saved }) }
+        : { tone: "error", text: t("saveAllPartial", { count: saved, failed }) },
+    );
+  };
 
   return (
-    <div style={{ display: "grid", gap: 8 }}>
-      <select
-        aria-label={`${role.key} ${t("provider")}`}
-        value={routeSelection(route)}
-        disabled={readOnly}
-        onChange={(event) => {
-          const next = fromSelection(event.target.value);
-          if (next.kind === "route") {
-            const firstModel = modelChoices(catalogue, next.provider)[0];
-            return onChange(index, {
-              ...next,
-              model: firstModel?.id ?? "",
-              ...(firstModel?.defaultEffort === undefined
-                ? {}
-                : { effort: firstModel.defaultEffort }),
-            });
-          }
-          onChange(index, next);
-        }}
-        style={fieldStyle(0, true)}
-      >
-        <option value="__inherit__:inherit-parent">{t("inheritParent")}</option>
-        <option value="__inherit__:auto">{t("auto")}</option>
-        {providers.map((provider) => (
-          <option key={provider.provider} value={provider.provider}>
-            {provider.name === provider.provider
-              ? provider.provider
-              : `${provider.name} (${provider.provider})`}
-          </option>
-        ))}
-        {providerMissing ? (
-          <option value={route.provider}>{`${route.provider} (${t("unavailable")})`}</option>
-        ) : null}
-      </select>
-
-      {route.kind === "route" ? (
-        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-          <select
-            aria-label={`${role.key} ${t("model")}`}
-            value={route.model}
-            disabled={readOnly}
-            onChange={(event) => {
-              const model = event.target.value;
-              const entry = models.find((candidate) => candidate.id === model);
-              onChange(index, {
-                kind: "route",
-                provider: route.provider,
-                model,
-                ...(entry?.defaultEffort === undefined ? {} : { effort: entry.defaultEffort }),
-              });
-            }}
-            style={fieldStyle(220)}
+    <section>
+      <header className="pstack-section-head">
+        <div>
+          <p className="pstack-section-desc">{t("rolesSubtitle")}</p>
+          <div className="pstack-file-meta">
+            <Status tone={fileStatus.tone} label={fileStatus.label} />
+            <span>{t("file")}</span>
+            <code className="pstack-file-path" title={snapshot.path}>
+              {t("filePath")}
+            </code>
+          </div>
+        </div>
+        <div className="pstack-section-actions">
+          <Button
+            variant="outline"
+            size="sm"
+            icon={<IconEraser size={13} />}
+            disabled={!canClearAll || bulkBusy !== undefined || anyBusy || loading}
+            onClick={clearAll}
           >
-            <option value="" disabled>
-              {t("model")}
-            </option>
-            {models.map((model) => (
-              <option key={model.id} value={model.id}>
-                {model.id}
-              </option>
-            ))}
-            {modelMissing ? <option value={route.model}>{route.model}</option> : null}
-          </select>
-          <select
-            aria-label={`${role.key} ${t("effort")}`}
-            value={route.effort ?? ""}
-            disabled={readOnly}
-            onChange={(event) => {
-              const effort = event.target.value;
-              onChange(index, {
-                kind: "route",
-                provider: route.provider,
-                model: route.model,
-                ...(effort === "" ? {} : { effort }),
-              });
-            }}
-            style={fieldStyle(140)}
+            {t("clearAll")}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            icon={<IconUndo size={13} />}
+            disabled={dirtyCount === 0 || bulkBusy !== undefined || anyBusy || loading}
+            onClick={resetAll}
           >
-            <option value="">{t("effortUnset")}</option>
-            {efforts.map((effort) => {
-              const model = models.find((candidate) => candidate.id === route.model);
-              const defaultEffort = model?.defaultEffort === effort;
-              return (
-                <option key={effort} value={effort}>
-                  {defaultEffort ? t("effortDefault", { effort }) : effort}
-                </option>
-              );
-            })}
-            {effortMissing ? <option value={route.effort}>{route.effort}</option> : null}
-          </select>
+            {t("resetAll")}
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            icon={bulkBusy === "save" ? <Spinner size={13} /> : <IconSave size={13} />}
+            disabled={
+              dirtyCount === 0 ||
+              bulkBusy !== undefined ||
+              anyBusy ||
+              anyIncomplete ||
+              loading ||
+              !snapshot.canSave
+            }
+            onClick={() => void saveAll()}
+          >
+            {bulkBusy === "save"
+              ? t("savingAll")
+              : dirtyCount > 0
+                ? t("saveAllCount", { count: dirtyCount })
+                : t("saveAll")}
+          </Button>
+          <IconButton
+            label={common("refresh")}
+            disabled={loading || bulkBusy !== undefined || anyBusy}
+            onClick={() => void load()}
+          >
+            {loading ? <Spinner size={14} /> : <IconRefresh size={14} />}
+          </IconButton>
+        </div>
+      </header>
+      {snapshot.reason === undefined ? null : (
+        <div className="pstack-notice" data-tone="error">
+          <IconAlert size={14} />
+          <span>{t("unreadable", { reason: snapshot.reason })}</span>
+        </div>
+      )}
+      {snapshot.status === "missing" ? (
+        <div className="pstack-notice">
+          <IconInfo size={14} />
+          <span>{t("fileMissingHint")}</span>
         </div>
       ) : null}
-
-      {routes.length > 1 ? (
-        <button
-          type="button"
-          style={{ ...dangerButtonStyle(), justifySelf: "start" }}
-          onClick={() => onRemove(index)}
-          disabled={readOnly}
-        >
-          {t("removeRoute")}
-        </button>
-      ) : null}
-    </div>
+      {snapshot.issues.length === 0 ? null : (
+        <div className="pstack-notice" data-tone="error">
+          <IconAlert size={14} />
+          <ul className="pstack-notice-list">
+            {snapshot.issues.map((issue, index) => (
+              <li key={`${issue.line ?? "x"}-${index}`}>
+                {issue.line === undefined
+                  ? issue.message
+                  : t("issueAtLine", { line: issue.line, message: issue.message })}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {bulkMessage === undefined ? null : (
+        <span className="pstack-inline-message" data-tone={bulkMessage.tone}>
+          {bulkMessage.tone === "success" ? <IconCheck size={12} /> : <IconAlert size={12} />}
+          {bulkMessage.text}
+        </span>
+      )}
+      <div className="pstack-role-list">
+        {snapshot.roles.map((role) => (
+          <RoleCard
+            key={role.key}
+            role={role}
+            draft={draftFor(role)}
+            catalogue={catalogue}
+            translations={translations}
+            disabled={!snapshot.canSave || bulkBusy !== undefined || anyBusy}
+            onRoutesChange={(routes) => updateRoutes(role.key, routes)}
+            onSave={() => void saveRole(role.key)}
+            onReset={() => resetRole(role.key)}
+          />
+        ))}
+      </div>
+    </section>
   );
 }
 
 function RoleCard(props: {
-  readonly role: RoleView;
-  readonly routes: readonly DraftRoute[];
-  readonly catalogue: CatalogueResult | undefined;
-  readonly busy: boolean;
-  readonly readOnly: boolean;
-  readonly message: { readonly tone: "ok" | "error"; readonly text: string } | undefined;
-  readonly onRouteChange: (index: number, route: DraftRoute) => void;
-  readonly onAddRoute: () => void;
-  readonly onRemoveRoute: (index: number) => void;
-  readonly onSave: () => void;
-  readonly onReset: () => void;
-  readonly t: Translate;
+  role: RoleView;
+  draft: RoleDraft;
+  catalogue: CatalogueResult | undefined;
+  translations: PstackTranslations;
+  disabled: boolean;
+  onRoutesChange: (routes: RouteView[]) => void;
+  onSave: () => void;
+  onReset: () => void;
 }): ReactElement {
-  const {
-    role,
-    routes,
-    catalogue,
-    busy,
-    readOnly,
-    message,
-    onRouteChange,
-    onAddRoute,
-    onRemoveRoute,
-    onSave,
-    onReset,
-    t,
-  } = props;
-  const issues = draftIssues(role, routes);
-  const roleText = rolePresentation(role.key, t);
-  const canReset =
-    routes.length !== 1 || routes[0]?.kind !== "inherit" || routes[0]?.alias !== "inherit-parent";
-
+  const { role, draft, catalogue, translations, disabled, onRoutesChange, onSave, onReset } = props;
+  const t = translations.roles;
+  const common = translations.common;
+  const copy = ROLE_COPY[role.key];
+  const name = copy === undefined ? role.key : t(copy.nameKey);
+  const description = copy === undefined ? "" : t(copy.descriptionKey);
+  const dirty = isDirty(draft);
+  const controlsDisabled = disabled || draft.busy;
+  const incomplete = draft.routes.some(
+    (route) =>
+      route.kind === "route" && (route.provider.trim() === "" || route.model.trim() === ""),
+  );
+  const canClearRole = draft.routes.some((route) => !isInheritParent(route));
+  const clearRole = (): void => onRoutesChange([inheritRoute()]);
+  const status =
+    role.issues.length > 0
+      ? { tone: "error" as StatusTone, label: t("roleInvalid") }
+      : role.configured
+        ? { tone: "success" as StatusTone, label: t("roleConfigured") }
+        : { tone: "neutral" as StatusTone, label: t("roleMissing") };
   return (
-    <section
-      style={{
-        border: `1px solid ${COLOR_BORDER}`,
-        borderRadius: 12,
-        padding: 14,
-        display: "grid",
-        gap: 10,
-        background: COLOR_SURFACE,
-      }}
-    >
-      <header style={{ display: "grid", gap: 5 }}>
-        <div style={{ display: "flex", gap: 10, alignItems: "baseline", flexWrap: "wrap" }}>
-          <strong style={{ color: COLOR_TEXT, fontSize: 14 }}>{roleText.name}</strong>
-          <code style={{ color: COLOR_CAPTION, fontFamily: FONT_CODE, fontSize: 11 }}>
-            {role.key}
-          </code>
-          <span style={{ color: COLOR_CAPTION, fontSize: 12 }}>
-            {role.configured ? t("configuredLine", { line: role.line ?? "?" }) : t("notConfigured")}
-          </span>
+    <section className="pstack-role-card" data-dirty={dirty ? "true" : undefined}>
+      <header className="pstack-role-head">
+        <span className="pstack-role-glyph">
+          <IconRoute size={16} />
+        </span>
+        <div className="pstack-role-title">
+          <div className="pstack-role-name-row">
+            <h4 className="pstack-role-name">{name}</h4>
+            <code className="pstack-code-chip">{role.key}</code>
+            <span
+              className="pstack-tag"
+              title={role.shape === "single" ? t("singleRouteHint") : undefined}
+            >
+              {role.shape === "single" ? t("singleRoute") : t("listRoute")}
+            </span>
+          </div>
+          {description === "" ? null : <p className="pstack-role-desc">{description}</p>}
         </div>
-        <p style={{ margin: 0, color: COLOR_SECONDARY, fontSize: 12, lineHeight: 1.5 }}>
-          {roleText.description}
-        </p>
+        <div className="pstack-role-status">
+          <Status tone={status.tone} label={status.label} />
+          {role.line === undefined ? null : (
+            <span className="pstack-role-line">{t("roleLine", { line: role.line })}</span>
+          )}
+        </div>
       </header>
-      <code style={{ color: COLOR_SECONDARY, fontFamily: FONT_CODE, fontSize: 12 }}>
-        {readOnly ? t("statusUnreadable") : routes.map((route) => formatRoute(route)).join(" · ")}
-      </code>
-      {role.issues.map((issue, index) => (
-        <div key={`${issue}-${index}`} style={{ color: COLOR_ERROR, fontSize: 12 }}>
-          {t("roleIssues", { message: issue })}
+      {role.issues.length === 0 ? null : (
+        <div className="pstack-notice" data-tone="error" style={{ margin: 0 }}>
+          <IconAlert size={14} />
+          <ul className="pstack-notice-list">
+            {role.issues.map((issue, index) => (
+              <li key={index}>{issue}</li>
+            ))}
+          </ul>
         </div>
-      ))}
-      {readOnly
-        ? null
-        : routes.map((route, index) => (
-            <RoleRouteRow
-              key={index}
-              role={role}
-              index={index}
-              route={route}
-              routes={routes}
-              catalogue={catalogue}
-              readOnly={readOnly}
-              onChange={onRouteChange}
-              onRemove={onRemoveRoute}
-              t={t}
-            />
-          ))}
-      {issues.map((issue, index) => (
-        <div key={`${issue}-${index}`} style={{ color: COLOR_ERROR, fontSize: 12 }}>
-          {issue}
+      )}
+      <div className="pstack-route-list">
+        {draft.routes.map((route, index) => (
+          <RouteRow
+            key={`${role.key}-${index}`}
+            roleName={name}
+            route={route}
+            catalogue={catalogue}
+            disabled={controlsDisabled}
+            canRemove={role.shape === "list" && draft.routes.length > 1}
+            onChange={(next) =>
+              onRoutesChange(
+                draft.routes.map((item, position) => (position === index ? next : item)),
+              )
+            }
+            onRemove={() =>
+              onRoutesChange(draft.routes.filter((_item, position) => position !== index))
+            }
+            translations={translations}
+          />
+        ))}
+      </div>
+      <footer className="pstack-role-foot">
+        <div className="pstack-role-foot-actions">
+          {role.shape === "list" ? (
+            <Button
+              variant="outline"
+              size="sm"
+              icon={<IconPlus size={13} />}
+              disabled={controlsDisabled}
+              onClick={() =>
+                onRoutesChange([...draft.routes, { kind: "inherit", alias: "inherit-parent" }])
+              }
+            >
+              {t("addRoute")}
+            </Button>
+          ) : null}
         </div>
-      ))}
-      <footer style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-        {role.shape === "list" && !readOnly ? (
-          <button type="button" style={buttonStyle()} onClick={onAddRoute} disabled={busy}>
-            {t("addRoute")}
-          </button>
-        ) : null}
-        <button
-          type="button"
-          style={buttonStyle(true)}
-          onClick={onSave}
-          disabled={readOnly || busy || issues.length > 0}
-        >
-          {busy ? t("saving") : t("save")}
-        </button>
-        <button
-          type="button"
-          style={buttonStyle()}
-          onClick={onReset}
-          disabled={readOnly || busy || !canReset}
-        >
-          {busy ? t("resetting") : t("reset")}
-        </button>
-        {message === undefined ? null : (
-          <span
-            style={{ color: message.tone === "ok" ? COLOR_SUCCESS : COLOR_ERROR, fontSize: 12 }}
+        <div className="pstack-role-save">
+          {draft.message === undefined ? (
+            dirty ? (
+              <Status tone="warn" label={t("unsavedChanges")} />
+            ) : null
+          ) : (
+            <span className="pstack-inline-message" data-tone={draft.message.tone}>
+              {draft.message.tone === "success" ? <IconCheck size={12} /> : <IconAlert size={12} />}
+              {draft.message.text}
+            </span>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            icon={<IconEraser size={13} />}
+            disabled={controlsDisabled || !canClearRole}
+            onClick={clearRole}
           >
-            {message.text}
-          </span>
-        )}
+            {t("clearRole")}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            icon={<IconUndo size={13} />}
+            disabled={controlsDisabled || !dirty}
+            onClick={onReset}
+          >
+            {t("resetRole")}
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            icon={draft.busy ? <Spinner size={13} /> : <IconSave size={13} />}
+            disabled={controlsDisabled || !dirty || incomplete}
+            onClick={onSave}
+          >
+            {draft.busy ? common("saving") : common("save")}
+          </Button>
+        </div>
       </footer>
     </section>
   );
 }
 
-function RoleEffortNote({ t }: { readonly t: Translate }): ReactElement {
+function RouteRow(props: {
+  roleName: string;
+  route: RouteView;
+  catalogue: CatalogueResult | undefined;
+  disabled: boolean;
+  canRemove: boolean;
+  onChange: (route: RouteView) => void;
+  onRemove: () => void;
+  translations: PstackTranslations;
+}): ReactElement {
+  const { roleName, route, catalogue, disabled, canRemove, onChange, onRemove, translations } =
+    props;
+  const t = translations.roles;
+  const providerValue = route.kind === "inherit" ? `__inherit__:${route.alias}` : route.provider;
+  const providers = catalogue?.providers ?? [];
+  const models = route.kind === "route" ? modelChoices(catalogue, route.provider) : [];
+  const efforts =
+    route.kind === "route" ? effortChoices(catalogue, route.provider, route.model) : [];
+  const effortOptions =
+    route.kind === "route" && route.effort !== undefined && !efforts.includes(route.effort)
+      ? [route.effort, ...efforts]
+      : efforts;
+  const fields =
+    route.kind === "route"
+      ? "minmax(0, 1.25fr) minmax(0, 1.25fr) minmax(0, 0.7fr)"
+      : "minmax(0, 1fr)";
+  const columns = canRemove ? `${fields} 32px` : fields;
   return (
-    <section
-      style={{
-        border: `1px solid ${COLOR_BORDER}`,
-        borderRadius: 12,
-        padding: "12px 14px",
-        display: "grid",
-        gap: 6,
-        background: COLOR_SURFACE,
-        color: COLOR_SECONDARY,
-        fontSize: 12,
-        lineHeight: 1.5,
-      }}
-    >
-      <strong style={{ color: COLOR_TEXT, fontSize: 13 }}>{t("effortBaselineTitle")}</strong>
-      <p style={{ margin: 0 }}>{t("effortBaselineIntro")}</p>
-    </section>
-  );
-}
-
-/** Pure view: all rendering decisions are explicit props. */
-export function RoleSettingsView(props: RoleSettingsViewProps): ReactElement {
-  const { snapshot, catalogue, drafts, busyKey, messages, loadError, onRetry, t } = props;
-  return (
-    <div style={{ display: "grid", gap: 16, padding: "4px 0 20px", color: COLOR_TEXT }}>
-      <header style={{ display: "grid", gap: 6 }}>
-        <h3 style={{ margin: 0, fontSize: 16 }}>{t("title")}</h3>
-        <p style={{ margin: 0, color: COLOR_SECONDARY, fontSize: 13, lineHeight: 1.5 }}>
-          {t("subtitle")}
-        </p>
-      </header>
-
-      <RoleEffortNote t={t} />
-
-      {snapshot === null ? (
-        <div style={{ display: "flex", gap: 10, alignItems: "center", color: COLOR_SECONDARY }}>
-          {loadError === undefined ? t("loading") : t("loadFailed", { message: loadError })}
-          {loadError === undefined ? null : (
-            <button type="button" style={buttonStyle()} onClick={onRetry}>
-              {t("retry")}
-            </button>
-          )}
-        </div>
-      ) : (
-        <>
-          <section
-            style={{
-              border: `1px solid ${COLOR_BORDER}`,
-              borderRadius: 12,
-              padding: 14,
-              display: "grid",
-              gap: 6,
-              background: COLOR_SURFACE,
-            }}
-          >
-            <div style={{ display: "flex", gap: 8, alignItems: "baseline", flexWrap: "wrap" }}>
-              <span style={{ fontSize: 12, color: COLOR_CAPTION }}>{t("file")}</span>
-              <code style={{ fontFamily: FONT_CODE, fontSize: 12, overflowWrap: "anywhere" }}>
-                {snapshot.path}
-              </code>
-              <span
-                style={{
-                  fontSize: 12,
-                  padding: "1px 8px",
-                  borderRadius: 999,
-                  border: `1px solid ${statusColor(snapshot.status)}`,
-                  color: statusColor(snapshot.status),
-                }}
-              >
-                {statusLabel(t, snapshot.status)}
-              </span>
-            </div>
-            {snapshot.budget === undefined ? null : (
-              <div style={{ fontSize: 12, color: COLOR_SECONDARY }}>
-                {t("budget")}: <code style={{ fontFamily: FONT_CODE }}>{snapshot.budget}</code>
-              </div>
-            )}
-            {snapshot.status === "unreadable" ? (
-              <div style={{ fontSize: 12, color: COLOR_ERROR }}>
-                {t("unreadableBody", { reason: snapshot.reason ?? "" })}
-              </div>
-            ) : null}
-          </section>
-
-          {snapshot.issues.length === 0 ? null : (
-            <section style={{ display: "grid", gap: 4 }}>
-              <strong style={{ fontSize: 13 }}>{t("fileIssues")}</strong>
-              {snapshot.issues.map((issue, index) => (
-                <div key={`${issue.message}-${index}`} style={{ color: COLOR_ERROR, fontSize: 12 }}>
-                  {issue.line === undefined
-                    ? issue.message
-                    : `${t("line", { line: issue.line })}: ${issue.message}`}
-                </div>
-              ))}
-            </section>
-          )}
-
-          {catalogue === undefined || catalogue.providers.length === 0 ? (
-            <div style={{ color: COLOR_WARN, fontSize: 12 }}>{t("noCatalogue")}</div>
-          ) : catalogue.truncated ? (
-            <div style={{ color: COLOR_CAPTION, fontSize: 12 }}>{t("truncated")}</div>
+    <div className="pstack-route-row" style={{ gridTemplateColumns: columns }}>
+      <label className="pstack-field">
+        <span className="pstack-field-label">{t("provider")}</span>
+        <select
+          className="pstack-select"
+          aria-label={`${roleName} ${t("provider")}`}
+          value={providerValue}
+          disabled={disabled}
+          onChange={(event) => {
+            const value = event.target.value;
+            if (value === "__inherit__:inherit-parent" || value === "__inherit__:auto") {
+              onChange({
+                kind: "inherit",
+                alias: value.endsWith("auto") ? "auto" : "inherit-parent",
+              });
+              return;
+            }
+            const model = modelChoices(catalogue, value)[0];
+            onChange({
+              kind: "route",
+              provider: value,
+              model: model?.id ?? "",
+              ...(model?.defaultEffort === undefined ? {} : { effort: model.defaultEffort }),
+            });
+          }}
+        >
+          <option value="__inherit__:inherit-parent">{t("inheritParent")}</option>
+          <option value="__inherit__:auto">{t("auto")}</option>
+          {route.kind === "route" &&
+          route.provider !== "" &&
+          providers.every((provider) => provider.provider !== route.provider) ? (
+            <option value={route.provider}>{route.provider}</option>
           ) : null}
-
-          <div style={{ display: "grid", gap: 10 }}>
-            {snapshot.roles.map((role) => (
-              <RoleCard
-                key={role.key}
-                role={role}
-                routes={drafts[role.key] ?? [inheritRoute()]}
-                catalogue={catalogue}
-                busy={busyKey === role.key}
-                readOnly={!snapshot.canSave}
-                message={messages[role.key]}
-                onRouteChange={(index, route) => props.onRouteChange(role.key, index, route)}
-                onAddRoute={() => props.onAddRoute(role.key)}
-                onRemoveRoute={(index) => props.onRemoveRoute(role.key, index)}
-                onSave={() => props.onSave(role.key)}
-                onReset={() => props.onReset(role.key)}
-                t={t}
-              />
-            ))}
-          </div>
+          {providers.map((provider) => (
+            <option key={provider.provider} value={provider.provider}>
+              {providerLabel(providers, provider.provider)}
+            </option>
+          ))}
+        </select>
+      </label>
+      {route.kind === "route" ? (
+        <>
+          <label className="pstack-field">
+            <span className="pstack-field-label">{t("model")}</span>
+            <select
+              className="pstack-select"
+              aria-label={`${roleName} ${t("model")}`}
+              value={route.model}
+              disabled={disabled}
+              onChange={(event) => {
+                const model = models.find((entry) => entry.id === event.target.value);
+                onChange({
+                  kind: "route",
+                  provider: route.provider,
+                  model: event.target.value,
+                  ...(model?.defaultEffort === undefined ? {} : { effort: model.defaultEffort }),
+                });
+              }}
+            >
+              {models.length === 0 ? (
+                <option value="" disabled>
+                  {t("noModels")}
+                </option>
+              ) : null}
+              {route.kind === "route" &&
+              route.model !== "" &&
+              models.every((model) => model.id !== route.model) ? (
+                <option value={route.model}>{route.model}</option>
+              ) : null}
+              {models.map((model) => (
+                <option key={model.id} value={model.id}>
+                  {model.id}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="pstack-field">
+            <span className="pstack-field-label">{t("effort")}</span>
+            <select
+              className="pstack-select"
+              aria-label={`${roleName} ${t("effort")}`}
+              value={route.effort ?? ""}
+              disabled={disabled}
+              onChange={(event) => {
+                const effort = event.target.value;
+                onChange({
+                  kind: "route",
+                  provider: route.provider,
+                  model: route.model,
+                  ...(effort === "" ? {} : { effort }),
+                });
+              }}
+            >
+              <option value="">{t("effortUnset")}</option>
+              {effortOptions.map((effort) => (
+                <option key={effort} value={effort}>
+                  {effort}
+                </option>
+              ))}
+            </select>
+          </label>
         </>
-      )}
+      ) : null}
+      {canRemove ? (
+        <div className="pstack-route-actions">
+          <IconButton
+            danger
+            label={`${t("removeRoute")} ${roleName}`}
+            disabled={disabled}
+            onClick={onRemove}
+          >
+            <IconTrash size={14} />
+          </IconButton>
+        </div>
+      ) : null}
     </div>
   );
 }
 
-function remoteError(error: unknown): string {
-  if (typeof error === "object" && error !== null && "message" in error) {
-    return String((error as { message: unknown }).message);
-  }
-  return String(error);
+function draftOf(role: RoleView): RoleDraft {
+  const routes = routesOf(role);
+  return { routes, baseline: routes.map((route) => ({ ...route })), busy: false };
 }
 
-/** Props of the role configuration section rendered inside the bundle config dialog. */
-export type RoleSettingsPageProps = PropsLocale<typeof NS> & {
-  readonly api: PstackRolesApi;
-};
+function routesOf(role: RoleView): RouteView[] {
+  return role.routes.length === 0 ? [inheritRoute()] : role.routes.map((route) => ({ ...route }));
+}
 
-/** Section container: owns loading, drafts, and the two Remote calls. */
-export function RoleSettingsPage(props: RoleSettingsPageProps): ReactElement {
-  const { api, t } = props;
-  const [snapshot, setSnapshot] = useState<RoleFileSnapshot | null>(null);
-  const [catalogue, setCatalogue] = useState<CatalogueResult | undefined>(undefined);
-  const [drafts, setDrafts] = useState<Record<string, readonly DraftRoute[]>>({});
-  const [messages, setMessages] = useState<Record<string, { tone: "ok" | "error"; text: string }>>(
-    {},
+function inheritRoute(): RouteView {
+  return { kind: "inherit", alias: "inherit-parent" };
+}
+
+function isInheritParent(route: RouteView): boolean {
+  return route.kind === "inherit" && route.alias === "inherit-parent";
+}
+
+function isDirty(draft: RoleDraft): boolean {
+  return signature(draft.routes) !== signature(draft.baseline);
+}
+
+function signature(routes: readonly RouteView[]): string {
+  return JSON.stringify(routes);
+}
+
+function statusPresentation(
+  snapshot: RoleFileSnapshot,
+  t: PstackTranslations["roles"],
+): { label: string; tone: StatusTone } {
+  if (snapshot.status === "unreadable") {
+    return { label: t("statusUnreadable"), tone: "error" };
+  }
+  if (snapshot.status === "missing") return { label: t("statusMissing"), tone: "warn" };
+  return { label: t("statusLoaded"), tone: "success" };
+}
+
+function modelChoices(
+  catalogue: CatalogueResult | undefined,
+  provider: string,
+): readonly ModelEntry[] {
+  return catalogue?.providers.find((entry) => entry.provider === provider)?.models ?? [];
+}
+
+function providerLabel(providers: CatalogueResult["providers"], providerId: string): string {
+  const provider = providers.find((entry) => entry.provider === providerId);
+  if (provider === undefined) return providerId;
+  const duplicated = providers.some(
+    (entry) => entry.provider !== providerId && entry.name === provider.name,
   );
-  const [busyKey, setBusyKey] = useState<string | undefined>(undefined);
-  const [loadError, setLoadError] = useState<string | undefined>(undefined);
-  const [reloadToken, setReloadToken] = useState(0);
+  return duplicated ? `${provider.name} (${provider.provider})` : provider.name;
+}
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoadError(undefined);
-    void Promise.all([api.status(), api.catalogue()]).then(
-      ([nextSnapshot, nextCatalogue]) => {
-        if (cancelled) return;
-        setSnapshot(nextSnapshot);
-        setCatalogue(nextCatalogue);
-        setDrafts(draftsFromSnapshot(nextSnapshot));
-      },
-      (error: unknown) => {
-        if (cancelled) return;
-        setLoadError(remoteError(error));
-      },
-    );
-    return () => {
-      cancelled = true;
-    };
-  }, [api, reloadToken]);
+function effortChoices(
+  catalogue: CatalogueResult | undefined,
+  provider: string,
+  model: string,
+): readonly string[] {
+  return modelChoices(catalogue, provider).find((entry) => entry.id === model)?.efforts ?? [];
+}
 
-  const updateRole = (key: string, next: readonly DraftRoute[]): void => {
-    setDrafts((current) => ({ ...current, [key]: next }));
-    setMessages((current) => {
-      const { [key]: _ignored, ...rest } = current;
-      return rest;
-    });
-  };
-
-  const save = (key: string, routes: readonly DraftRoute[]): void => {
-    setBusyKey(key);
-    setMessages((current) => {
-      const { [key]: _ignored, ...rest } = current;
-      return rest;
-    });
-    void api.save(saveRequestFor(key, routes)).then(
-      (result) => {
-        setBusyKey(undefined);
-        if (!result.ok) {
-          setMessages((current) => ({
-            ...current,
-            [key]: { tone: "error", text: t("saveRejected", { reason: result.reason }) },
-          }));
-          return;
-        }
-        setSnapshot(result.snapshot);
-        setDrafts((current) => ({
-          ...current,
-          [key]: draftsFromSnapshot(result.snapshot)[key] ?? [inheritRoute()],
-        }));
-        setMessages((current) => ({ ...current, [key]: { tone: "ok", text: t("saved") } }));
-      },
-      (error: unknown) => {
-        setBusyKey(undefined);
-        setMessages((current) => ({
-          ...current,
-          [key]: { tone: "error", text: t("saveRejected", { reason: remoteError(error) }) },
-        }));
-      },
-    );
-  };
-
-  return (
-    <RoleSettingsView
-      snapshot={snapshot}
-      catalogue={catalogue}
-      drafts={drafts}
-      busyKey={busyKey}
-      messages={messages}
-      loadError={loadError}
-      onRetry={() => setReloadToken((value) => value + 1)}
-      onRouteChange={(key, index, route) => {
-        const current = drafts[key] ?? [inheritRoute()];
-        updateRole(key, replaceRoute(current, index, route));
-      }}
-      onAddRoute={(key) => updateRole(key, appendRoute(drafts[key] ?? [inheritRoute()]))}
-      onRemoveRoute={(key, index) =>
-        updateRole(key, removeRoute(drafts[key] ?? [inheritRoute()], index))
-      }
-      onSave={(key) => save(key, drafts[key] ?? [inheritRoute()])}
-      onReset={(key) => save(key, [inheritRoute()])}
-      t={t}
-    />
-  );
+function messageOf(reason: unknown): string {
+  return reason instanceof Error ? reason.message : String(reason);
 }

@@ -2,18 +2,17 @@
  * 能力自动化 runner（入口 playground/cases-run.mjs 经 Vite runnerImport 加载本文件）。
  *
  * 读取 playground/config.json（每个 provider 一层：apiKey + 模型 -> 思考等级），
- * 逐条能力用例：先校验路由属于本机部署，再按用例自动写 playground/.dsh/pstack-models.mdc，
- * 用 `dsh headless --json` 跑一次真实会话，解析事件流里的 tool_call / tool_result 做
- * 「能力级」断言（child 数量、route 互异、脚本输出等），最后输出 pass/fail 报告。
+ * 逐条能力用例：先校验允许路由属于本机部署，再用 `dsh headless --json` 跑一次真实会话。
+ * 用例读取事件流里的 tool_call / tool_result，按当时需要观察的行为写断言，
+ * 最后输出 pass/fail 报告。
  *
- * 它只断言工具契约的可观察事实，不写死插件文案或 UI 内容；真实会话证据仍在
- * playground/.dsh/sessions 下（可用 zstdcat 复核）。
+ * 用例断言目标行为。真实会话证据在 playground/.dsh/sessions 下，可用 zstdcat 复核。
  *
  * 用法（经 playground/cases-run.mjs 用 Vite runnerImport 运行，或 vp run cases）：
  *   node playground/cases-run.mjs --list          # 列出用例与就绪状态（不跑模型）
  *   node playground/cases-run.mjs --check         # 校验配置+部署+路由，不跑模型
  *   node playground/cases-run.mjs                 # 跑全部可跑用例
- *   node playground/cases-run.mjs --case CASE-PANEL-01
+ *   node playground/cases-run.mjs --case CASE-ID
  *
  * 前置：playground 至少启动过一次（playground/.dsh/cordis.patch.yml 存在），
  *       并复制 config.example.json 为 config.json，填入 provider 的 apiKey 与模型。
@@ -39,10 +38,11 @@ const yaml = require("js-yaml");
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = dirname(HERE);
 const DSH_HOME = join(HERE, ".dsh");
-const ROLE_FILE = join(DSH_HOME, "pstack-models.mdc");
 const HOME_PATCH = join(DSH_HOME, "cordis.patch.yml");
 const PROFILE_NAME = "pstack-headless";
 const PROFILE_DIR = join(DSH_HOME, "profiles", PROFILE_NAME);
+const PRESET_PROFILE_NAME = "pstack-presets";
+const PRESET_PROFILE_DIR = join(DSH_HOME, "profiles", PRESET_PROFILE_NAME);
 const REPORT_DIR = join(DSH_HOME, "cases-report");
 const CONFIG_FILE = join(HERE, "config.json");
 const DSH_BIN = process.env.DSH_BIN || "dsh";
@@ -272,10 +272,10 @@ function prepareCredentials(config, deployment, routes) {
 // Headless profile
 // ---------------------------------------------------------------------------
 
-function ensureHeadlessProfile() {
-  mkdirSync(join(PROFILE_DIR, "node_modules"), { recursive: true });
+function ensureProfile(profileName, profileDir, patchText) {
+  mkdirSync(join(profileDir, "node_modules"), { recursive: true });
   const manifest = {
-    name: "dsh-profile-pstack-headless",
+    name: `dsh-profile-${profileName}`,
     private: true,
     dependencies: { "dsh-pstack": `link:${REPO_ROOT}` },
     dsh: {
@@ -284,8 +284,10 @@ function ensureHeadlessProfile() {
       },
     },
   };
-  writeFileSync(join(PROFILE_DIR, "package.json"), `${JSON.stringify(manifest, null, 2)}\n`);
-  const link = join(PROFILE_DIR, "node_modules", "dsh-pstack");
+  writeFileSync(join(profileDir, "package.json"), `${JSON.stringify(manifest, null, 2)}\n`);
+  if (patchText !== undefined) writeFileSync(join(profileDir, "cordis.patch.yml"), patchText);
+  else rmSync(join(profileDir, "cordis.patch.yml"), { force: true });
+  const link = join(profileDir, "node_modules", "dsh-pstack");
   let linked = false;
   try {
     linked = lstatSync(link).isSymbolicLink() || lstatSync(link).isDirectory();
@@ -297,10 +299,26 @@ function ensureHeadlessProfile() {
       symlinkSync(REPO_ROOT, link, "dir");
     } catch (error) {
       die(
-        `无法为 headless profile 链接 dsh-pstack：${error instanceof Error ? error.message : String(error)}`,
+        `无法为 ${profileName} 链接 dsh-pstack：${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }
+}
+
+function ensureHeadlessProfile() {
+  ensureProfile(PROFILE_NAME, PROFILE_DIR);
+}
+
+function ensurePresetProfile() {
+  const patch = [
+    "- insert:",
+    "    - id: agent-preset-registry",
+    "      name: '@deepseek-ai/dsh-agent-preset-registry'",
+    "      config:",
+    "        default: poteto-agent",
+    "",
+  ].join("\n");
+  ensureProfile(PRESET_PROFILE_NAME, PRESET_PROFILE_DIR, patch);
 }
 
 // ---------------------------------------------------------------------------
@@ -347,10 +365,10 @@ const CASES = Object.values(caseModules)
   .filter((entry) => entry && typeof entry.build === "function" && typeof entry.id === "string")
   .sort((left, right) => left.id.localeCompare(right.id));
 
-if (CASES.length === 0) {
+if (CASES.length === 0 && !opts.help) {
   console.error(
-    "[run-cases] 未加载到任何用例：import.meta.glob 需要经 Vite 模块运行器展开。\n" +
-      "请用 `vp run cases`（内部走 playground/cases-run.mjs 的 runnerImport）。",
+    "[run-cases] 未加载到任何用例。按 playground/cases/_template.mjs 添加 *.case.mjs，" +
+      "再用 `vp run cases` 运行。",
   );
   process.exit(2);
 }
@@ -359,20 +377,8 @@ if (CASES.length === 0) {
 // 执行
 // ---------------------------------------------------------------------------
 
-function withRoleFile(lines, run) {
-  const previous = existsSync(ROLE_FILE) ? readFileSync(ROLE_FILE, "utf8") : null;
-  try {
-    const body = lines.length > 0 ? `${lines.join("\n")}\n` : "# case probe: no role lines\n";
-    writeFileSync(ROLE_FILE, body);
-    return run();
-  } finally {
-    if (previous !== null) writeFileSync(ROLE_FILE, previous);
-    else rmSync(ROLE_FILE, { force: true });
-  }
-}
-
-function runHeadless(prompt) {
-  const result = spawnSync(DSH_BIN, ["--profile", PROFILE_NAME, "--json", prompt], {
+function runHeadless(prompt, profileName = PROFILE_NAME) {
+  const result = spawnSync(DSH_BIN, ["--profile", profileName, "--json", prompt], {
     cwd: REPO_ROOT,
     env: { ...process.env, DSH_HOME },
     encoding: "utf8",
@@ -437,6 +443,7 @@ function main() {
   }
 
   ensureHeadlessProfile();
+  ensurePresetProfile();
 
   const results = [];
   for (const c of selected) {
@@ -446,24 +453,28 @@ function main() {
       console.log(`- ${c.id} SKIP  ${built.skip}`);
       continue;
     }
-    process.stdout.write(`- ${c.id} 跑… `);
-    const outcome = withRoleFile(built.roleLines, () => {
-      const run = runHeadless(built.prompt);
+    built.setup?.();
+    try {
+      process.stdout.write(`- ${c.id} 跑… `);
+      const run = runHeadless(
+        built.prompt,
+        built.profile === "presets" ? PRESET_PROFILE_NAME : PROFILE_NAME,
+      );
       const events = parseEvents(run.stdout);
       const calls = collectToolCalls(events);
-      const final = events.find((e) => e.type === "final");
-      const verify = built.verify({ calls, events, final, run });
+      const final = events.find((event) => event.type === "final");
+      const outcome = built.verify({ calls, events, final, run });
       const completed = run.status === 0 && final?.reason?.kind === "completed";
-      if (!completed && verify.ok) {
-        return bad(
-          `会话未正常完成（exit=${run.status}, reason=${final?.reason?.kind ?? "无 final"}）`,
-        );
+      if (!completed && outcome.ok) {
+        outcome.ok = false;
+        outcome.detail = `会话未正常完成（exit=${run.status}, reason=${final?.reason?.kind ?? "无 final"}）`;
       }
-      return verify;
-    });
-    const status = outcome.ok ? "PASS" : "FAIL";
-    results.push({ id: c.id, title: c.title, status, detail: outcome.detail });
-    console.log(`${status}  ${outcome.detail}`);
+      const status = outcome.ok ? "PASS" : "FAIL";
+      results.push({ id: c.id, title: c.title, status, detail: outcome.detail });
+      console.log(`${status}  ${outcome.detail}`);
+    } finally {
+      built.cleanup?.();
+    }
   }
 
   const reportPath = writeReport(results, { source, routes }, deployment);

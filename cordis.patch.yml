@@ -1,42 +1,311 @@
 # dsh-pstack bundle patch.
 #
-# `pstack` registers the bundled skill provider and `pstack_skill`, the trusted loader
-# that can reach skills hidden with `disable-model-invocation`.
-# `pstack-models` registers the read-only model/effort directory used by `/setup-pstack`.
-# `pstack-roles` exposes the same role file to the Plugins configuration page through a
-# Typert Remote service; its browser half is declared by `dsh.client` in package.json.
-# `pstack-role-catalog` registers `pstack_roles`, the read-only capability query that
-# reports each role's shape and autoPanel so a caller sets `roleIndex` correctly.
-# `pstack-subagent` registers `pstack_subagent`, which re-reads the role file on every
-# delegation and selects one of the pstack agent presets below.
-# `pstack-script` registers `pstack_script`, the only supported way to run the bundled
-# Node artefacts under both the npm CLI and the Desktop (Electron) runtime.
-#
-# The two presets are ordinary `@deepseek-ai/dsh-agent-preset` declarations. They own the
-# child persona and tool composition; `pstack_subagent` only passes `agentPreset`. Keeping
-# the tool list here is what makes `comment-sicko` read-only without a per-call field:
-# `dsh-tool-fs` registers `read` but not `write` or `edit`.
+# `pstack-skill` registers the trusted hidden-skill loader. The three
+# `dsh-skill-filesystem` rows expose the generated pstack tree, vendored
+# cursor-team-kit skills, and authored project skills at bundled rank 600.
+# `pstack-models` reports the live route catalogue; `pstack-role-catalog` reports
+# role shapes; `pstack-subagent` delegates one child per selected route. The
+# preset rows below own the child personas and tool compositions.
 - insert:
     - id: pstack
       name: dsh-pstack
+    - id: pstack-skills
+      name: "@deepseek-ai/dsh-skill-filesystem"
+      config:
+        providerName: pstack
+        includeDefaultRoots: false
+        watch: false
+        bundledSkillDir: !!js process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('dsh-pstack/package.json')), 'dist/pstack/skills')
+    - id: pstack-vendored-skills
+      name: "@deepseek-ai/dsh-skill-filesystem"
+      config:
+        providerName: pstack-vendored
+        includeDefaultRoots: false
+        watch: false
+        bundledSkillDir: !!js process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('dsh-pstack/package.json')), 'dist/skills/vendored')
+    - id: pstack-authored-skills
+      name: "@deepseek-ai/dsh-skill-filesystem"
+      config:
+        providerName: pstack-authored
+        includeDefaultRoots: false
+        watch: false
+        bundledSkillDir: !!js process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('dsh-pstack/package.json')), 'dist/skills/authored')
     - id: pstack-models
       name: dsh-pstack/models
     - id: pstack-roles
-      name: dsh-pstack/roles
+      name: dsh-pstack/role-service
     - id: pstack-role-catalog
       name: dsh-pstack/role-catalog
     - id: pstack-subagent
       name: dsh-pstack/subagent
       config:
+        provider: spawn
         maxDepth: 2
-    - id: pstack-script
-      name: dsh-pstack/script
+    - id: pstack-render
+      name: dsh-pstack/render
+    - id: preset-poteto-mode
+      name: "dsh-pstack/preset"
+      config:
+        id: poteto-mode
+        name: Poteto mode
+        description: Based on Standard mode, with the same capabilities plus the persistent poteto-mode workflow.
+        order: 5
+        plugins:
+          - id: persona
+            name: "@deepseek-ai/dsh-persona"
+            config:
+              prefix: You are a coding agent powered by the {{model}} model. You are running in the persistent pstack `poteto-mode` preset. The full poteto-mode instructions are in the persistent section of this system prompt.
+          - id: agent-instructions
+            name: "@deepseek-ai/dsh-agent-instructions"
+            config:
+              maxBytes: 65536
+          - id: time-context
+            name: "@deepseek-ai/dsh-time-context"
+          - id: tool-bash
+            name: "@deepseek-ai/dsh-tool-bash"
+            disabled: !!js process.platform === 'win32'
+          - id: tool-pwsh
+            name: "@deepseek-ai/dsh-tool-pwsh"
+            disabled: !!js process.platform !== 'win32'
+          - id: tool-fs
+            name: "@deepseek-ai/dsh-tool-fs"
+            config:
+              # Set false to drop the apply_patch tool beside edit.
+              applyPatch: false
+          - id: tool-fs-search
+            name: "@deepseek-ai/dsh-tool-fs-search"
+            config:
+              sampleOverCapGlobResults: false
+          - id: tool-jobs
+            name: "@deepseek-ai/dsh-tool-jobs"
+          - id: tool-schedule
+            name: "@deepseek-ai/dsh-tool-schedule"
+          - id: skill-filesystem
+            name: "@deepseek-ai/dsh-skill-filesystem"
+          - id: tool-skill
+            name: "@deepseek-ai/dsh-tool-skill"
+          - id: command-goal
+            name: "@deepseek-ai/dsh-command-goal"
+          - id: tool-goal
+            name: "@deepseek-ai/dsh-tool-goal"
+          - id: planning
+            name: cordis:group
+            group: true
+            isolate:
+              planMode: true
+            config:
+              - id: plan-mode
+                name: "@deepseek-ai/dsh-plan-mode"
+                config:
+                  section: |
+                    You are in plan mode. Stay in plan mode until the user approves your plan through exit_plan_mode or switches the session mode. Imperative language to implement changes means plan the implementation, not execute it. A user's conversational agreement — including an answer confirming something you asked — approves nothing and does not end plan mode; fold the confirmed decision into the plan and submit it through exit_plan_mode.
+
+                    Explore first. Use non-mutating reads, searches, static analysis, and checks to ground the plan in the actual repository. Do not edit or write files, change configuration, run formatters or code generation that rewrites tracked files, commit, or otherwise carry out the plan. Prefer existing functions and patterns over new machinery.
+
+                    The tool catalog stays the same across modes for request-cache stability. These plan-mode rules override any later tool description or guidance that suggests using mutation tools; those tools remain listed to keep the tool catalog unchanged. Do not use todo_write to track this planning phase: it tracks implementation after an approved plan, while the plan itself belongs in exit_plan_mode.
+
+                    Resolve discoverable facts by inspection. Use ask_user_question only for user-owned choices or material ambiguity that inspection cannot answer. Do not ask the user where code lives or how current behavior works when you can find out.
+
+                    Make the plan decision-complete: state the goal and success criteria; group implementation changes by subsystem; identify public API, schema, and data-flow changes; cover edge cases, failure modes, tests, acceptance criteria, and explicit assumptions. Keep it concise enough to review but detailed enough that another engineer can implement it without making design decisions.
+
+                    When ready, call exit_plan_mode with the complete plan markdown, starting with a # title. Make exit_plan_mode the only and final tool call in that assistant response: it presents the plan for approval, and implementation begins only in a later step after approval. Do not paste the final plan as a plain reply or ask "should I proceed?" through prose or ask_user_question. If review rejects it, incorporate the feedback and present again. If the review channel is unavailable or aborted, stay in plan mode and ask the user to switch modes manually; do not proceed with implementation.
+          - id: compaction
+            name: cordis:group
+            group: true
+            isolate:
+              compaction: true
+              toolResultPruner: true
+            config:
+              - id: compaction-basic
+                name: "@deepseek-ai/dsh-compaction-basic"
+              - id: command-compact
+                name: "@deepseek-ai/dsh-command-compact"
+              - id: tool-result-pruner
+                name: "@deepseek-ai/dsh-compaction-tool-result-pruner"
+                config:
+                  thresholdChars: 8192
+                  headChars: 4096
+                  tailChars: 1024
+          - id: delegation
+            name: cordis:group
+            group: true
+            isolate:
+              workflowEngine: true
+            config:
+              - id: tool-subagent-control
+                name: "@deepseek-ai/dsh-tool-subagent-control"
+              - id: workflow-ptc
+                name: "@deepseek-ai/dsh-workflow-ptc"
+                config:
+                  provider: spawn
+              - id: tool-workflow
+                name: "@deepseek-ai/dsh-tool-workflow"
+          - id: tool-ask-user
+            name: "@deepseek-ai/dsh-tool-ask-user"
+          - id: tool-todo
+            name: "@deepseek-ai/dsh-tool-todo"
+            config:
+              allowParallelInProgress: true
+          - id: tool-web
+            name: "@deepseek-ai/dsh-tool-web"
+            config:
+              fetch: true
+              searchTimeoutMs: 60000
+          - id: present
+            name: "@deepseek-ai/dsh-tool-present"
+          - id: tool-plugin-manager
+            name: "@deepseek-ai/dsh-plugin-manager/tools"
+            disabled: !!js "!ctx.get('profileContext')"
+          - id: tool-plugin-market
+            name: "@deepseek-ai/dsh-plugin-market/tools"
+            disabled: true
+          - id: pstack-skill
+            name: dsh-pstack
+          - id: pstack-subagent
+            name: dsh-pstack/subagent
+            config:
+              provider: spawn
+              maxDepth: 2
+          - id: poteto-mode-section
+            name: dsh-pstack/poteto-mode
+
+    - id: preset-poteto-mode-creator
+      name: "dsh-pstack/preset"
+      config:
+        id: poteto-mode-creator
+        name: Poteto Creator mode
+        description: Based on Creator mode, with the same capabilities plus the persistent poteto-mode workflow.
+        order: 6
+        plugins:
+          - id: persona
+            name: "@deepseek-ai/dsh-persona"
+            config:
+              prefix: You are a coding agent powered by the {{model}} model. You are running in the persistent pstack `poteto-mode-creator` preset. The full poteto-mode instructions are in the persistent section of this system prompt.
+          - id: agent-instructions
+            name: "@deepseek-ai/dsh-agent-instructions"
+            config:
+              maxBytes: 65536
+          - id: time-context
+            name: "@deepseek-ai/dsh-time-context"
+          - id: tool-bash
+            name: "@deepseek-ai/dsh-tool-bash"
+            disabled: !!js process.platform === 'win32'
+          - id: tool-pwsh
+            name: "@deepseek-ai/dsh-tool-pwsh"
+            disabled: !!js process.platform !== 'win32'
+          - id: tool-fs
+            name: "@deepseek-ai/dsh-tool-fs"
+            config:
+              # Set false to drop the apply_patch tool beside edit.
+              applyPatch: false
+          - id: tool-fs-search
+            name: "@deepseek-ai/dsh-tool-fs-search"
+            config:
+              sampleOverCapGlobResults: false
+          - id: tool-jobs
+            name: "@deepseek-ai/dsh-tool-jobs"
+          - id: tool-schedule
+            name: "@deepseek-ai/dsh-tool-schedule"
+          - id: command-goal
+            name: "@deepseek-ai/dsh-command-goal"
+          - id: tool-goal
+            name: "@deepseek-ai/dsh-tool-goal"
+          - id: planning
+            name: cordis:group
+            group: true
+            isolate:
+              planMode: true
+            config:
+              - id: plan-mode
+                name: "@deepseek-ai/dsh-plan-mode"
+                config:
+                  section: |
+                    You are in plan mode. Stay in plan mode until the user approves your plan through exit_plan_mode or switches the session mode. Imperative language to implement changes means plan the implementation, not execute it. A user's conversational agreement — including an answer confirming something you asked — approves nothing and does not end plan mode; fold the confirmed decision into the plan and submit it through exit_plan_mode.
+
+                    Explore first. Use non-mutating reads, searches, static analysis, and checks to ground the plan in the actual repository. Do not edit or write files, change configuration, run formatters or code generation that rewrites tracked files, commit, or otherwise carry out the plan. Prefer existing functions and patterns over new machinery.
+
+                    The tool catalog stays the same across modes for request-cache stability. These plan-mode rules override any later tool description or guidance that suggests using mutation tools; those tools remain listed to keep the tool catalog unchanged. Do not use todo_write to track this planning phase: it tracks implementation after an approved plan, while the plan itself belongs in exit_plan_mode.
+
+                    Resolve discoverable facts by inspection. Use ask_user_question only for user-owned choices or material ambiguity that inspection cannot answer. Do not ask the user where code lives or how current behavior works when you can find out.
+
+                    Make the plan decision-complete: state the goal and success criteria; group implementation changes by subsystem; identify public API, schema, and data-flow changes; cover edge cases, failure modes, tests, acceptance criteria, and explicit assumptions. Keep it concise enough to review but detailed enough that another engineer can implement it without making design decisions.
+
+                    When ready, call exit_plan_mode with the complete plan markdown, starting with a # title. Make exit_plan_mode the only and final tool call in that assistant response: it presents the plan for approval, and implementation begins only in a later step after approval. Do not paste the final plan as a plain reply or ask "should I proceed?" through prose or ask_user_question. If review rejects it, incorporate the feedback and present again. If the review channel is unavailable or aborted, stay in plan mode and ask the user to switch modes manually; do not proceed with implementation.
+          - id: compaction
+            name: cordis:group
+            group: true
+            isolate:
+              compaction: true
+              toolResultPruner: true
+            config:
+              - id: compaction-basic
+                name: "@deepseek-ai/dsh-compaction-basic"
+              - id: command-compact
+                name: "@deepseek-ai/dsh-command-compact"
+              - id: tool-result-pruner
+                name: "@deepseek-ai/dsh-compaction-tool-result-pruner"
+                config:
+                  thresholdChars: 8192
+                  headChars: 4096
+                  tailChars: 1024
+          - id: delegation
+            name: cordis:group
+            group: true
+            isolate:
+              workflowEngine: true
+            config:
+              - id: tool-subagent-control
+                name: "@deepseek-ai/dsh-tool-subagent-control"
+              - id: workflow-ptc
+                name: "@deepseek-ai/dsh-workflow-ptc"
+                config:
+                  provider: spawn
+              - id: tool-workflow
+                name: "@deepseek-ai/dsh-tool-workflow"
+          - id: tool-ask-user
+            name: "@deepseek-ai/dsh-tool-ask-user"
+          - id: tool-todo
+            name: "@deepseek-ai/dsh-tool-todo"
+            config:
+              allowParallelInProgress: true
+          - id: tool-web
+            name: "@deepseek-ai/dsh-tool-web"
+            config:
+              fetch: true
+              searchTimeoutMs: 60000
+          - id: tool-cordis
+            name: "@deepseek-ai/dsh-tool-cordis"
+          - id: skill-filesystem
+            name: "@deepseek-ai/dsh-skill-filesystem"
+            config:
+              customSkillDirs:
+                - !!js process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-agent-preset/package.json')), 'skills')
+          - id: tool-skill
+            name: "@deepseek-ai/dsh-tool-skill"
+          - id: present
+            name: "@deepseek-ai/dsh-tool-present"
+          - id: tool-plugin-manager
+            name: "@deepseek-ai/dsh-plugin-manager/tools"
+            disabled: !!js "!ctx.get('profileContext')"
+          - id: tool-plugin-market
+            name: "@deepseek-ai/dsh-plugin-market/tools"
+            disabled: !!js "!ctx.get('profileContext')"
+          - id: pstack-skill
+            name: dsh-pstack
+          - id: pstack-subagent
+            name: dsh-pstack/subagent
+            config:
+              provider: spawn
+              maxDepth: 2
+          - id: poteto-mode-section
+            name: dsh-pstack/poteto-mode
+
     - id: preset-poteto-agent
-      name: "@deepseek-ai/dsh-agent-preset"
+      name: "dsh-pstack/preset"
       config:
         id: poteto-agent
-        name: pstack poteto-agent
-        description: pstack implementation delegate. Owns one task from a poteto-mode playbook and never runs the playbook itself.
+        name: Implementation agent
+        description: Implementation delegate that follows poteto-mode discipline for one task.
         order: 100
         plugins:
           - id: persona
@@ -67,12 +336,19 @@
             config:
               fetch: true
               searchTimeoutMs: 60000
+          - id: pstack-skill
+            name: dsh-pstack
+          - id: pstack-subagent
+            name: dsh-pstack/subagent
+            config:
+              provider: spawn
+              maxDepth: 1
     - id: preset-comment-sicko
-      name: "@deepseek-ai/dsh-agent-preset"
+      name: "dsh-pstack/preset"
       config:
         id: comment-sicko
-        name: pstack comment-sicko
-        description: Read-only comment reviewer. Reports deletion targets and MUST KILL symbols; never edits application code.
+        name: Comment review
+        description: Review comments and report deletion targets and symbols that need refactoring.
         order: 101
         plugins:
           - id: persona
@@ -119,3 +395,36 @@
             name: "@deepseek-ai/dsh-tool-fs-search"
             config:
               sampleOverCapGlobResults: false
+          - id: pstack-skill
+            name: dsh-pstack
+    - id: preset-readonly
+      name: "dsh-pstack/preset"
+      config:
+        id: readonly
+        name: Read-only research
+        description: Read-only research delegate that gathers evidence without editing files.
+        order: 102
+        plugins:
+          - id: persona
+            name: "@deepseek-ai/dsh-persona"
+            config:
+              prefix: You are a read-only pstack delegate. Investigate, read, search, and report evidence. Do not modify files or run commands that write. Your preset enforces the read-only sandbox; if a tool rejects a write, record the denial and continue with the evidence you can gather.
+          - id: tool-bash
+            name: "@deepseek-ai/dsh-tool-bash"
+            disabled: !!js process.platform === 'win32'
+          - id: tool-pwsh
+            name: "@deepseek-ai/dsh-tool-pwsh"
+            disabled: !!js process.platform !== 'win32'
+          - id: tool-fs
+            name: "@deepseek-ai/dsh-tool-fs"
+            config:
+              write: false
+              edit: false
+          - id: tool-fs-search
+            name: "@deepseek-ai/dsh-tool-fs-search"
+            config:
+              sampleOverCapGlobResults: false
+          - id: pstack-skill
+            name: dsh-pstack
+          - id: readonly-policy
+            name: dsh-pstack/readonly

@@ -1,133 +1,107 @@
-/**
- * Browser half of dsh-pstack: the bundle configuration dialog button and the
- * one-time recommended-plugin guidance on the Plugins → dsh-pstack bundle page.
- *
- * The browser bundle is loaded by `dsh-client-modules` as a classic script and
- * registers the configuration action through `plugins.detail.actions` and the
- * one-time guidance through `plugins.bundle.activation`. Its Remote
- * contribution is hand-written in `../remote.ts`; no Typert generation chain is
- * required at build time.
- */
+/** Browser entry for dsh-pstack: the plugin-detail configuration action. */
 
 import type { Context } from "@deepseek-ai/cordis";
 import type {} from "@deepseek-ai/dsh-api-gateway/client";
 import type {} from "@deepseek-ai/dsh-client-locale/client";
-import type {} from "@deepseek-ai/dsh-client-ui-plugin-manager/client";
 import type {} from "@deepseek-ai/dsh-client-ui-renderer/client";
+import type {} from "@deepseek-ai/dsh-client-ui-settings/client";
 import type {} from "@deepseek-ai/dsh-client-ui-slots";
-import type { PstackRolesLocaleKey } from "./locales.ts";
-import type { PstackPluginsLocaleKey } from "./optional-plugins-locales.ts";
+import type {} from "@deepseek-ai/dsh-client-ui-plugin-manager/client";
 
-import { pstackRolesRemote, type PstackRolesNamespace } from "../remote.ts";
-import { OptionalPluginsActivation } from "./OptionalPluginsPage.tsx";
-import { PstackBundleConfigAction } from "./PstackBundleConfigDialog.tsx";
-import type { PstackRolesApi } from "./RoleSettingsPage.tsx";
-import type { BundleChange, BundleSnapshot, OptionalPluginsApi } from "./optional-plugins-state.ts";
-import { NS as ROLES_NS, catalogs as rolesCatalogs } from "./locales.ts";
-import { NS as PLUGINS_NS, catalogs as pluginsCatalogs } from "./optional-plugins-locales.ts";
+import type { CatalogueResult } from "../models.ts";
+import { pstackRolesRemote } from "../role-remote.ts";
+import type { RoleFileSnapshot, SaveRoleRequest, SaveRoleResult } from "../role-wire.ts";
+import { createPstackConfigAction } from "./PstackConfigDialog.tsx";
+import { NS, catalogs } from "./locales/index.ts";
+import type { BundleView, PluginManagerApi } from "./RecommendedPluginsPage.tsx";
+import type { RoleSettingsApi } from "./RoleSettingsPage.tsx";
 
-/** The public `pluginManager` Remote methods this page reads, in the Gateway's result envelope. */
-interface PluginManagerRemote {
-  listBundles(): Promise<
-    | { readonly ok: true; readonly value: readonly BundleSnapshot[] }
-    | { readonly ok: false; readonly error: unknown }
-  >;
-  setBundleEnabled(
-    name: string,
-    enabled: boolean,
-  ): Promise<
-    | { readonly ok: true; readonly value: BundleChange }
-    | { readonly ok: false; readonly error: unknown }
-  >;
-}
-
-declare module "@deepseek-ai/dsh-client-ui-slots" {
-  interface LocaleNamespaceMap {
-    /** dsh-pstack role model configuration page copy. */
-    pstackRoles: PstackRolesLocaleKey;
-    /** dsh-pstack recommended optional plugins page copy. */
-    pstackPlugins: PstackPluginsLocaleKey;
-  }
-}
-
-/** Browser services this plugin needs before `apply` runs. */
+/** Browser services this plugin needs. */
 export const inject = ["remote", "slots", "locale", "remote.pluginManager"];
 
-/** Mount the Remote contribution and register the bundle configuration action and activation guidance. */
-export async function apply(ctx: Context): Promise<() => Promise<void>> {
-  // `remote.<namespace>` only exists after this plugin mounts the contribution,
-  // so it cannot live in the top-level `inject` list (that would deadlock: the
-  // service is created by the very apply that waits for it). Mount first, then
-  // let a child scope wait for the namespace service before touching it.
-  const disposeRemote = await ctx.remote.$mount(pstackRolesRemote);
+interface Result<T> {
+  readonly ok: boolean;
+  readonly value?: T;
+  readonly error?: Error;
+}
 
-  // Spread into a fresh literal: DSH's typed register accepts the open locale map,
-  // and the catalogs already pin one complete dictionary per supported locale.
-  ctx.effect(() => ctx.locale.register(ROLES_NS, { ...rolesCatalogs }), "pstack-roles.locale");
+interface PstackRolesNamespace {
+  status(): Promise<Result<RoleFileSnapshot>>;
+  catalogue(signal?: AbortSignal): Promise<Result<CatalogueResult>>;
+  save(request: SaveRoleRequest, signal?: AbortSignal): Promise<Result<SaveRoleResult>>;
+}
+
+interface PluginManagerNamespace {
+  listBundles(): Promise<Result<readonly BundleView[]>>;
+  setBundleEnabled(name: string, enabled: boolean): Promise<Result<unknown>>;
+}
+
+export async function apply(ctx: Context): Promise<() => Promise<void>> {
+  const disposeRemote = await ctx.remote.$mount(pstackRolesRemote);
   ctx.effect(
-    () => ctx.locale.register(PLUGINS_NS, { ...pluginsCatalogs }),
-    "pstack-plugins.locale",
+    () => ctx.locale.register(NS.common, { ...catalogs.common }),
+    "pstack-config.locale.common",
+  );
+  ctx.effect(
+    () => ctx.locale.register(NS.config, { ...catalogs.config }),
+    "pstack-config.locale.config",
+  );
+  ctx.effect(
+    () => ctx.locale.register(NS.plugins, { ...catalogs.plugins }),
+    "pstack-config.locale.plugins",
+  );
+  ctx.effect(
+    () => ctx.locale.register(NS.roles, { ...catalogs.roles }),
+    "pstack-config.locale.roles",
   );
 
-  const pluginManager = (ctx.remote as unknown as { readonly pluginManager: PluginManagerRemote })
-    .pluginManager;
-  const optionalPlugins: OptionalPluginsApi = {
-    listBundles: async () => {
-      const result = await pluginManager.listBundles();
-      if (!result.ok) throw result.error;
-      return result.value;
-    },
-    setBundleEnabled: async (name, enabled) => {
-      const result = await pluginManager.setBundleEnabled(name, enabled);
-      if (!result.ok) throw result.error;
-      return result.value;
-    },
-  };
-
   ctx.inject(["remote.pstackRoles"], (scope: Context) => {
-    const namespace = (scope.remote as unknown as PstackRolesNamespace).pstackRoles;
-    const api: PstackRolesApi = {
-      status: async () => {
-        const result = await namespace.status();
-        if (!result.ok) throw result.error;
-        return result.value;
-      },
-      catalogue: async () => {
-        const result = await namespace.catalogue();
-        if (!result.ok) throw result.error;
-        return result.value;
-      },
-      save: async (request) => {
-        const result = await namespace.save(request);
-        if (!result.ok) return { ok: false, reason: result.error.message };
-        return result.value;
-      },
+    const remote = scope.remote as unknown as {
+      pstackRoles?: PstackRolesNamespace;
     };
+    const pstack = remote.pstackRoles;
+    if (pstack === undefined) return;
 
+    const roleApi: RoleSettingsApi = {
+      status: async () => unwrap(await pstack.status()),
+      catalogue: async () => unwrap(await pstack.catalogue()),
+      save: async (request) => unwrap(await pstack.save(request)),
+    };
+    const pluginManager = (ctx.remote as unknown as { pluginManager?: PluginManagerNamespace })
+      .pluginManager;
+    const pluginApi: PluginManagerApi | undefined =
+      pluginManager === undefined
+        ? undefined
+        : {
+            listBundles: async () => unwrap(await pluginManager.listBundles()),
+            setBundleEnabled: async (name, enabled) => {
+              unwrap(await pluginManager.setBundleEnabled(name, enabled));
+            },
+          };
+    const translations = {
+      common: ctx.locale.bind(NS.common),
+      config: ctx.locale.bind(NS.config),
+      plugins: ctx.locale.bind(NS.plugins),
+      roles: ctx.locale.bind(NS.roles),
+    };
     scope.slots.inject("plugins.detail.actions", () =>
       scope.slots.register(
         {
           name: "plugins.detail.actions",
-          id: "dsh-pstack",
-          locale: PLUGINS_NS,
-          inject: () => ({ api, optionalPlugins, rolesT: ctx.locale.bind(ROLES_NS) }),
+          id: "pstack",
+          order: 20,
+          label: translations.config("configureAction"),
         },
-        PstackBundleConfigAction,
-      ),
-    );
-
-    scope.slots.inject("plugins.bundle.activation", () =>
-      scope.slots.register(
-        {
-          name: "plugins.bundle.activation",
-          key: "dsh-pstack",
-          locale: PLUGINS_NS,
-          inject: () => ({ optionalPlugins }),
-        },
-        OptionalPluginsActivation,
+        createPstackConfigAction(roleApi, pluginApi, translations),
       ),
     );
   });
 
   return disposeRemote;
+}
+
+function unwrap<T>(result: Result<T>): T {
+  if (!result.ok) throw result.error ?? new Error("remote call failed");
+  if (result.value === undefined) throw new Error("remote call returned no value");
+  return result.value;
 }

@@ -1,68 +1,60 @@
 /**
  * `pstack_subagent`: pstack's delegation entry point.
  *
- * One call plans one or more fresh children, validates every route and effort before the
- * first child starts, then starts them through `ctx.subagents.startActivation` with
- * parent delivery. Results arrive as completion notices; this module never polls.
+ * One call resolves the role file, validates every route and effort before the
+ * first child starts, then starts one fresh child per selected route through
+ * `ctx.subagents.startActivation`. Results arrive as completion notices; this
+ * tool never polls.
  */
 
 import { existsSync, statSync } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
 
-import {
-  SET_EFFORT_TOOL,
-  agentOptionsFor,
-  effectiveEffort,
-  installEffortControl,
-  validateEffortFor,
-} from "./internal/effort.ts";
+import type { Agent, AgentOptions } from "@deepseek-ai/dsh-agent";
+import type { Context } from "@deepseek-ai/cordis";
+import type { ReasoningEffortId } from "@deepseek-ai/dsh-llm";
+import type {} from "@deepseek-ai/dsh-working-directory";
 import type {
-  Agent,
-  AgentOptions,
-  AgentsHost,
-  JsonSchemaNode,
-  LlmHost,
-  ReasoningEffortId,
+  SubagentActivation,
   SubagentCapabilities,
-  SubagentsHost,
-  TextBlock,
-  ToolDefinition,
-  ToolRunContext,
-  ToolsHost,
-  WorkingDirectoryHost,
-} from "./internal/host-contract.ts";
+  SubagentRuntime as SubagentService,
+} from "@deepseek-ai/dsh-subagent";
+import type { JsonSchemaNode, ToolDefinition, ToolRunContext } from "@deepseek-ai/dsh-tools";
+
+import { POTETO_MODE_SKILL_PATH } from "./paths.ts";
 import {
   modelsFilePath,
   readRoleConfiguration,
   requireRole,
   resolveDshHome,
-  selectRoleRoutes,
+  selectRoutes,
   type Route,
   type RouteSelection,
-} from "./internal/role-config.ts";
-import type { RoleSpec } from "./internal/role-manifest.ts";
-import { POTETO_MODE_SKILL_PATH } from "./internal/paths.ts";
+} from "./role-config.ts";
 
-/** Cordis row name, used by Loader diagnostics. */
+/** Cordis row name. */
 export const name = "pstack-subagent";
 
-/**
- * Delegation needs the tool registry, the subagent registry, the LLM adapters, and the
- * session directory. `agents` is not here: it is optional and read per call, so a
- * profile without it still delegates and the child simply keeps its starting effort.
- */
+/** The services this row requires. */
 export const inject = ["tools", "subagents", "llm", "workingDirectory"];
 
 /** Model-facing tool name. */
 export const TOOL_NAME = "pstack_subagent";
 
-/** Backend used when the row does not name one. */
-export const DEFAULT_SUBAGENT_PROVIDER = "spawn";
+/** Default backend when the row does not name one. */
+export const DEFAULT_PROVIDER = "spawn";
 
-/** The child kinds this tool knows how to brief. */
-export const AGENT_KINDS = ["poteto-agent", "comment-sicko", "general"] as const;
+/** Child kinds this tool can brief. */
+export const AGENT_KINDS = ["poteto-agent", "comment-sicko", "readonly", "general"] as const;
 
 export type AgentKind = (typeof AGENT_KINDS)[number];
+
+/** Preset id for each independently composed child kind. */
+const AGENT_PRESETS: Readonly<Record<Exclude<AgentKind, "general">, string>> = {
+  "poteto-agent": "poteto-agent",
+  "comment-sicko": "comment-sicko",
+  readonly: "readonly",
+};
 
 /** Row configuration. */
 export interface PstackSubagentConfig {
@@ -70,29 +62,44 @@ export interface PstackSubagentConfig {
   readonly maxDepth?: number;
 }
 
-const DEFAULT_CONFIG: PstackSubagentConfig = { provider: DEFAULT_SUBAGENT_PROVIDER };
+const DEFAULT_CONFIG: PstackSubagentConfig = { provider: DEFAULT_PROVIDER };
 
-/**
- * Depth a child runs at when a call omits `maxDepth` or passes an unusable value.
- *
- * A child is always at least depth 1 (it is one level below its parent), so this is the
- * smallest value that can start a child while forbidding it from delegating further.
- */
-export const DEFAULT_CHILD_MAX_DEPTH = 1;
+/** Safe default when a call omits `maxDepth`; a child is already depth 1. */
+export const DEFAULT_CHILD_DEPTH = 1;
 
-/** What a call asked for, after every required argument has been validated. */
 export interface DelegationArgs {
   readonly description: string;
   readonly prompt: string;
   readonly agent: AgentKind;
   readonly role: string | null;
-  readonly cwd: string | null;
-  readonly maxDepth: number | null;
   readonly roleIndex: number | null;
   readonly reasoningEffort: string | null;
+  readonly cwd: string | null;
+  readonly maxDepth: number | null;
 }
 
-/** One child this call started. */
+export interface ChildPlan {
+  readonly index: number;
+  readonly total: number;
+  readonly label: string;
+  readonly agent: AgentKind;
+  readonly role: string;
+  readonly route: Route;
+  readonly routeLabel: string;
+  readonly agentOptions?: AgentOptions;
+  readonly agentPreset?: string;
+  readonly cwd?: string;
+  readonly maxDepth?: number;
+}
+
+export interface DelegationPlan {
+  readonly provider: string;
+  readonly role: string;
+  readonly prompt: string;
+  readonly children: readonly ChildPlan[];
+  readonly diagnostics: readonly string[];
+}
+
 export interface ChildRecord {
   readonly childId: string;
   readonly label: string;
@@ -109,365 +116,193 @@ export interface DelegationResult {
   readonly diagnostics: readonly string[];
 }
 
-/** Raised for a configuration or argument problem, before any child starts. */
-export class DelegationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "DelegationError";
-  }
-}
-
-/** Raised when a child starts but a later entry in the same call fails. */
-export class PartialDelegationError extends DelegationError {
-  readonly startedChildren: readonly ChildRecord[];
-
-  constructor(message: string, startedChildren: readonly ChildRecord[]) {
-    super(message);
-    this.name = "PartialDelegationError";
-    this.startedChildren = startedChildren;
-  }
-}
-
-/** The live services and locations one delegation reads. */
+/** The live services one delegation reads. */
 export interface SubagentRuntime {
-  readonly subagents: SubagentsHost;
+  readonly subagents: Pick<
+    SubagentService,
+    "getProvider" | "list" | "resolveMaxDepth" | "startActivation"
+  >;
   readonly llm: LlmHost;
-  /** Optional: absent means the child keeps the effort it was started with. */
-  readonly agents?: AgentsHost;
-  readonly workingDirectory: WorkingDirectoryHost;
+  readonly workingDirectory: Pick<WorkingDirectoryService, "ensure">;
   readonly dshHome: string;
+  readonly potetoModeSkillPath: string;
 }
 
-// ---------------------------------------------------------------------------
-// Row config
-// ---------------------------------------------------------------------------
-
-function isNonEmptyString(value: unknown): value is string {
-  return typeof value === "string" && value.trim() !== "";
+/** The slice of `ctx.llm` used before starting a child. */
+export interface LlmHost {
+  resolveCallConfig(
+    config: { provider: string; model: string; reasoningEffort?: ReasoningEffortId },
+    signal?: AbortSignal,
+  ): Promise<unknown>;
 }
 
-function isNonNegativeSafeInteger(value: unknown): value is number {
-  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+/** The slice of `ctx.workingDirectory` used before starting a child. */
+export interface WorkingDirectoryService {
+  ensure(agent: Agent, signal?: AbortSignal): Promise<string>;
 }
 
-/**
- * Validate the row configuration without a Schemastery dependency.
- *
- * A typo must fail at activation rather than at the first delegation, and an omitted
- * `config` must be valid. Cordis passes the raw mapping because this row exports no
- * `Config` object; callers that object as `config` are still checked here.
- */
+/** Validate the row's own config; omitted config uses the default provider. */
 export function normalizeConfig(value: unknown): PstackSubagentConfig {
   if (value === undefined || value === null) return DEFAULT_CONFIG;
-  if (typeof value !== "object" || Array.isArray(value))
+  if (typeof value !== "object" || Array.isArray(value)) {
     throw new Error("pstack-subagent: config must be a mapping");
+  }
   const record = value as Record<string, unknown>;
   for (const key of Object.keys(record)) {
-    if (key !== "provider" && key !== "maxDepth")
+    if (key !== "provider" && key !== "maxDepth") {
       throw new Error(`pstack-subagent: unknown config field "${key}"`);
+    }
   }
   const provider = record["provider"];
-  if (provider !== undefined && !isNonEmptyString(provider)) {
+  if (provider !== undefined && (typeof provider !== "string" || provider.trim() === "")) {
     throw new Error("pstack-subagent: provider must be a non-empty string");
   }
   const maxDepth = record["maxDepth"];
-  if (maxDepth !== undefined && !isNonNegativeSafeInteger(maxDepth)) {
-    throw new Error("pstack-subagent: maxDepth must be a non-negative safe integer");
+  if (maxDepth !== undefined && !isDepth(maxDepth)) {
+    throw new Error("pstack-subagent: maxDepth must be a positive safe integer");
   }
   return {
-    provider: isNonEmptyString(provider) ? provider : DEFAULT_SUBAGENT_PROVIDER,
-    ...(isNonNegativeSafeInteger(maxDepth) ? { maxDepth } : {}),
+    provider: typeof provider === "string" ? provider : DEFAULT_PROVIDER,
+    ...(maxDepth === undefined ? {} : { maxDepth }),
   };
 }
 
-// ---------------------------------------------------------------------------
-// Prompt and agent presets
-// ---------------------------------------------------------------------------
-
-/** The preset id behind each pstack agent kind. `general` joins the parent preset. */
-export const AGENT_PRESETS: Readonly<Record<Exclude<AgentKind, "general">, string>> = {
-  "poteto-agent": "poteto-agent",
-  "comment-sicko": "comment-sicko",
-};
-
-/** The preset a child of this kind must mount, or undefined to join the parent preset. */
-export function agentPresetFor(agent: AgentKind): string | undefined {
-  return agent === "general" ? undefined : AGENT_PRESETS[agent];
-}
-
-/** Compose the self-contained prompt one child receives. */
-export function composeChildPrompt(input: {
-  readonly injectedPaths?: readonly { readonly label: string; readonly path: string }[];
-  readonly task: string;
-}): string {
-  const sections: string[] = [];
-  const injected = input.injectedPaths ?? [];
-  if (injected.length > 0) {
-    sections.push(
-      [
-        "Absolute paths injected by `pstack_subagent`. Read them directly; do not search a plugin directory.",
-        "",
-        ...injected.map((entry) => `- ${entry.label}: \`${entry.path}\``),
-      ].join("\n"),
-    );
-  }
-  if (sections.length === 0) return input.task;
-  sections.push(`Task:\n\n${input.task}`);
-  return sections.join("\n\n---\n\n");
-}
-
-// ---------------------------------------------------------------------------
-// Arguments
-// ---------------------------------------------------------------------------
-
-export const DELEGATION_ARGUMENT_KEYS = [
-  "description",
-  "prompt",
-  "agent",
-  "role",
-  "roleIndex",
-  "reasoningEffort",
-  "cwd",
-  "maxDepth",
-] as const;
-
-/**
- * Keys a call must pass. `maxDepth` is accepted but not required: a missing or unusable
- * value resolves to `DEFAULT_CHILD_MAX_DEPTH` instead of forcing the caller to guess an
- * integer, which is where the reflexive `0` came from.
- */
-export const REQUIRED_DELEGATION_ARGUMENT_KEYS = [
-  "description",
-  "prompt",
-  "agent",
-  "role",
-  "roleIndex",
-  "reasoningEffort",
-  "cwd",
-] as const;
-
-/** Validate every required model-facing argument. Null declines an optional setting. */
+/** Validate every model-facing argument before doing any Host call. */
 export function parseDelegationArgs(raw: unknown): DelegationArgs {
-  if (typeof raw !== "object" || raw === null || Array.isArray(raw))
-    throw new DelegationError("arguments must be an object");
-  const record = raw as Record<string, unknown>;
-
-  for (const key of REQUIRED_DELEGATION_ARGUMENT_KEYS) {
-    if (!Object.hasOwn(record, key))
-      throw new DelegationError(
-        `missing required argument "${key}"; every argument except maxDepth must be passed explicitly`,
-      );
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+    throw new Error("pstack_subagent arguments must be an object");
   }
+  const record = raw as Record<string, unknown>;
+  const known = new Set([
+    "description",
+    "prompt",
+    "agent",
+    "role",
+    "roleIndex",
+    "reasoningEffort",
+    "cwd",
+    "maxDepth",
+  ]);
   for (const key of Object.keys(record)) {
-    if (!(DELEGATION_ARGUMENT_KEYS as readonly string[]).includes(key))
-      throw new DelegationError(
-        `unknown argument "${key}"; accepted arguments are ${DELEGATION_ARGUMENT_KEYS.join(", ")}`,
-      );
+    if (!known.has(key)) throw new Error(`unknown pstack_subagent argument "${key}"`);
+  }
+  for (const key of [
+    "description",
+    "prompt",
+    "agent",
+    "role",
+    "roleIndex",
+    "reasoningEffort",
+    "cwd",
+  ]) {
+    if (!Object.hasOwn(record, key)) throw new Error(`missing required argument "${key}"`);
   }
 
   const description = record["description"];
-  if (!isNonEmptyString(description))
-    throw new DelegationError("description must be a non-empty string: it becomes the child label");
   const prompt = record["prompt"];
-  if (!isNonEmptyString(prompt)) throw new DelegationError("prompt must be a non-empty string");
-
   const agent = record["agent"];
-  if (typeof agent !== "string" || !(AGENT_KINDS as readonly string[]).includes(agent)) {
-    throw new DelegationError(
-      `agent must be one of ${AGENT_KINDS.join(", ")}; choose explicitly, and never pass a DSH agent preset id.`,
-    );
-  }
-
   const role = record["role"];
-  if (role !== null && !isNonEmptyString(role))
-    throw new DelegationError("role must be a non-empty string or null");
-
-  const cwd = record["cwd"];
-  if (cwd !== null && !isNonEmptyString(cwd))
-    throw new DelegationError("cwd must be a non-empty string or null");
-
-  const rawMaxDepth = record["maxDepth"];
-  const maxDepth = rawMaxDepth === undefined ? null : rawMaxDepth;
-  if (maxDepth !== null && !isNonNegativeSafeInteger(maxDepth))
-    throw new DelegationError("maxDepth must be a non-negative safe integer, or null/omitted");
-
   const roleIndex = record["roleIndex"];
-  if (roleIndex !== null && !isNonNegativeSafeInteger(roleIndex))
-    throw new DelegationError("roleIndex must be a non-negative safe integer or null");
-  if (roleIndex !== null && role === null)
-    throw new DelegationError("roleIndex requires a non-null role");
+  const reasoningEffort = record["reasoningEffort"];
+  const cwd = record["cwd"];
+  const maxDepth = record["maxDepth"];
 
-  const requestedEffort = record["reasoningEffort"];
-  if (requestedEffort !== null && !isNonEmptyString(requestedEffort)) {
-    throw new DelegationError("reasoningEffort must be a non-empty string or null");
+  if (typeof description !== "string" || description.trim() === "") {
+    throw new Error("description must be a non-empty string");
   }
-  if (typeof requestedEffort === "string" && /\s/.test(requestedEffort.trim())) {
-    throw new DelegationError(
-      `reasoningEffort ${JSON.stringify(requestedEffort)} contains whitespace. An effort is one token, exactly as the model advertises it.`,
-    );
+  if (typeof prompt !== "string" || prompt.trim() === "") {
+    throw new Error("prompt must be a non-empty string");
+  }
+  if (typeof agent !== "string" || !(AGENT_KINDS as readonly string[]).includes(agent)) {
+    throw new Error(`agent must be one of: ${AGENT_KINDS.join(", ")}`);
+  }
+  if (role !== null && (typeof role !== "string" || role.trim() === "")) {
+    throw new Error("role must be a non-empty string or null");
+  }
+  if (roleIndex !== null && (!isNonNegativeInteger(roleIndex) || roleIndex === null)) {
+    throw new Error("roleIndex must be a non-negative integer or null");
+  }
+  if (roleIndex !== null && role === null) throw new Error("roleIndex requires a non-null role");
+  if (reasoningEffort !== null) {
+    if (typeof reasoningEffort !== "string" || reasoningEffort.trim() === "") {
+      throw new Error("reasoningEffort must be a non-empty string or null");
+    }
+    if (/\s/.test(reasoningEffort.trim())) {
+      throw new Error("reasoningEffort must be one token, exactly as the model advertises it");
+    }
+  }
+  if (cwd !== null && (typeof cwd !== "string" || cwd.trim() === "")) {
+    throw new Error("cwd must be a non-empty string or null");
+  }
+  if (maxDepth !== undefined && maxDepth !== null && !isDepth(maxDepth)) {
+    throw new Error("maxDepth must be a positive safe integer or null");
   }
 
   return {
-    description,
-    prompt,
+    description: description.trim(),
+    prompt: prompt.trim(),
     agent: agent as AgentKind,
-    role,
-    cwd,
-    maxDepth,
-    roleIndex,
-    reasoningEffort: requestedEffort?.trim() ?? null,
+    role: role as string | null,
+    roleIndex: roleIndex as number | null,
+    reasoningEffort: typeof reasoningEffort === "string" ? reasoningEffort.trim() : null,
+    cwd: typeof cwd === "string" ? cwd.trim() : null,
+    maxDepth: maxDepth === undefined ? null : (maxDepth as number | null),
   };
 }
 
-// ---------------------------------------------------------------------------
-// Planning
-// ---------------------------------------------------------------------------
-
-/** One planned child, before any Host call. */
-export interface ChildPlan {
-  readonly index: number;
-  readonly total: number;
-  readonly label: string;
-  readonly agent: AgentKind;
-  readonly role: string;
-  readonly route: Route;
-  readonly routeLabel: string;
-  readonly effort?: string;
-  readonly agentOptions?: AgentOptions;
-  /** Preset id that supplies this child's persona and tool composition. */
-  readonly agentPreset?: string;
-  readonly cwd?: string;
-  readonly maxDepth?: number;
-}
-
-export interface DelegationPlan {
-  readonly agent: AgentKind;
-  readonly prompt: string;
-  readonly provider: string;
-  readonly role: string;
-  readonly mode: RouteSelection["mode"];
-  readonly roleIndex?: number;
-  readonly roleTotal: number;
-  readonly reasoningEffort?: string;
-  readonly children: readonly ChildPlan[];
-  readonly diagnostics: readonly string[];
-}
-
-/** Route text as reported to the model. */
-export function routeLabel(route: Route, effortOverride?: string): string {
-  const effort = effectiveEffort(route, effortOverride);
-  const base = route.kind === "inherit" ? "inherit-parent" : `${route.provider}/${route.model}`;
-  return effort === undefined ? base : `${base} [${effort}]`;
-}
-
-/** Take the smallest of the requested depth, this row's cap, and the Host setting. */
-export function resolveDelegationDepth(
-  configured: number | undefined,
-  requested: number | null | undefined,
-  hostLimit: number | undefined,
-): number | undefined {
-  if (requested !== undefined && requested !== null && !isNonNegativeSafeInteger(requested))
-    throw new DelegationError("maxDepth must be a non-negative safe integer or null");
-  if (
-    configured !== undefined &&
-    requested !== undefined &&
-    requested !== null &&
-    requested > configured
-  ) {
-    throw new DelegationError(
-      `maxDepth ${requested} exceeds this row's configured cap of ${configured}. Lower the request or raise \`pstack-subagent\` config.maxDepth.`,
-    );
-  }
-  const candidates = [configured, requested, hostLimit].filter(
-    (value): value is number => value !== undefined && value !== null,
-  );
-  return candidates.length === 0 ? undefined : Math.min(...candidates);
-}
-
-/**
- * Turn the per-call `maxDepth` request into an effective depth request.
- *
- * A child is always at least depth 1, so `0` can never start one: it is reported and
- * replaced with `DEFAULT_CHILD_MAX_DEPTH` rather than failing the whole call. Omitting
- * `maxDepth` (null) also uses the default, so a caller never has to guess an integer.
- */
-export function requestedChildDepth(requested: number | null, diagnostics: string[]): number {
-  if (requested === null) return DEFAULT_CHILD_MAX_DEPTH;
-  if (requested === 0) {
-    diagnostics.push(
-      `maxDepth 0 cannot start a child (the child itself is depth 1), so this call used ${DEFAULT_CHILD_MAX_DEPTH}. Omit maxDepth for that default, or pass 1 or more.`,
-    );
-    return DEFAULT_CHILD_MAX_DEPTH;
-  }
-  return requested;
-}
-
-/** Resolve the role file, routes, prompt, and depth into one plan. Pure of service calls. */
+/** Resolve the role file, child routes, prompt, and depth without Host calls. */
 export function planDelegation(
   args: DelegationArgs,
   runtime: SubagentRuntime,
   config: PstackSubagentConfig = DEFAULT_CONFIG,
 ): DelegationPlan {
-  const rolePath = modelsFilePath(runtime.dshHome);
-  const roleFile = readRoleConfiguration(rolePath);
+  const path = modelsFilePath(runtime.dshHome);
+  const roleFile = readRoleConfiguration(path);
   if (roleFile.status === "unreadable") {
-    throw new DelegationError(
-      `the pstack role file at ${rolePath} exists but cannot be read (${roleFile.reason}). Fix its permissions or delete it, which makes every role inherit the parent route.`,
+    throw new Error(
+      `the pstack role file at ${path} exists but cannot be read (${roleFile.reason}). Fix its permissions or delete it to let every role inherit the parent route.`,
     );
   }
+
   const diagnostics: string[] = [];
   if (roleFile.status === "loaded") {
-    for (const issue of roleFile.issues)
+    for (const issue of roleFile.issues) {
       diagnostics.push(
-        `${rolePath}${issue.line === undefined ? "" : `:${issue.line}`}: ${issue.message}`,
+        `${path}${issue.line === undefined ? "" : `:${issue.line}`}: ${issue.message}`,
       );
+    }
   }
 
   let selection: RouteSelection | undefined;
-  let roleSpec: RoleSpec | undefined;
   if (args.role !== null) {
-    roleSpec = requireRole(args.role);
-    const entry = roleFile.status === "loaded" ? roleFile.roles.get(roleSpec.key) : undefined;
-    selection = selectRoleRoutes(roleSpec, entry, args.roleIndex ?? undefined);
-  }
-
-  const routes: readonly Route[] = selection?.routes ?? [{ kind: "inherit" }];
-  const roleName = roleSpec?.key ?? "(none)";
-
-  if (selection !== undefined) {
+    const spec = requireRole(args.role);
+    const entry = roleFile.status === "loaded" ? roleFile.roles.get(spec.key) : undefined;
+    selection = selectRoutes(spec, entry, args.roleIndex ?? undefined);
     if (!selection.configured) {
       diagnostics.push(
-        `role "${selection.role.key}" has no line in ${rolePath}, so it inherits the parent route. Add a line to route it explicitly.`,
+        `role "${spec.key}" has no line in ${path}, so it inherits the parent route`,
       );
     }
     if (selection.mode === "selected") {
       diagnostics.push(
-        `role "${selection.role.key}" holds ${selection.total} entries and is not an automatic panel; entry ${(selection.roleIndex ?? 0) + 1} was selected. Pass \`roleIndex\` to choose another.`,
-      );
-    }
-    if (selection.role.key === "swarm workers") {
-      diagnostics.push(
-        'role "swarm workers" is a list, not a panel: its first entry is the default route for every worker, and `roleIndex` gives one race arm another entry. Each worker still needs its own pstack_subagent call.',
+        `role "${spec.key}" has ${selection.total} entries; entry ${(selection.roleIndex ?? 0) + 1} was selected`,
       );
     }
   }
 
-  const injected =
+  const routes = selection?.routes ?? [{ kind: "inherit" as const }];
+  const roleName = selection?.role.key ?? "(none)";
+  const agentPreset = args.agent === "general" ? undefined : AGENT_PRESETS[args.agent];
+  const prompt =
     args.agent === "poteto-agent"
-      ? [{ label: "`poteto-mode` SKILL.md", path: POTETO_MODE_SKILL_PATH }]
-      : [];
-  const prompt = composeChildPrompt({ injectedPaths: injected, task: args.prompt });
-  const agentPreset = agentPresetFor(args.agent);
+      ? injectPotetoModePath(args.prompt, runtime.potetoModeSkillPath)
+      : args.prompt;
+  const hostDepth = runtime.subagents.resolveMaxDepth(config.maxDepth);
+  const depth = resolveChildDepth(args.maxDepth, config, hostDepth);
 
-  const depth = resolveDelegationDepth(
-    config.maxDepth,
-    requestedChildDepth(args.maxDepth, diagnostics),
-    undefined,
-  );
   const total = routes.length;
   const children: ChildPlan[] = routes.map((route, index) => {
-    const agentOptions = agentOptionsFor(route, args.reasoningEffort ?? undefined);
-    const effort = effectiveEffort(route, args.reasoningEffort ?? undefined);
+    const effort = args.reasoningEffort ?? (route.kind === "route" ? route.effort : undefined);
     return {
       index,
       total,
@@ -476,428 +311,219 @@ export function planDelegation(
       agent: args.agent,
       role: roleName,
       route,
-      routeLabel: routeLabel(route, args.reasoningEffort ?? undefined),
-      ...(effort === undefined ? {} : { effort }),
-      ...(agentOptions === undefined ? {} : { agentOptions }),
+      routeLabel: formatRoute(route, args.reasoningEffort ?? undefined),
+      ...(isRoute(route) || effort !== undefined
+        ? { agentOptions: agentOptionsFor(route, effort) }
+        : {}),
       ...(agentPreset === undefined ? {} : { agentPreset }),
       ...(args.cwd === null ? {} : { cwd: args.cwd }),
       ...(depth === undefined ? {} : { maxDepth: depth }),
     };
   });
 
-  if (args.reasoningEffort !== null) {
-    const overwritten = routes.filter(
-      (route) =>
-        route.kind === "route" &&
-        route.effort !== undefined &&
-        route.effort !== args.reasoningEffort,
-    );
-    if (overwritten.length > 0) {
+  if (selection?.mode === "panel" && children.length > 1) {
+    const distinct = new Set(children.map((child) => child.routeLabel));
+    if (distinct.size === 1) {
       diagnostics.push(
-        `reasoningEffort "${args.reasoningEffort}" overrides the effort this call's role line names (${overwritten.map((route) => routeLabel(route)).join(", ")}). The role line is a starting level; pass no reasoningEffort to keep it.`,
+        `all ${children.length} entries of panel "${roleName}" resolve to ${[...distinct][0]}, so they are not a cross-model panel`,
       );
     }
   }
 
-  addPanelDiagnostics(children, roleName, selection, rolePath, diagnostics);
-
   return {
-    agent: args.agent,
-    prompt,
     provider: config.provider,
     role: roleName,
-    mode: selection?.mode ?? "single",
-    ...(selection?.roleIndex === undefined ? {} : { roleIndex: selection.roleIndex }),
-    roleTotal: selection?.total ?? 1,
-    ...(args.reasoningEffort === null ? {} : { reasoningEffort: args.reasoningEffort }),
+    prompt,
     children,
     diagnostics,
   };
 }
 
-function addPanelDiagnostics(
-  children: readonly ChildPlan[],
-  roleName: string,
-  selection: RouteSelection | undefined,
-  rolePath: string,
-  diagnostics: string[],
-): void {
-  if (selection === undefined || selection.mode !== "panel") return;
-  if (children.length === 1) {
-    diagnostics.push(
-      `panel "${roleName}" has one configured entry, so this call started one child and claims no model diversity. Add entries to ${rolePath} for a real panel.`,
-    );
-    return;
-  }
-  const distinct = new Set(children.map((child) => child.routeLabel));
-  if (distinct.size > 1) return;
-  diagnostics.push(
-    `all ${children.length} entries of panel "${roleName}" resolve to the same route (${[...distinct][0]}), so these children are not a cross-model review.`,
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Host calls
-// ---------------------------------------------------------------------------
-
-/** Check the backend can enforce what this call asks for. */
-export function assertProviderCapabilities(
-  capabilities: SubagentCapabilities,
-  providerName: string,
-  asks: {
-    readonly agentOptions: boolean;
-    readonly agentPreset: boolean;
-    readonly maxDepth: boolean;
-  },
-): void {
-  const missing: string[] = [];
-  if (asks.agentOptions && !capabilities.agentOptions) missing.push("agentOptions");
-  if (asks.agentPreset && !capabilities.agentPreset) missing.push("agentPreset");
-  if (asks.maxDepth && !capabilities.depthLimit) missing.push("maxDepth");
-  if (missing.length === 0) return;
-  throw new DelegationError(
-    `subagent provider "${providerName}" does not support ${missing.join(", ")}. Change the route to \`inherit-parent\`, drop the unsupported argument, or configure a backend that supports it.`,
-  );
-}
-
-/**
- * Validate every route and effort before anything starts. An inherit-parent entry with
- * no effort carries no agentOptions and is skipped; an override on an inherit route is
- * validated against the parent's live route.
- */
-async function preflightRoutes(
-  llm: LlmHost,
-  parent: Agent,
-  children: readonly ChildPlan[],
-  roleName: string,
-  effortOverride: string | undefined,
-  signal: AbortSignal,
-): Promise<void> {
-  for (const child of children) {
-    if (child.agentOptions === undefined) continue;
-
-    if (child.route.kind === "inherit") {
-      const effort = effortOverride as string;
-      try {
-        await validateEffortFor(llm, undefined, effort, parent, signal);
-      } catch (error) {
-        throw new DelegationError(
-          `role ${roleName} inherits the parent route, and reasoningEffort "${effort}" failed preflight there: ${describeError(error)} Pass null for reasoningEffort, or name a role whose line holds an exact route.`,
-        );
-      }
-      continue;
-    }
-
-    const route = child.route;
-    try {
-      await llm.resolveCallConfig(
-        {
-          provider: route.provider,
-          model: route.model,
-          ...(child.effort === undefined
-            ? {}
-            : { reasoningEffort: child.effort as ReasoningEffortId }),
-        },
-        signal,
-      );
-    } catch (error) {
-      throw new DelegationError(
-        `role ${roleName} resolves to ${child.routeLabel}, which failed route preflight: ${describeError(error)}. Check the route in ${modelsFilePath("$DSH_HOME")} against the providers this deployment serves.`,
-      );
-    }
-  }
-}
-
-/**
- * Resolve and validate one child's `cwd`.
- *
- * A child may run inside the session directory or inside an explicitly separate Git
- * worktree. Anything else is refused: this tool does not create isolation, so it will
- * not promise one.
- */
-export function resolveChildCwd(
-  requested: string | undefined,
-  sessionRoot: string,
-): string | undefined {
-  if (requested === undefined) return undefined;
-  const resolved = isAbsolute(requested) ? resolve(requested) : resolve(sessionRoot, requested);
-
-  let isDirectory = false;
-  try {
-    isDirectory = statSync(resolved).isDirectory();
-  } catch {
-    isDirectory = false;
-  }
-  if (!isDirectory)
-    throw new DelegationError(`cwd ${resolved} does not exist or is not a directory`);
-
-  if (isWithin(sessionRoot, resolved) || isGitWorktree(resolved)) return resolved;
-  throw new DelegationError(
-    `cwd ${resolved} is outside this session's directory (${sessionRoot}) and is not a separate Git worktree. Pass a path inside the session directory, or create a worktree first and pass its checkout.`,
-  );
-}
-
-function isWithin(root: string, target: string): boolean {
-  const rel = relative(root, target);
-  return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
-}
-
-function isGitWorktree(directory: string): boolean {
-  return existsSync(join(directory, ".git"));
-}
-
-/**
- * Start the planned children. Everything rejectable has already been rejected; a
- * failure at entry N keeps children 1..N-1 running and reports their ids.
- */
+/** Start every planned child after one final capability and route check. */
 export async function startPlannedChildren(
   parent: Agent,
   plan: DelegationPlan,
   runtime: SubagentRuntime,
-  config: PstackSubagentConfig,
   signal: AbortSignal,
 ): Promise<DelegationResult> {
   const provider = runtime.subagents.getProvider(plan.provider);
   if (provider === undefined) {
     const available = runtime.subagents.list();
-    throw new DelegationError(
-      `subagent provider "${plan.provider}" is not registered; registered providers: ${available.length === 0 ? "(none)" : available.join(", ")}.`,
+    throw new Error(
+      `subagent provider "${plan.provider}" is not registered; available providers: ${available.length === 0 ? "(none)" : available.join(", ")}`,
     );
   }
 
-  const hostLimit = runtime.subagents.resolveMaxDepth(config.maxDepth);
-  const effectiveDepth = resolveDelegationDepth(
-    config.maxDepth,
-    plan.children[0]?.maxDepth,
-    hostLimit,
-  );
-
-  assertProviderCapabilities(provider.capabilities, plan.provider, {
-    agentOptions: plan.children.some((child) => child.agentOptions !== undefined),
-    agentPreset: plan.children.some((child) => child.agentPreset !== undefined),
-    maxDepth: effectiveDepth !== undefined,
-  });
-
+  assertCapabilities(provider.capabilities, plan);
   const sessionRoot = await runtime.workingDirectory.ensure(parent, signal);
   const children = plan.children.map((child) => ({
     ...child,
-    ...(effectiveDepth === undefined ? {} : { maxDepth: effectiveDepth }),
-    cwd: resolveChildCwd(child.cwd, sessionRoot),
+    ...(child.cwd === undefined ? {} : { cwd: resolveChildCwd(child.cwd, sessionRoot) }),
   }));
 
-  await preflightRoutes(runtime.llm, parent, children, plan.role, plan.reasoningEffort, signal);
-  if (runtime.subagents.getProvider(plan.provider) !== provider) {
-    throw new DelegationError(
-      `subagent provider "${plan.provider}" changed while the child routes were being resolved; retry the delegation`,
-    );
-  }
+  await preflightRoutes(runtime.llm, parent, children, signal);
 
-  const started: ChildRecord[] = [];
-  const diagnostics = [...plan.diagnostics];
+  const records: ChildRecord[] = [];
   for (const child of children) {
     signal.throwIfAborted();
-    try {
-      const activation = await runtime.subagents.startActivation({
-        provider: plan.provider,
-        label: child.label,
-        request: {
-          prompt: [{ type: "text", text: plan.prompt }] satisfies TextBlock[],
-          parent,
-          ...(child.agentPreset === undefined ? {} : { agentPreset: child.agentPreset }),
-          ...(child.cwd === undefined ? {} : { cwd: child.cwd }),
-          ...(child.agentOptions === undefined ? {} : { agentOptions: child.agentOptions }),
-          ...(child.maxDepth === undefined ? {} : { maxDepth: child.maxDepth }),
-        },
-        signal,
-        delivery: "parent",
-      });
-
-      // The child can change its own effort from here on. Registration is on the child's
-      // own scope, which disposes it with the child, so this call keeps no handle.
-      const target =
-        runtime.agents === undefined ? undefined : runtime.agents.get(activation.childId);
-      if (target === undefined) {
-        diagnostics.push(
-          `child ${activation.childId} has no live local Agent handle, so it cannot change its own reasoning effort with \`${SET_EFFORT_TOOL}\`. It runs at ${child.effort === undefined ? "the adapter default" : `"${child.effort}"`} for its whole life.`,
-        );
-      } else {
-        installEffortControl(target, runtime.llm);
-      }
-
-      started.push({
-        childId: activation.childId,
-        label: child.label,
-        agent: child.agent,
-        role: child.role,
-        route: child.routeLabel,
-        ...(child.effort === undefined ? {} : { effort: child.effort }),
+    const activation = await runtime.subagents.startActivation({
+      provider: plan.provider,
+      label: child.label,
+      request: {
+        prompt: [{ type: "text", text: plan.prompt }],
+        parent,
+        ...(child.agentPreset === undefined ? {} : { agentPreset: child.agentPreset }),
+        ...(child.cwd === undefined ? {} : { cwd: child.cwd }),
+        ...(child.agentOptions === undefined ? {} : { agentOptions: child.agentOptions }),
         ...(child.maxDepth === undefined ? {} : { maxDepth: child.maxDepth }),
-      });
-    } catch (error) {
-      if (started.length === 0) {
-        throw new DelegationError(
-          `starting the ${plan.role === "(none)" ? "child" : `"${plan.role}" child`} "${child.label}" (${child.routeLabel}) failed: ${describeError(error)}`,
-        );
-      }
-      throw new PartialDelegationError(
-        `starting entry ${child.index + 1} of ${child.total} for role "${plan.role}" (${child.label}, ${child.routeLabel}) failed: ${describeError(error)}. The ${started.length} already started: ${started
-          .map((record) => `${record.childId} (${record.label})`)
-          .join(", ")}. Those children are still running and are not rolled back.`,
-        started,
-      );
-    }
+      },
+      signal,
+      delivery: "parent",
+    });
+    records.push(recordFor(child, activation));
   }
 
   return {
-    kind: started.length === 1 ? "activation" : "activations",
-    children: started,
-    diagnostics,
+    kind: records.length === 1 ? "activation" : "activations",
+    children: records,
+    diagnostics: plan.diagnostics,
   };
 }
 
-/** Full delegation: plan, validate, start. */
+/** Complete delegation: plan, check, start. */
 export async function delegate(
   parent: Agent,
   args: DelegationArgs,
   runtime: SubagentRuntime,
-  config: PstackSubagentConfig = DEFAULT_CONFIG,
-  signal: AbortSignal = new AbortController().signal,
+  config: PstackSubagentConfig,
+  signal: AbortSignal,
 ): Promise<DelegationResult> {
-  const plan = planDelegation(args, runtime, config);
-  return startPlannedChildren(parent, plan, runtime, config, signal);
+  return startPlannedChildren(parent, planDelegation(args, runtime, config), runtime, signal);
 }
 
-// ---------------------------------------------------------------------------
-// Tool
-// ---------------------------------------------------------------------------
+/** Register `pstack_subagent` for this row. */
+export function apply(ctx: Context, rawConfig?: unknown): void {
+  const config = normalizeConfig(rawConfig);
+  const runtime: SubagentRuntime = {
+    subagents: ctx.subagents,
+    llm: ctx.llm,
+    workingDirectory: ctx.workingDirectory,
+    dshHome: resolveDshHome(),
+    potetoModeSkillPath: POTETO_MODE_SKILL_PATH,
+  };
+  ctx.tools.register(createPstackSubagentTool(runtime, config));
+}
+
+/** Build the model-facing tool. Exported for tests. */
+export function createPstackSubagentTool(
+  runtime: SubagentRuntime,
+  config: PstackSubagentConfig = DEFAULT_CONFIG,
+): ToolDefinition {
+  return {
+    name: TOOL_NAME,
+    description: TOOL_DESCRIPTION,
+    parameters: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        description: {
+          type: "string",
+          description: "A short 3-5 word label for the child, shown in notices.",
+        },
+        prompt: {
+          type: "string",
+          description:
+            "The complete, self-contained brief. The child does not see this conversation.",
+        },
+        agent: {
+          type: "string",
+          enum: [...AGENT_KINDS],
+          description:
+            'Child preset: "poteto-agent" for pstack implementation, "comment-sicko" for comment review, "readonly" for a sandbox-enforced read-only researcher, or "general" to join the parent preset.',
+        },
+        role: {
+          type: ["string", "null"],
+          description:
+            "pstack role key. It selects the child's route and effort; null inherits the parent route.",
+        },
+        roleIndex: {
+          type: ["integer", "null"],
+          description:
+            "Entry index for a list role that is not an automatic panel. Null selects the first entry; omit only through null.",
+        },
+        reasoningEffort: {
+          type: ["string", "null"],
+          description:
+            "One advertised reasoning-effort token for this call, or null to keep the role's starting effort.",
+        },
+        cwd: {
+          type: ["string", "null"],
+          description:
+            "Initial child working directory inside this session or a separate Git worktree; null inherits the session directory.",
+        },
+        maxDepth: {
+          type: ["integer", "null"],
+          minimum: 1,
+          description:
+            "Optional delegation-depth cap. Omit or null for depth 1; explicit values must be at least 1. The row cap still applies.",
+        },
+      },
+      required: ["description", "prompt", "agent", "role", "roleIndex", "reasoningEffort", "cwd"],
+    },
+    output: {
+      schema: OUTPUT_SCHEMA,
+      render: (_args, value) => [
+        { type: "text", text: renderDelegation(value as unknown as DelegationResult) },
+      ],
+    },
+    isConcurrencySafe: () => true,
+    async execute(rawArgs, exec: ToolRunContext) {
+      if (exec.agent === undefined) throw new Error("pstack_subagent requires a calling Agent");
+      return delegate(exec.agent, parseDelegationArgs(rawArgs), runtime, config, exec.signal);
+    },
+  };
+}
 
 const TOOL_DESCRIPTION = [
   "Delegate self-contained work to one or more fresh child agents.",
   "",
-  "Every argument is required except maxDepth. Pass null for role, roleIndex, reasoningEffort,",
-  "or cwd when that setting is not used. Choose agent explicitly. maxDepth is optional: omit it",
-  "(or pass null) for the safe default of 1, where the child exists but cannot start its own",
-  "children; pass 2 or more, within this row's configured cap, to let it delegate further. A 0 is",
-  "treated as 1, because a child is already depth 1 and 0 can never start one.",
+  "Every argument is required except maxDepth. Pass null for role, roleIndex, reasoningEffort, or cwd when unused. Choose agent explicitly.",
   "",
-  "Returns the id of every child it started plus the route each one resolved. The children run",
-  "in the background: their results arrive later as completion notices in this conversation.",
-  "Never wait or poll for them, and keep working on something useful meanwhile.",
+  "`agent` picks a DSH agent preset: `poteto-agent` mounts the pstack implementation delegate and receives the absolute path of the poteto-mode instructions; `comment-sicko` mounts the comment reviewer; `readonly` mounts a read-only research preset with the sandbox policy set to read-only; `general` joins the parent preset.",
   "",
-  "`agent` picks a DSH agent preset: `poteto-agent` mounts the pstack implementation delegate",
-  "and receives the absolute path of the poteto-mode instructions; `comment-sicko` mounts the",
-  "read-only comment reviewer; `general` joins the parent preset with no pstack persona.",
+  "`role` selects a configured pstack role and therefore the child's model route and starting effort. Null inherits the parent route. Automatic panel roles start one child per configured entry; `pstack_roles` reports which roles accept `roleIndex`.",
   "",
-  "`role` selects a configured pstack role and therefore the child's model route and reasoning",
-  "effort. The role names come from the pstack role manifest, not this schema. Null inherits the",
-  "parent route. Automatic panel roles start one child per configured entry.",
-  "",
-  "`reasoningEffort` raises or lowers the effort for this delegation alone, using a token the",
-  "target model advertises. An unsupported value fails the call before any child starts,",
-  "including every entry of a panel. Null keeps the role line's starting effort. A running child",
-  "can change its own effort with `set_reasoning_effort`, which applies from its next step.",
-  "",
-  "Every prompt is a fresh child that does not see this conversation, so include everything it",
-  "needs. A child's own summary is not evidence: review its diff or artifacts yourself.",
+  "Returns every child id with its resolved route. Results arrive as completion notices; do not poll.",
 ].join("\n");
-
-function buildParameters(): Record<string, unknown> {
-  return {
-    type: "object",
-    additionalProperties: false,
-    properties: {
-      description: {
-        type: "string",
-        description: "A short 3-5 word label for the child, shown in list_agents and its notices.",
-      },
-      prompt: {
-        type: "string",
-        description:
-          "The complete, self-contained brief. The child does not see this conversation, so include the task, every prior directive, and the paths or branches it needs.",
-      },
-      agent: {
-        type: "string",
-        enum: [...AGENT_KINDS],
-        description:
-          'Required child preset: "poteto-agent" for pstack implementation delegates, "comment-sicko" for the read-only comment reviewer, or "general" to join the parent preset.',
-      },
-      role: {
-        type: ["string", "null"],
-        description:
-          "Required pstack role key, matched exactly. It selects the child's model route and effort. Null inherits the parent route.",
-      },
-      cwd: {
-        type: ["string", "null"],
-        description:
-          "Required initial working directory, inside this session's directory or a separate Git worktree. Relative paths resolve against this session's directory. Null inherits the session directory.",
-      },
-      maxDepth: {
-        type: ["integer", "null"],
-        description:
-          "Optional delegation-depth cap for the child. Omit or pass null for the safe default of 1 (the child exists but cannot start its own children). Pass 2 or more, within this row's configured cap, to let it delegate further. 0 is treated as 1: a child is already depth 1, so 0 can never start one.",
-      },
-      roleIndex: {
-        type: ["integer", "null"],
-        description:
-          "Required entry index for a list-valued role that is not an automatic panel, 0 or greater. Requires a non-null role. Null selects the first entry. Call `pstack_roles` to see which roles accept an index.",
-      },
-      reasoningEffort: {
-        type: ["string", "null"],
-        description:
-          "Required reasoning-effort override for every child this call starts. Use one token the target model advertises, or null to keep the role line's starting effort. An unknown token fails the whole call before any child starts.",
-      },
-    },
-    required: [...REQUIRED_DELEGATION_ARGUMENT_KEYS],
-  };
-}
 
 const OUTPUT_SCHEMA: JsonSchemaNode = {
   type: "object",
   additionalProperties: false,
   properties: {
-    kind: {
-      type: "string",
-      enum: ["activation", "activations"],
-      description: "How many children this call started.",
-    },
+    kind: { type: "string", enum: ["activation", "activations"] },
     children: {
       type: "array",
-      description: "One record per started child, in start order.",
       items: {
         type: "object",
         additionalProperties: false,
         properties: {
-          childId: { type: "string", description: "The child session id." },
-          label: { type: "string", description: "The label this call gave the child." },
-          agent: { type: "string", description: "The child brief type." },
-          role: { type: "string", description: "The role key, or `(none)`." },
-          route: {
-            type: "string",
-            description: "`inherit-parent` or `<provider>/<model> [effort]`.",
-          },
-          effort: {
-            type: "string",
-            description: "The reasoning effort this child runs at, when one applies.",
-          },
-          maxDepth: {
-            type: "integer",
-            description: "The delegation-depth cap the child received.",
-          },
+          childId: { type: "string" },
+          label: { type: "string" },
+          agent: { type: "string" },
+          role: { type: "string" },
+          route: { type: "string" },
+          effort: { type: "string" },
+          maxDepth: { type: "integer" },
         },
         required: ["childId", "label", "agent", "role", "route"],
       },
     },
-    diagnostics: {
-      type: "array",
-      description: "Configuration notes, including a panel whose entries share one route.",
-      items: { type: "string" },
-    },
+    diagnostics: { type: "array", items: { type: "string" } },
   },
   required: ["kind", "children", "diagnostics"],
 };
 
-/** Render one delegation result for the model. */
-export function renderDelegationResult(result: DelegationResult): string {
+function renderDelegation(result: DelegationResult): string {
   const lines = [
     result.kind === "activation"
       ? `started 1 child: ${result.children[0]?.childId ?? "(none)"}`
@@ -906,82 +532,158 @@ export function renderDelegationResult(result: DelegationResult): string {
       (child) =>
         `- ${child.childId} (${child.label}) agent=${child.agent} role=${child.role} route=${child.route}${child.effort === undefined ? "" : ` effort=${child.effort}`}${child.maxDepth === undefined ? "" : ` maxDepth=${child.maxDepth}`}`,
     ),
-    "Results arrive as completion notices; do not poll for them. Each child can change its own",
-    "effort from its next step with `set_reasoning_effort`.",
+    "Results arrive as completion notices; do not poll for them.",
   ];
-  if (result.diagnostics.length > 0)
-    lines.push("", "Diagnostics:", ...result.diagnostics.map((diagnostic) => `- ${diagnostic}`));
+  if (result.diagnostics.length > 0) {
+    lines.push("", "Diagnostics:", ...result.diagnostics.map((line) => `- ${line}`));
+  }
   return lines.join("\n");
 }
 
-/** Build the model-facing tool for one row. */
-export function createPstackSubagentTool(
-  runtime: SubagentRuntime,
-  config: PstackSubagentConfig = DEFAULT_CONFIG,
-): ToolDefinition {
+function recordFor(child: ChildPlan, activation: SubagentActivation): ChildRecord {
   return {
-    name: TOOL_NAME,
-    description: TOOL_DESCRIPTION,
-    parameters: buildParameters(),
-    output: {
-      schema: OUTPUT_SCHEMA,
-      render: (_args, value) => [
-        { type: "text", text: renderDelegationResult(value as unknown as DelegationResult) },
-      ],
-    },
-    isConcurrencySafe: () => true,
-    async execute(rawArgs, exec: ToolRunContext) {
-      const parent = exec.agent;
-      if (parent === undefined) {
-        throw new DelegationError(
-          "pstack_subagent needs a calling Agent, and exec.agent was undefined.",
-        );
+    childId: activation.childId,
+    label: child.label,
+    agent: child.agent,
+    role: child.role,
+    route: child.routeLabel,
+    ...(child.agentOptions?.reasoningEffort === undefined
+      ? {}
+      : { effort: child.agentOptions.reasoningEffort }),
+    ...(child.maxDepth === undefined ? {} : { maxDepth: child.maxDepth }),
+  };
+}
+
+function agentOptionsFor(route: Route, effort: string | undefined): AgentOptions {
+  return isRoute(route)
+    ? {
+        provider: route.provider,
+        model: route.model,
+        ...(effort === undefined ? {} : { reasoningEffort: effort as ReasoningEffortId }),
       }
-      const args = parseDelegationArgs(rawArgs);
-      return await delegate(parent, args, runtime, config, exec.signal);
-    },
-  };
+    : effort === undefined
+      ? {}
+      : { reasoningEffort: effort as ReasoningEffortId };
 }
 
-/** The slices of the Cordis context this row uses. */
-export interface PstackSubagentHost {
-  readonly tools: ToolsHost;
-  readonly subagents: SubagentsHost;
-  readonly llm: LlmHost;
-  readonly workingDirectory: WorkingDirectoryHost;
+function formatRoute(route: Route, override?: string): string {
+  const effort = override ?? (isRoute(route) ? route.effort : undefined);
+  const base = isRoute(route) ? `${route.provider}/${route.model}` : "inherit-parent";
+  return effort === undefined ? base : `${base} [${effort}]`;
 }
 
-/** Build the runtime a real Host call reads. */
-export function hostRuntime(
-  ctx: PstackSubagentHost,
-  getAgentRegistry: () => AgentsHost | undefined = () => undefined,
-): SubagentRuntime {
-  return {
-    subagents: ctx.subagents,
-    llm: ctx.llm,
-    workingDirectory: ctx.workingDirectory,
-    get agents() {
-      return getAgentRegistry();
-    },
-    dshHome: resolveDshHome(),
-  };
+function resolveChildDepth(
+  requested: number | null,
+  config: PstackSubagentConfig,
+  hostLimit: number | undefined,
+): number | undefined {
+  let depth = requested === null ? DEFAULT_CHILD_DEPTH : requested;
+  if (depth < 1) {
+    throw new Error("maxDepth must be a positive safe integer or null");
+  }
+  if (config.maxDepth !== undefined && depth > config.maxDepth) {
+    throw new Error(`maxDepth ${depth} exceeds this row's configured cap of ${config.maxDepth}`);
+  }
+  if (hostLimit !== undefined && depth > hostLimit) {
+    throw new Error(`maxDepth ${depth} exceeds the Host delegation limit of ${hostLimit}`);
+  }
+  return hostLimit === undefined ? depth : Math.min(depth, hostLimit);
 }
 
-/** Register `pstack_subagent` for this row. */
-export function apply(
-  ctx: PstackSubagentHost & { get?: (name: string) => AgentsHost | undefined },
-  config?: unknown,
-): void {
-  const resolved = normalizeConfig(config);
-  const runtime = hostRuntime(ctx, () => ctx.get?.("agents"));
-  ctx.tools.register(createPstackSubagentTool(runtime, resolved));
+function assertCapabilities(capabilities: SubagentCapabilities, plan: DelegationPlan): void {
+  const needsAgentOptions = plan.children.some((child) => child.agentOptions !== undefined);
+  const needsPreset = plan.children.some((child) => child.agentPreset !== undefined);
+  const needsDepth = plan.children.some((child) => child.maxDepth !== undefined);
+  const missing = [
+    ...(needsAgentOptions && !capabilities.agentOptions ? ["agentOptions"] : []),
+    ...(needsPreset && !capabilities.agentPreset ? ["agentPreset"] : []),
+    ...(needsDepth && !capabilities.depthLimit ? ["maxDepth"] : []),
+  ];
+  if (missing.length > 0) {
+    throw new Error(`subagent provider does not support ${missing.join(", ")}`);
+  }
+}
+
+async function preflightRoutes(
+  llm: LlmHost,
+  parent: Agent,
+  children: readonly ChildPlan[],
+  signal: AbortSignal,
+): Promise<void> {
+  for (const child of children) {
+    const options = child.agentOptions;
+    if (options === undefined) continue;
+    const provider = options.provider ?? parent.options.provider;
+    const model = options.model ?? parent.options.model;
+    if (provider === undefined || model === undefined) {
+      throw new Error(
+        `cannot resolve role "${child.role}" because the child has no provider/model and the parent has not made a request yet`,
+      );
+    }
+    try {
+      await llm.resolveCallConfig(
+        {
+          provider,
+          model,
+          ...(options.reasoningEffort === undefined
+            ? {}
+            : { reasoningEffort: options.reasoningEffort }),
+        },
+        signal,
+      );
+    } catch (error) {
+      throw new Error(
+        `role "${child.role}" resolves to ${child.routeLabel}, which failed route preflight: ${describeError(error)}`,
+      );
+    }
+  }
+}
+
+function resolveChildCwd(requested: string, sessionRoot: string): string {
+  const target = isAbsolute(requested) ? resolve(requested) : resolve(sessionRoot, requested);
+  let directory = false;
+  try {
+    directory = statSync(target).isDirectory();
+  } catch {
+    directory = false;
+  }
+  if (!directory) throw new Error(`cwd ${target} does not exist or is not a directory`);
+  if (isWithin(sessionRoot, target) || existsSync(join(target, ".git"))) return target;
+  throw new Error(
+    `cwd ${target} is outside the session directory (${sessionRoot}) and is not a Git worktree`,
+  );
+}
+
+function isWithin(root: string, target: string): boolean {
+  const rel = relative(root, target);
+  return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
+}
+
+function injectPotetoModePath(task: string, path: string): string {
+  return [
+    "Absolute path injected by `pstack_subagent`:",
+    `- \`poteto-mode\` SKILL.md: \`${path}\``,
+    "",
+    "Read it directly before doing any work. Your skill catalog hides this skill, so a missing catalog entry does not mean pstack is absent.",
+    "",
+    "Task:",
+    "",
+    task,
+  ].join("\n");
+}
+
+function isRoute(route: Route): route is Extract<Route, { kind: "route" }> {
+  return route.kind === "route";
+}
+
+function isNonNegativeInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+}
+
+function isDepth(value: unknown): value is number {
+  return isNonNegativeInteger(value) && value >= 1;
 }
 
 function describeError(error: unknown): string {
-  if (error instanceof Error) {
-    const code = (error as { code?: unknown }).code;
-    const suffix = typeof code === "string" ? ` (${code})` : "";
-    return `${error.message}${suffix}`;
-  }
-  return String(error);
+  return error instanceof Error ? error.message : String(error);
 }

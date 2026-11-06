@@ -1,47 +1,39 @@
 /**
- * `pstack_models`: a read-only model directory for `/setup-pstack`.
+ * `pstack_models`: a read-only directory of the routes this deployment serves.
  *
- * It asks `ctx.llm` which providers are registered, which models each one advertises,
- * and the exact reasoning-effort tokens each route accepts. Because a route is only real
- * when the deployment serves it, this tool never infers a slug from an upstream name:
- * every entry is what the live adapters report.
- *
- * Writes no files. One provider whose discovery fails does not discard the others, and
- * the result is bounded so a large deployment still returns a complete page.
+ * Every entry comes from the live LLM adapter registry. The tool never invents
+ * a provider, model, or reasoning-effort token from a Cursor slug, and one
+ * provider whose discovery fails does not hide the others.
  */
 
-import type {
-  JsonSchemaNode,
-  LlmHost,
-  LlmResolvedModelInfo,
-  ToolDefinition,
-  ToolsHost,
-} from "./internal/host-contract.ts";
+import type { Context } from "@deepseek-ai/cordis";
+import type { LlmModelInfo, LlmResolvedModelInfo, LlmRuntime } from "@deepseek-ai/dsh-llm";
+import type { JsonSchemaNode, ToolDefinition, ToolRunContext } from "@deepseek-ai/dsh-tools";
 
-/** Cordis row name, used by Loader diagnostics. */
+/** Cordis row name. */
 export const name = "pstack-models";
 
-/** The hard dependencies: the adapter registry and the tool registry. */
+/** The services this row requires. */
 export const inject = ["llm", "tools"];
 
 /** Model-facing tool name. */
 export const TOOL_NAME = "pstack_models";
 
 const MAX_PROVIDERS = 64;
-const MAX_MODELS_PER_PROVIDER = 200;
+const MAX_MODELS = 200;
+
+/** The slice of `ctx.llm` used by the directory. */
+export type ModelsLlm = Pick<LlmRuntime, "listProviders" | "listModels" | "resolveModelInfo">;
 
 export interface ModelEntry {
-  /** `<provider>/<model>`, the exact route a role line writes. */
   readonly route: string;
   readonly id: string;
   readonly name: string;
   readonly description?: string;
   readonly contextWindow?: number;
   readonly maxTokens?: number;
-  /** Advertised reasoning efforts, in the adapter's least-to-greatest order. */
   readonly efforts: readonly string[];
   readonly defaultEffort?: string;
-  /** Set when this one model could not be resolved; the route is still listed. */
   readonly error?: string;
 }
 
@@ -49,7 +41,6 @@ export interface ProviderEntry {
   readonly provider: string;
   readonly name: string;
   readonly models: readonly ModelEntry[];
-  /** Set when this provider's model list could not be read. */
   readonly error?: string;
 }
 
@@ -59,47 +50,29 @@ export interface CatalogueResult {
   readonly providerFilter?: string;
 }
 
-function entryFromInfo(provider: string, info: LlmResolvedModelInfo): ModelEntry {
-  const efforts = info.reasoning?.efforts.map((effort) => effort.id) ?? [];
-  return {
-    route: `${provider}/${info.id}`,
-    id: info.id,
-    name: info.name,
-    ...(info.description === undefined ? {} : { description: info.description }),
-    ...(info.context?.contextWindow === undefined
-      ? {}
-      : { contextWindow: info.context.contextWindow }),
-    ...(info.defaultMaxTokens === undefined ? {} : { maxTokens: info.defaultMaxTokens }),
-    efforts,
-    ...(info.reasoning?.defaultEffort === undefined
-      ? {}
-      : { defaultEffort: info.reasoning.defaultEffort }),
-  };
-}
-
-/** Collect the catalogue from the live adapters. */
+/** Collect the live catalogue with bounded provider/model counts. */
 export async function collectCatalogue(
-  llm: LlmHost,
+  llm: ModelsLlm,
   providerFilter: string | undefined,
   signal: AbortSignal,
 ): Promise<CatalogueResult> {
-  const all = llm.listProviders();
-  const selected =
+  const registered = llm.listProviders();
+  const providers =
     providerFilter === undefined
-      ? all
-      : all.filter(
+      ? registered
+      : registered.filter(
           (provider) => provider.id === providerFilter || provider.name === providerFilter,
         );
+  const selected = providers.slice(0, MAX_PROVIDERS);
+  const output: ProviderEntry[] = [];
+  let truncated = providers.length > selected.length;
 
-  const providers: ProviderEntry[] = [];
-  let truncated = false;
-
-  for (const provider of selected.slice(0, MAX_PROVIDERS)) {
-    let models;
+  for (const provider of selected) {
+    let models: readonly LlmModelInfo[];
     try {
       models = await llm.listModels(provider.id);
     } catch (error) {
-      providers.push({
+      output.push({
         provider: provider.id,
         name: provider.name,
         models: [],
@@ -107,15 +80,17 @@ export async function collectCatalogue(
       });
       continue;
     }
-    if (models.length > MAX_MODELS_PER_PROVIDER) truncated = true;
-
+    if (models.length > MAX_MODELS) truncated = true;
     const entries: ModelEntry[] = [];
-    for (const model of models.slice(0, MAX_MODELS_PER_PROVIDER)) {
+    for (const model of models.slice(0, MAX_MODELS)) {
       signal.throwIfAborted();
       try {
-        entries.push(
-          entryFromInfo(provider.id, await llm.resolveModelInfo(provider.id, model.id, signal)),
+        const info: LlmResolvedModelInfo = await llm.resolveModelInfo(
+          provider.id,
+          model.id,
+          signal,
         );
+        entries.push(entryFor(provider.id, info));
       } catch (error) {
         entries.push({
           route: `${provider.id}/${model.id}`,
@@ -127,25 +102,23 @@ export async function collectCatalogue(
         });
       }
     }
-    providers.push({ provider: provider.id, name: provider.name, models: entries });
+    output.push({ provider: provider.id, name: provider.name, models: entries });
   }
 
-  if (selected.length > MAX_PROVIDERS) truncated = true;
-
   return {
-    providers,
+    providers: output,
     truncated,
     ...(providerFilter === undefined ? {} : { providerFilter }),
   };
 }
 
+/** Render the catalogue as compact model-facing text. */
 export function renderCatalogue(result: CatalogueResult): string {
   if (result.providers.length === 0) {
     return result.providerFilter === undefined
       ? "No provider is registered with the live adapter registry."
-      : `No provider matches "${result.providerFilter}". Registered providers are listed when \`provider\` is omitted.`;
+      : `No provider matches "${result.providerFilter}".`;
   }
-
   const lines: string[] = [];
   for (const provider of result.providers) {
     lines.push(`${provider.provider} (${provider.name})`);
@@ -162,18 +135,30 @@ export function renderCatalogue(result: CatalogueResult): string {
         model.efforts.length === 0
           ? "no reasoning efforts"
           : `efforts: ${model.efforts.join(", ")}`;
-      const defaultEffort =
-        model.defaultEffort === undefined ? "" : `; default: ${model.defaultEffort}`;
-      const failure = model.error === undefined ? "" : `; error: ${model.error}`;
-      lines.push(`  ${model.route} — ${efforts}${defaultEffort}${failure}`);
+      const fallback = model.defaultEffort === undefined ? "" : `; default: ${model.defaultEffort}`;
+      const error = model.error === undefined ? "" : `; error: ${model.error}`;
+      lines.push(`  ${model.route} — ${efforts}${fallback}${error}`);
     }
   }
-  if (result.truncated)
-    lines.push(
-      "",
-      `Truncated at ${MAX_PROVIDERS} providers and ${MAX_MODELS_PER_PROVIDER} models each.`,
-    );
+  if (result.truncated) lines.push("", "Truncated at the provider/model page limits.");
   return lines.join("\n");
+}
+
+function entryFor(provider: string, info: LlmResolvedModelInfo): ModelEntry {
+  return {
+    route: `${provider}/${info.id}`,
+    id: info.id,
+    name: info.name,
+    ...(info.description === undefined ? {} : { description: info.description }),
+    ...(info.context?.contextWindow === undefined
+      ? {}
+      : { contextWindow: info.context.contextWindow }),
+    ...(info.defaultMaxTokens === undefined ? {} : { maxTokens: info.defaultMaxTokens }),
+    efforts: info.reasoning?.efforts.map((effort) => effort.id) ?? [],
+    ...(info.reasoning?.defaultEffort === undefined
+      ? {}
+      : { defaultEffort: info.reasoning.defaultEffort }),
+  };
 }
 
 const OUTPUT_SCHEMA: JsonSchemaNode = {
@@ -221,14 +206,15 @@ const OUTPUT_SCHEMA: JsonSchemaNode = {
 const TOOL_DESCRIPTION = [
   "List the exact model routes this deployment serves, with each route's advertised reasoning-effort tokens.",
   "",
-  "Read-only. Use it before writing `$DSH_HOME/pstack-models.mdc`: it reports what the live adapters actually serve, so a role line names a route that exists instead of a slug guessed from an upstream name.",
+  "Read-only. Use it before writing `$DSH_HOME/pstack-models.mdc`: it reports what the live adapters actually serve, so a role line names a route that exists instead of a slug guessed from a Cursor name.",
   "",
   "`provider` limits discovery to one registered provider id or display name; omit it to list every provider.",
   "",
-  "A route is written `<provider>/<model>`, and a role line may add `[effort]` using a token from that route's `efforts`. A provider whose discovery fails is reported beside the others rather than dropping the whole catalog.",
+  "A route is written `<provider>/<model>`, and a role line may add `[effort]` using a token from that route's `efforts`.",
 ].join("\n");
 
-export function createPstackModelsTool(llm: LlmHost): ToolDefinition {
+/** Build `pstack_models` for one LLM service. */
+export function createPstackModelsTool(llm: ModelsLlm): ToolDefinition {
   return {
     name: TOOL_NAME,
     description: TOOL_DESCRIPTION,
@@ -238,8 +224,7 @@ export function createPstackModelsTool(llm: LlmHost): ToolDefinition {
       properties: {
         provider: {
           type: "string",
-          description:
-            "A registered provider id or display name to limit discovery to. Omit it to list every provider.",
+          description: "A registered provider id or display name; omit for every provider.",
         },
       },
     },
@@ -250,41 +235,24 @@ export function createPstackModelsTool(llm: LlmHost): ToolDefinition {
       ],
     },
     isConcurrencySafe: () => true,
-    async execute(rawArgs, exec) {
-      const provider = readProviderArgument(rawArgs);
-      const result = await collectCatalogue(llm, provider, exec.signal);
-      return result;
+    async execute(rawArgs, exec: ToolRunContext) {
+      if (typeof rawArgs !== "object" || rawArgs === null || Array.isArray(rawArgs)) {
+        throw new Error("pstack_models takes an object argument");
+      }
+      const provider = (rawArgs as Record<string, unknown>)["provider"];
+      if (provider !== undefined && typeof provider !== "string") {
+        throw new Error("provider must be a string when present");
+      }
+      return collectCatalogue(llm, provider as string | undefined, exec.signal);
     },
   };
 }
 
-function readProviderArgument(raw: unknown): string | undefined {
-  if (raw === null || raw === undefined) return undefined;
-  if (typeof raw !== "object" || Array.isArray(raw))
-    throw new Error("pstack_models arguments must be an object");
-  const provider = (raw as Record<string, unknown>)["provider"];
-  if (provider === undefined) return undefined;
-  if (typeof provider !== "string" || provider.trim() === "") {
-    throw new Error("`provider` must be a non-empty string when present");
-  }
-  return provider.trim();
-}
-
-/** The slice of the Cordis context this row uses. */
-export interface PstackModelsHost {
-  readonly llm: LlmHost;
-  readonly tools: ToolsHost;
-}
-
-/** Register `pstack_models`. */
-export function apply(ctx: PstackModelsHost): void {
+/** Register the directory on one row. */
+export function apply(ctx: Context): void {
   ctx.tools.register(createPstackModelsTool(ctx.llm));
 }
 
 function describeError(error: unknown): string {
-  if (error instanceof Error) {
-    const code = (error as { code?: unknown }).code;
-    return typeof code === "string" ? `${error.message} (${code})` : error.message;
-  }
-  return String(error);
+  return error instanceof Error ? error.message : String(error);
 }
