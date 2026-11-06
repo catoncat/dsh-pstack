@@ -62,21 +62,34 @@ The current review covers 68 Cursor-facing capabilities: 39 direct mappings, 2 o
 
 2. **Restart the profile or open a new Session.**
 
-3. **Initialize role-based model routing.**
+### 🖥️ Visual setup
 
-   ```text
-   /setup-pstack
-   ```
+Use the plugin UI when you want to configure related plugins and role routes.
 
-   The command saves available routes to `$DSH_HOME/pstack-models.mdc`. Without this file, roles inherit the parent model.
+1. Open **Plugins → Installed plugins → dsh-pstack** and click **Configure**.
 
-4. **Start a workflow.**
+   ![Configure entry](./assets/plugin-configure.png)
 
-   Select `poteto-mode` or `poteto-mode-creator` when creating a Session for persistent mode. In another preset, invoke `/poteto-mode` for one task.
+2. In **Recommended plugins**, review the **Recommended**, **Optional**, and **Conflicts** groups. **Enable all** enables only the recommended group.
 
-### ⚙️ Configure role models
+   ![Recommended plugins](./assets/plugin-recommended.png)
 
-To view or edit routes after setup, open **Plugins → Installed plugins → dsh-pstack → Configure**.
+3. Open **Role models**, set the provider, model, and reasoning effort for each role, then save the changed row or use **Save all**.
+
+   ![Role models](./assets/plugin-roles.png)
+
+4. Open **Settings → Agent presets** and confirm **Poteto mode** and **Poteto Creator mode** are available.
+
+   ![Agent presets](./assets/agent-presets.png)
+
+### 🧠 Skill usage
+
+Use presets and commands when you want to run pstack workflows from a Session.
+
+1. **Initialize role routes.** Run `/setup-pstack` once. It writes available routes to `$DSH_HOME/pstack-models.mdc`. Without this file, roles inherit the parent model.
+2. **Choose a preset.** Create a Session with **Poteto mode** or **Poteto Creator mode** for a persistent workflow.
+3. **Run a one-off workflow.** In another preset, type `/poteto-mode` for a single task.
+4. **Use targeted commands.** Pick a command from [Common commands](#️-common-commands).
 
 ## ⌨️ Common commands
 
