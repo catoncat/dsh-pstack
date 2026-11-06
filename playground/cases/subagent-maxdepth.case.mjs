@@ -4,13 +4,26 @@ export default {
   build() {
     return {
       prompt: [
-        "请先用 pstack_subagent 派生一个 general 子代理，让它读取 playground/README.md 并只用一句话总结其中的准备步骤。",
-        "必须通过子代理完成，不要直接回答；拿到子代理结果后再给我最终回答。",
+        "请用 pstack 的普通子代理完成这个任务：读取 playground/README.md，并用一句话总结其中的准备步骤。",
+        "必须由子代理完成，不要自己阅读；拿到子代理结果后再给我最终回答。",
       ].join("\n"),
       verify({ calls }) {
         const subagentCalls = calls.filter((call) => call.tool === "pstack_subagent");
         if (subagentCalls.length === 0) {
           return { ok: false, detail: "模型没有调用 pstack_subagent" };
+        }
+        if (subagentCalls.length > 1) {
+          return {
+            ok: false,
+            detail: `pstack_subagent 调用了 ${subagentCalls.length} 次，期望一次成功`,
+          };
+        }
+        const input = subagentCalls[0].input ?? {};
+        if (input.agent !== "general") {
+          return {
+            ok: false,
+            detail: `pstack_subagent agent=${JSON.stringify(input.agent)}，期望 general`,
+          };
         }
         const zeroCalls = subagentCalls.filter((call) => call.input?.maxDepth === 0);
         if (zeroCalls.length > 0) {
