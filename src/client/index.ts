@@ -31,9 +31,31 @@ interface PstackRolesNamespace {
   save(request: SaveRoleRequest, signal?: AbortSignal): Promise<Result<SaveRoleResult>>;
 }
 
-interface PluginManagerNamespace {
+export interface PluginManagerNamespace {
   listBundles(): Promise<Result<readonly BundleView[]>>;
   setBundleEnabled(name: string, enabled: boolean): Promise<Result<unknown>>;
+}
+
+/**
+ * Build a stable API whose methods resolve the manager at call time.
+ *
+ * The plugin-manager Remote namespace can arrive before or after this plugin's
+ * `apply`, so it must not be captured once here. A missing manager fails only the
+ * recommendation tab when it is used, and a later arrival recovers on refresh.
+ */
+export function createPluginManagerApi(
+  getPluginManager: () => PluginManagerNamespace | undefined,
+): PluginManagerApi {
+  const manager = (): PluginManagerNamespace => {
+    const value = getPluginManager();
+    if (value === undefined) throw new Error("plugin manager is not available yet");
+    return value;
+  };
+  return {
+    listBundles: async () => unwrap(await manager().listBundles()),
+    setBundleEnabled: async (name, enabled) =>
+      toBundleChange(unwrap(await manager().setBundleEnabled(name, enabled))),
+  };
 }
 
 export async function apply(ctx: Context): Promise<() => Promise<void>> {
@@ -45,6 +67,16 @@ export async function apply(ctx: Context): Promise<() => Promise<void>> {
     "pstack-config.locale.plugins",
   );
   ctx.effect(() => ctx.locale.register(NS.roles, catalogs.roles), "pstack-config.locale.roles");
+
+  // Observe the plugin-manager namespace without gating the role action on it.
+  // If it arrives later, the next listBundles call sees it; if it never arrives,
+  // only the recommendation tab reports the problem.
+  let pluginManager: PluginManagerNamespace | undefined;
+  ctx.inject(["remote.pluginManager"], (scope: Context) => {
+    pluginManager = (scope.remote as unknown as { pluginManager?: PluginManagerNamespace })
+      .pluginManager;
+  });
+  const pluginApi = createPluginManagerApi(() => pluginManager);
 
   // `$mount` above installs the namespace, so its dependency is declared only now.
   // Injecting before the await would resolve against a namespace that does not exist yet.
@@ -60,16 +92,6 @@ export async function apply(ctx: Context): Promise<() => Promise<void>> {
       catalogue: async () => unwrap(await pstack.catalogue()),
       save: async (request) => unwrap(await pstack.save(request)),
     };
-    const pluginManager = (ctx.remote as unknown as { pluginManager?: PluginManagerNamespace })
-      .pluginManager;
-    const pluginApi: PluginManagerApi | undefined =
-      pluginManager === undefined
-        ? undefined
-        : {
-            listBundles: async () => unwrap(await pluginManager.listBundles()),
-            setBundleEnabled: async (name, enabled) =>
-              toBundleChange(unwrap(await pluginManager.setBundleEnabled(name, enabled))),
-          };
     const translations = {
       common: ctx.locale.bind(NS.common),
       config: ctx.locale.bind(NS.config),

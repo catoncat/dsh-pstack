@@ -469,4 +469,22 @@ describe("remote adapter unwrap", () => {
 
     expect(document.body.textContent).toContain("remote exploded");
   });
+
+  it("keeps the recommendation tab available with a clear error when plugin manager is absent", async () => {
+    const harness = await mountThroughApply(async () => ({ ok: true, value: snapshotFor() }));
+    const Component = harness.component;
+    await act(async () => {
+      root.render(
+        createElement(Component as never, {
+          subject: { kind: "bundle", pkg: { name: "dsh-pstack" } },
+        }),
+      );
+    });
+    await flush();
+    await click(buttonByText(container, "Configure"));
+
+    expect(document.body.textContent).toContain("Could not read plugin status");
+    expect(document.body.textContent).toContain("plugin manager is not available yet");
+    expect(document.body.textContent).not.toContain("plugin manager unavailable");
+  });
 });

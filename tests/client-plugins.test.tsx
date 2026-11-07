@@ -11,6 +11,7 @@ import {
   type PluginManagerApi,
 } from "../src/client/RecommendedPluginsPage.tsx";
 import { catalogs, type PstackTranslations } from "../src/client/locales/index.ts";
+import { createPluginManagerApi, type PluginManagerNamespace } from "../src/client/index.ts";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -104,6 +105,34 @@ const applications: readonly [ChangeApplication, string, string][] = [
   ["failed", "error", "Could not change"],
   ["cancelled", "neutral", "was cancelled"],
 ];
+
+describe("plugin manager API resolution", () => {
+  function manager(): PluginManagerNamespace {
+    return {
+      listBundles: async () => ({ ok: true, value: [bundle(FORGE)] }),
+      setBundleEnabled: async () => ({
+        ok: true,
+        value: { application: "restart-required", restartReason: "no-hmr" },
+      }),
+    };
+  }
+
+  it("fails only when called with no manager, then recovers when one arrives", async () => {
+    let current: PluginManagerNamespace | undefined;
+    const api = createPluginManagerApi(() => current);
+    await expect(api.listBundles()).rejects.toThrow("plugin manager is not available yet");
+    current = manager();
+    await expect(api.listBundles()).resolves.toEqual([bundle(FORGE)]);
+  });
+
+  it("maps the Host change result through the current manager", async () => {
+    const api = createPluginManagerApi(() => manager());
+    await expect(api.setBundleEnabled(FORGE, true)).resolves.toEqual({
+      application: "restart-required",
+      restartReason: "no-hmr",
+    });
+  });
+});
 
 describe("recommended plugin change outcomes", () => {
   for (const [application, tone, text] of applications) {
