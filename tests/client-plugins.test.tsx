@@ -70,6 +70,7 @@ afterEach(() => {
     root.unmount();
   });
   container.remove();
+  document.body.innerHTML = "";
 });
 
 async function flush(): Promise<void> {
@@ -102,6 +103,10 @@ async function click(element: HTMLElement): Promise<void> {
 
 function message(): HTMLElement {
   return container.querySelector<HTMLElement>(".pstack-inline-message")!;
+}
+
+function toast(): HTMLElement {
+  return document.body.querySelector<HTMLElement>(".pstack-toast")!;
 }
 
 function apiFor(result: (name: string) => ChangeResult): PluginManagerApi {
@@ -212,15 +217,16 @@ describe("enable-all bulk summary", () => {
   it("counts every settled change", async () => {
     await mount(apiFor(() => change("applied")));
     await click(enableAllButton());
-    expect(message().dataset["tone"]).toBe("success");
-    expect(message().textContent).toContain("Enabled 2 recommended plugins");
+    expect(toast().dataset["tone"]).toBe("success");
+    expect(toast().textContent).toContain("Enabled 2 recommended plugins");
+    expect(container.querySelector(".pstack-inline-message")).toBeNull();
   });
 
   it("counts settled versus unsettled outcomes", async () => {
     await mount(apiFor((name) => (name === FORGE ? change("applied") : change("cancelled"))));
     await click(enableAllButton());
-    expect(message().dataset["tone"]).toBe("error");
-    expect(message().textContent).toContain(
+    expect(toast().dataset["tone"]).toBe("error");
+    expect(toast().textContent).toContain(
       "Changed 1 recommended plugins, 0 require a restart, 1 not applied",
     );
   });
@@ -228,9 +234,10 @@ describe("enable-all bulk summary", () => {
   it("reports a restart instead of claiming all plugins are enabled", async () => {
     await mount(apiFor(() => ({ ...change("restart-required"), restartReason: "no-hmr" })));
     await click(enableAllButton());
-    expect(message().dataset["tone"]).toBe("warn");
-    expect(message().textContent).toContain("2 recommended plugins require a restart");
-    expect(message().textContent).not.toContain("Enabled 2 recommended plugins");
+    expect(toast().dataset["tone"]).toBe("warn");
+    expect(toast().textContent).toContain("2 recommended plugins require a restart");
+    expect(toast().textContent).not.toContain("Enabled 2 recommended plugins");
+    expect(container.querySelector(".pstack-inline-message")).toBeNull();
   });
 
   it("includes restart and unsettled counts in a mixed summary", async () => {
@@ -242,8 +249,8 @@ describe("enable-all bulk summary", () => {
       ),
     );
     await click(enableAllButton());
-    expect(message().dataset["tone"]).toBe("error");
-    expect(message().textContent).toContain(
+    expect(toast().dataset["tone"]).toBe("error");
+    expect(toast().textContent).toContain(
       "Changed 1 recommended plugins, 1 require a restart, 1 not applied",
     );
   });

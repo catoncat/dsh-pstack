@@ -587,6 +587,9 @@ const CSS = `
 .pstack-toast[data-tone="success"] {
   color: var(--dsw-alias-state-success-primary);
 }
+.pstack-toast[data-tone="warn"] {
+  color: var(--dsw-alias-state-warn-primary);
+}
 .pstack-toast[data-tone="error"] {
   color: var(--dsw-alias-state-error-primary);
 }

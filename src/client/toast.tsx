@@ -3,11 +3,11 @@
 import { useEffect, useState, type ReactElement } from "react";
 import { createPortal } from "react-dom";
 
-import { IconAlert, IconCheck } from "./icons.tsx";
+import { IconAlert, IconCheck, IconInfo } from "./icons.tsx";
 import { ensurePstackStyles } from "./styles.ts";
 
 export interface ToastMessage {
-  readonly tone: "success" | "error";
+  readonly tone: "success" | "warn" | "error" | "neutral";
   readonly text: string;
 }
 
@@ -34,11 +34,18 @@ export function Toast({
     <div
       className="pstack-toast"
       data-tone={current.tone}
-      role={current.tone === "error" ? "alert" : "status"}
+      role={current.tone === "error" || current.tone === "warn" ? "alert" : "status"}
     >
-      {current.tone === "success" ? <IconCheck size={12} /> : <IconAlert size={12} />}
+      <ToastIcon tone={current.tone} />
       {current.text}
     </div>,
     document.body,
   );
+}
+
+function ToastIcon({ tone }: { readonly tone: ToastMessage["tone"] }): ReactElement | null {
+  if (tone === "success") return <IconCheck size={12} />;
+  if (tone === "error") return <IconAlert size={12} />;
+  if (tone === "warn") return <IconInfo size={12} />;
+  return null;
 }

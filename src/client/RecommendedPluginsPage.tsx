@@ -19,6 +19,7 @@ import {
   type IconComponent,
 } from "./icons.tsx";
 import { ensurePstackStyles } from "./styles.ts";
+import { Toast, type ToastMessage } from "./toast.tsx";
 import { Button, IconButton, Spinner, Status, Switch, type StatusTone } from "./ui.tsx";
 import type { PstackTranslations, PluginsKey } from "./locales/index.ts";
 
@@ -135,7 +136,7 @@ export function RecommendedPluginsView(props: {
   const [error, setError] = useState<string | undefined>();
   const [busy, setBusy] = useState<string | undefined>();
   const [messages, setMessages] = useState<Record<string, PluginNotice>>({});
-  const [allMessage, setAllMessage] = useState<PluginNotice | undefined>();
+  const [toast, setToast] = useState<ToastMessage | undefined>();
   const { api, translations } = props;
   const t = translations.plugins;
   const common = translations.common;
@@ -181,7 +182,7 @@ export function RecommendedPluginsView(props: {
   const toggle = async (bundle: BundleInfo): Promise<void> => {
     if (api === undefined) return;
     setBusy(bundle.name);
-    setAllMessage(undefined);
+    setToast(undefined);
     setMessages((current) => {
       const next = { ...current };
       delete next[bundle.name];
@@ -217,7 +218,7 @@ export function RecommendedPluginsView(props: {
       );
     if (targets.length === 0) return;
     setBusy(ALL);
-    setAllMessage(undefined);
+    setToast(undefined);
     let settled = 0;
     let restarts = 0;
     let unsettled = 0;
@@ -233,7 +234,7 @@ export function RecommendedPluginsView(props: {
     }
     await load();
     setBusy(undefined);
-    setAllMessage(
+    setToast(
       unsettled > 0
         ? { tone: "error", text: t("enableAllPartial", { settled, restarts, unsettled }) }
         : restarts > 0
@@ -292,16 +293,7 @@ export function RecommendedPluginsView(props: {
           <span>{error}</span>
         </div>
       )}
-      {allMessage === undefined ? null : (
-        <span
-          className="pstack-inline-message"
-          data-tone={allMessage.tone}
-          style={{ marginBottom: 10 }}
-        >
-          <NoticeIcon tone={allMessage.tone} />
-          {allMessage.text}
-        </span>
-      )}
+      <Toast message={toast} />
       <div className="pstack-plugin-groups">
         {PLUGIN_GROUPS.map((group) => {
           const enabledInGroup = group.plugins.filter(
