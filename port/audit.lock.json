@@ -610,21 +610,21 @@
     "CAP-065": {
       "key": "Pele",
       "origin": "override",
-      "decision": "插件实现",
-      "recommendation": "🟠 插件实现。缺少 `pele` 时说明并询问是否安装到缓存目录；安装后支持 SVG 渲染，不安装则返回 Mermaid 文本。",
-      "requirement": "插件提供可选的 Pele 渲染步骤。缺失时说明并询问是否安装到缓存目录，安装后调用 `render` 输出 SVG；不安装时返回 Mermaid 文本。验收：安装后渲染一张 500 状态图；未安装时报告并回退 Mermaid。",
-      "conflict": "Pele 与 Mermaid 是两条渲染路径。Pele 需要安装依赖，Mermaid 文本始终可用。约定优先 Pele，缺依赖时回退 Mermaid。",
-      "residual": "Pele 安装需要网络与用户同意，离线时只能给 Mermaid 文本。",
+      "decision": "舍弃",
+      "recommendation": "🔴 舍弃。不提供图表渲染；statechart 只输出 Mermaid 文本，用户需要图片时自行渲染。",
+      "requirement": "无。插件不实现渲染步骤。",
+      "conflict": "Mermaid 文本与外部渲染器是两条路径。插件只输出 Mermaid 文本，需要图片时由用户自行渲染。",
+      "residual": "没有内置 SVG 输出，图片需用户在插件之外生成。",
       "sourceDigest": "sha256:fc315f98ff60abd84409f1e9ca9aa0440627119715911432f11aa59e96dcdd7d"
     },
     "CAP-066": {
       "key": "视频渲染",
       "origin": "override",
-      "decision": "插件实现",
-      "recommendation": "🟠 插件实现。缺少 ffmpeg 或 ImageMagick 时说明并询问是否安装；安装后支持视频渲染，不安装则只返回文字摘要。",
-      "requirement": "插件提供可选的视频渲染步骤。缺少 ffmpeg 与 ImageMagick 时说明并询问是否安装；安装后按 `ketchup-video` 生成 mp4。验收：用两页幻灯片渲染一段 5 秒视频并抽帧检查字幕。",
-      "conflict": "视频渲染依赖外部渲染器。`ketchup` 与 `ketchup-video` 共用截图素材，渲染失败时只回复文字摘要。",
-      "residual": "不安装 ffmpeg 与 ImageMagick 时视频能力不可用。",
+      "decision": "舍弃",
+      "recommendation": "🔴 舍弃。不提供视频渲染；需要视频时由用户使用外部工具。",
+      "requirement": "无。插件不实现视频渲染步骤。",
+      "conflict": "`ketchup` 与 `ketchup-video` 共用截图素材。插件只提供文字摘要，视频需用户在插件之外生成。",
+      "residual": "没有内置视频输出，`ketchup-video` 只能说明无法渲染。",
       "sourceDigest": "sha256:9b7ff9c89fd24d5e4e4f5879561230a44f490122ddc883f0e6065fd013b515f6"
     },
     "CAP-067": {
