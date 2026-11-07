@@ -55,8 +55,7 @@ export default defineConfig({
     },
   ],
   test: {
-    include: ["tests/**/*.test.{ts,tsx}"],
-    passWithNoTests: true,
+    include: ["tests/**/*.test.{ts,tsx,mjs}"],
   },
   run: {
     tasks: {
