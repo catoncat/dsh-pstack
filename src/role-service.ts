@@ -4,11 +4,12 @@ import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
 import type { LlmRuntime } from "@deepseek-ai/dsh-llm";
 import { TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
+import type {} from "@deepseek-ai/dsh-typert-registry";
 
 import { collectCatalogue, type CatalogueResult } from "./models.ts";
 import { modelsFilePath, readRoleConfiguration, resolveDshHome } from "./role-config.ts";
 import { saveRoleConfiguration, snapshotFromConfiguration } from "./role-editor.ts";
-import { pstackRolesRemote, ROLES_SERVICE } from "./role-remote.ts";
+import { pstackRolesHostContribution, ROLES_SERVICE } from "./role-remote.ts";
 import type { RoleFileSnapshot, SaveRoleRequest, SaveRoleResult } from "./role-wire.ts";
 
 /** Read and write `$DSH_HOME/pstack-models.mdc` for the Web settings page. */
@@ -20,7 +21,7 @@ export class PstackRolesService extends TypertRemoteService {
   }
 
   protected [Service.init](): void {
-    this.ctx.typert.remotes.register(pstackRolesRemote);
+    this.ctx.typert.register(pstackRolesHostContribution);
   }
 
   /** Current path, status, values, and per-line issues. */

@@ -81,6 +81,7 @@
     "@deepseek-ai/dsh-subagent": "catalog:types",
     "@deepseek-ai/dsh-tools": "catalog:types",
     "@deepseek-ai/dsh-typert-protocol": "catalog:types",
+    "@deepseek-ai/dsh-typert-registry": "catalog:types",
     "@deepseek-ai/dsh-working-directory": "catalog:types",
     "@deepseek-ai/schemastery": "catalog:types",
     "@types/node": "catalog:types",

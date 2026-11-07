@@ -1,9 +1,23 @@
 import { describe, expect, it } from "vite-plus/test";
 import type { TypertClientRemote } from "@deepseek-ai/dsh-typert-protocol";
 
-import { pstackRolesRemote } from "../src/role-remote.ts";
+import { pstackRolesHostContribution, pstackRolesRemote } from "../src/role-remote.ts";
 
 describe("pstack role Remote contribution", () => {
+  it("registers strict Host invocations for every Gateway endpoint", () => {
+    expect(pstackRolesHostContribution.face).toBe("host");
+    expect(pstackRolesHostContribution.package).toBe(pstackRolesRemote.package);
+    expect(
+      pstackRolesHostContribution.invocations.map(
+        (descriptor) => descriptor.namespace + "/" + descriptor.method,
+      ),
+    ).toEqual(["pstackRoles/status", "pstackRoles/catalogue", "pstackRoles/save"]);
+    for (const descriptor of pstackRolesHostContribution.invocations) {
+      expect(descriptor.service).toBe("pstackRoles");
+      expect(descriptor.invocation.kind).toBe("direct");
+    }
+  });
+
   it("declares only status, catalogue, and save with strict result decoders", () => {
     expect(pstackRolesRemote.descriptors.map((descriptor) => descriptor.method)).toEqual([
       "status",

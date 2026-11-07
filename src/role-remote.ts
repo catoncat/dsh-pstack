@@ -17,6 +17,7 @@ import type {
   TypertRemoteMethod,
   TypertSchema,
 } from "@deepseek-ai/dsh-typert-protocol";
+import type { TypertContribution } from "@deepseek-ai/dsh-typert-registry";
 
 import type { CatalogueResult } from "./models.ts";
 import {
@@ -153,5 +154,14 @@ export const pstackRolesRemote: TypertRemoteInfo = {
   } as TypertRemoteInfo["methods"],
 };
 
-/** Same contribution typed for the Host side. */
+/** Register the Host's strict invocation definitions in `ctx.typert.local`. */
+export const pstackRolesHostContribution: TypertContribution = {
+  package: REMOTE_PACKAGE,
+  face: "host",
+  schemas: [],
+  model: { services: [], events: [], objects: [] },
+  invocations: pstackRolesRemote.descriptors,
+};
+
+/** Same Remote contribution typed for the Client side. */
 export const pstackRolesContribution: TypertRemoteContribution = pstackRolesRemote;
