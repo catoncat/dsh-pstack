@@ -16,13 +16,13 @@ import {
   PSTACK_MODELS_FILENAME,
   ROLE_MANIFEST,
   findRole,
-  normalizeRoleName,
+  type InheritAlias,
   type RoleSpec,
 } from "./role-manifest.ts";
 
 /** One resolved child route. */
 export type Route =
-  | { readonly kind: "inherit"; readonly alias?: "inherit-parent" | "auto" }
+  | { readonly kind: "inherit"; readonly alias?: InheritAlias }
   | {
       readonly kind: "route";
       readonly provider: string;
@@ -303,50 +303,6 @@ export function requireRole(raw: string): RoleSpec {
   throw new Error(
     `unknown pstack role ${JSON.stringify(raw)}; role names come from the pstack role manifest, not free text. Known roles: ${ROLE_MANIFEST.map((role) => role.key).join(", ")}`,
   );
-}
-
-/** Suggest the closest role keys for user-facing diagnostics. */
-export function suggestRoles(raw: string, limit = 3): readonly string[] {
-  const target = normalizeRoleName(raw);
-  if (target === "") return [];
-  return ROLE_MANIFEST.map((role) => {
-    const shared = sharedTokenCount(target, role.key);
-    const contains = role.key.includes(target) || target.includes(role.key);
-    return {
-      key: role.key,
-      score: (contains ? 1000 : 0) + shared * 100 - editDistance(target, role.key),
-    };
-  })
-    .filter((entry) => entry.score > 0)
-    .sort((left, right) => right.score - left.score)
-    .slice(0, limit)
-    .map((entry) => entry.key);
-}
-
-function sharedTokenCount(left: string, right: string): number {
-  const words = new Set(left.split(/[^a-z0-9]+/).filter(Boolean));
-  return right
-    .split(/[^a-z0-9]+/)
-    .filter(Boolean)
-    .filter((word) => words.has(word)).length;
-}
-
-function editDistance(left: string, right: string): number {
-  const rows = Array.from({ length: right.length + 1 }, (_, index) => index);
-  for (let leftIndex = 1; leftIndex <= left.length; leftIndex += 1) {
-    let previous = rows[0]!;
-    rows[0] = leftIndex;
-    for (let rightIndex = 1; rightIndex <= right.length; rightIndex += 1) {
-      const current = rows[rightIndex]!;
-      rows[rightIndex] = Math.min(
-        rows[rightIndex]! + 1,
-        rows[rightIndex - 1]! + 1,
-        previous + (left[leftIndex - 1] === right[rightIndex - 1] ? 0 : 1),
-      );
-      previous = current;
-    }
-  }
-  return rows[right.length]!;
 }
 
 function isMissingFile(error: unknown): boolean {

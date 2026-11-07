@@ -2,8 +2,8 @@
  * Remote metadata for the pstack role settings page.
  *
  * The Host registers these descriptors with Typert and the Client mounts the
- * same contribution. Everything here is plain metadata; this module never
- * imports a runtime package, so it is safe to bundle for the browser.
+ * same contribution. The descriptors and their parsers are browser-safe and
+ * import no Node runtime.
  */
 
 import type {
@@ -18,6 +18,17 @@ import type {
   TypertSchema,
 } from "@deepseek-ai/dsh-typert-protocol";
 
+import type { CatalogueResult } from "./models.ts";
+import {
+  parseCatalogueResult,
+  parseRoleFileSnapshot,
+  parseSaveRoleRequest,
+  parseSaveRoleResult,
+  type RoleFileSnapshot,
+  type SaveRoleRequest,
+  type SaveRoleResult,
+} from "./role-wire.ts";
+
 /** npm package owning these methods. */
 export const REMOTE_PACKAGE = "dsh-pstack";
 
@@ -26,36 +37,32 @@ export const ROLES_SERVICE = "pstackRoles";
 
 type StrictCodec<Value> = Extract<TypertCodec<Value>, { readonly mode: "strict" }>;
 
-function codec<Value>(typeSymbol: string): StrictCodec<Value> {
+function codec<Value>(typeSymbol: string, parse: (value: unknown) => Value): StrictCodec<Value> {
   return {
     mode: "strict",
     typeSymbol,
-    create: (): TypertSchema<Value> => ({
-      parse(value: unknown): Value {
-        return value as Value;
-      },
-    }),
+    create: (): TypertSchema<Value> => ({ parse }),
+    decode: parse,
   };
 }
 
-function parameter(name: string, typeSymbol: string): InvocationParameterDescriptor {
-  return { name, wire: name, source: "json", codec: codec(typeSymbol) };
+function parameter(
+  name: string,
+  typeSymbol: string,
+  parse: (value: unknown) => unknown,
+): InvocationParameterDescriptor {
+  return { name, wire: name, source: "json", codec: codec(typeSymbol, parse) };
 }
 
-interface DirectOptions<Input extends object, Output> {
+interface DirectOptions<Output> {
   readonly method: string;
   readonly parameters: readonly InvocationParameterDescriptor[];
   readonly result: StrictCodec<Output>;
   readonly cancellation?: boolean;
-  readonly invoke: (
-    remote: TypertClientRemote,
-    input: Input,
-    signal?: AbortSignal,
-  ) => Promise<RemoteResult<Output>>;
 }
 
 function directMethod<Input extends object, Output>(
-  options: DirectOptions<Input, Output>,
+  options: DirectOptions<Output>,
 ): TypertRemoteMethod<Input, Output> {
   const descriptor: InvocationDescriptor = {
     id: `${REMOTE_PACKAGE}#${ROLES_SERVICE}/${options.method}`,
@@ -76,7 +83,13 @@ function directMethod<Input extends object, Output>(
             if (typeof value !== "object" || value === null || Array.isArray(value)) {
               throw new TypeError("the method input must be an object");
             }
-            return value as Input;
+            const record = value as Record<string, unknown>;
+            const parsed: Record<string, unknown> = {};
+            for (const item of options.parameters) {
+              if (item.codec.mode !== "strict") throw new TypeError("expected a strict codec");
+              parsed[item.wire] = item.codec.create().parse(record[item.wire]);
+            }
+            return parsed as Input;
           },
         }),
       };
@@ -100,63 +113,43 @@ function directMethod<Input extends object, Output>(
   return method as TypertRemoteMethod<Input, Output>;
 }
 
-const statusMethod = directMethod<Record<string, never>, unknown>({
+const statusMethod = directMethod<Record<string, never>, RoleFileSnapshot>({
   method: "status",
   parameters: [],
-  result: codec("PstackRoleFileSnapshot"),
-  invoke: (remote) => (remote as unknown as PstackRolesNamespace).pstackRoles.status(),
+  result: codec("PstackRoleFileSnapshot", parseRoleFileSnapshot),
 });
 
-const catalogueMethod = directMethod<Record<string, never>, unknown>({
+const catalogueMethod = directMethod<Record<string, never>, CatalogueResult>({
   method: "catalogue",
   parameters: [],
-  result: codec("PstackRoleCatalogue"),
+  result: codec("PstackRoleCatalogue", parseCatalogueResult),
   cancellation: true,
-  invoke: (remote, _input, signal) =>
-    (remote as unknown as PstackRolesNamespace).pstackRoles.catalogue(signal),
 });
 
-const saveMethod = directMethod<Record<string, unknown>, unknown>({
+const saveMethod = directMethod<{ request: SaveRoleRequest }, SaveRoleResult>({
   method: "save",
-  parameters: [parameter("request", "PstackSaveRoleRequest")],
-  result: codec("PstackSaveRoleResult"),
+  parameters: [parameter("request", "PstackSaveRoleRequest", parseSaveRoleRequest)],
+  result: codec("PstackSaveRoleResult", parseSaveRoleResult),
   cancellation: true,
-  invoke: (remote, input, signal) =>
-    (remote as unknown as PstackRolesNamespace).pstackRoles.save(input, signal),
-});
-
-const saveBudgetMethod = directMethod<Record<string, unknown>, unknown>({
-  method: "saveBudget",
-  parameters: [parameter("request", "PstackSaveBudgetRequest")],
-  result: codec("PstackSaveBudgetResult"),
-  invoke: (remote, input) =>
-    (remote as unknown as PstackRolesNamespace).pstackRoles.saveBudget(input),
 });
 
 /** Typed Client face installed by `$mount()`. */
 export interface PstackRolesNamespace {
   readonly pstackRoles: {
-    status(): Promise<RemoteResult<unknown>>;
-    catalogue(signal?: AbortSignal): Promise<RemoteResult<unknown>>;
-    save(request: unknown, signal?: AbortSignal): Promise<RemoteResult<unknown>>;
-    saveBudget(request: unknown): Promise<RemoteResult<unknown>>;
+    status(): Promise<RemoteResult<RoleFileSnapshot>>;
+    catalogue(signal?: AbortSignal): Promise<RemoteResult<CatalogueResult>>;
+    save(request: SaveRoleRequest, signal?: AbortSignal): Promise<RemoteResult<SaveRoleResult>>;
   };
 }
 
 /** Mountable contribution shared by Host registration and Client `$mount`. */
 export const pstackRolesRemote: TypertRemoteInfo = {
   package: REMOTE_PACKAGE,
-  descriptors: [
-    statusMethod,
-    catalogueMethod,
-    saveMethod,
-    saveBudgetMethod,
-  ] as InvocationDescriptor[],
+  descriptors: [statusMethod, catalogueMethod, saveMethod] as InvocationDescriptor[],
   methods: {
     [`${ROLES_SERVICE}/status`]: statusMethod,
     [`${ROLES_SERVICE}/catalogue`]: catalogueMethod,
     [`${ROLES_SERVICE}/save`]: saveMethod,
-    [`${ROLES_SERVICE}/saveBudget`]: saveBudgetMethod,
   } as TypertRemoteInfo["methods"],
 };
 

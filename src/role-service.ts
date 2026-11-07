@@ -7,19 +7,9 @@ import { TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
 
 import { collectCatalogue, type ModelsLlm } from "./models.ts";
 import { modelsFilePath, readRoleConfiguration, resolveDshHome } from "./role-config.ts";
-import {
-  saveBudgetConfiguration,
-  saveRoleConfiguration,
-  snapshotFromConfiguration,
-} from "./role-editor.ts";
+import { saveRoleConfiguration, snapshotFromConfiguration } from "./role-editor.ts";
 import { pstackRolesRemote, REMOTE_PACKAGE, ROLES_SERVICE } from "./role-remote.ts";
-import type {
-  RoleFileSnapshot,
-  SaveBudgetRequest,
-  SaveBudgetResult,
-  SaveRoleRequest,
-  SaveRoleResult,
-} from "./role-wire.ts";
+import type { RoleFileSnapshot, SaveRoleRequest, SaveRoleResult } from "./role-wire.ts";
 
 interface TypertHost {
   register(contribution: {
@@ -69,11 +59,6 @@ export class PstackRolesService extends TypertRemoteService {
   async save(request: SaveRoleRequest, signal: AbortSignal): Promise<SaveRoleResult> {
     signal.throwIfAborted();
     return saveRoleConfiguration(roleFilePath(), request, this.llm, signal);
-  }
-
-  /** Save the budget line and return the reloaded snapshot. */
-  saveBudget(request: SaveBudgetRequest): SaveBudgetResult {
-    return saveBudgetConfiguration(roleFilePath(), request);
   }
 
   private get llm(): ModelsLlm {

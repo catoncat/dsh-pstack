@@ -7,7 +7,8 @@
  */
 
 /** Whether a role holds one route or a comma-separated list of routes. */
-export type RoleShape = "single" | "list";
+export const ROLE_SHAPES = ["single", "list"] as const;
+export type RoleShape = (typeof ROLE_SHAPES)[number];
 
 /** One role accepted by `pstack_subagent`'s `role` field. */
 export interface RoleSpec {
@@ -23,6 +24,7 @@ export const PSTACK_MODELS_FILENAME = "pstack-models.mdc";
 
 /** Values that resolve to "send no route override and inherit the parent route". */
 export const INHERIT_ALIASES = ["inherit-parent", "auto"] as const;
+export type InheritAlias = (typeof INHERIT_ALIASES)[number];
 
 /** The 17 roles, in the order `setup-pstack` documents them. */
 export const ROLE_MANIFEST = [

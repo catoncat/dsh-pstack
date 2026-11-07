@@ -10,13 +10,10 @@ import type { Context } from "@deepseek-ai/cordis";
 import type { LlmModelInfo, LlmResolvedModelInfo, LlmRuntime } from "@deepseek-ai/dsh-llm";
 import type { JsonSchemaNode, ToolDefinition, ToolRunContext } from "@deepseek-ai/dsh-tools";
 
-/** Cordis row name. */
 export const name = "pstack-models";
 
-/** The services this row requires. */
 export const inject = ["llm", "tools"];
 
-/** Model-facing tool name. */
 export const TOOL_NAME = "pstack_models";
 
 const MAX_PROVIDERS = 64;
@@ -248,7 +245,6 @@ export function createPstackModelsTool(llm: ModelsLlm): ToolDefinition {
   };
 }
 
-/** Register the directory on one row. */
 export function apply(ctx: Context): void {
   ctx.tools.register(createPstackModelsTool(ctx.llm));
 }

@@ -48,7 +48,10 @@ describe("pstack_skill", () => {
     const tool = createPstackSkillTool(skills);
     const result = await tool.execute({ name: "how" }, exec);
     expect(result).toMatchObject({ name: "how", provider: "pstack", content: "# How\n" });
-    expect(renderLoadedSkill(result as never)).toContain('<skill_content name="how">');
+    const rendered = renderLoadedSkill(result as never);
+    expect(rendered).toContain('<skill_content name="how">');
+    expect(rendered).toContain("Base directory for this skill:");
+    expect(rendered).toContain("Load referenced resources only as needed.");
   });
 
   it("reads a relative resource and refuses traversal", async () => {
@@ -60,6 +63,15 @@ describe("pstack_skill", () => {
     await expect(readSkillResource(definition, "../secret.txt")).rejects.toThrow(
       /escapes the skill directory/,
     );
+  });
+
+  it("rejects an invalid skill name before querying the registry", async () => {
+    const tool = createPstackSkillTool({
+      get: async () => {
+        throw new Error("must not be called");
+      },
+    });
+    await expect(tool.execute({ name: "../secret" }, exec)).rejects.toThrow("invalid skill name");
   });
 
   it("reports an unknown skill", async () => {

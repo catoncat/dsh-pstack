@@ -12,10 +12,8 @@ import type { Context } from "@deepseek-ai/cordis";
 
 import { HARNESS_DOC_PATH, POTETO_MODE_SKILL_PATH } from "./paths.ts";
 
-/** Cordis row name. */
 export const name = "pstack-poteto-mode";
 
-/** The services this row requires. */
 export const inject = ["systemPrompt"];
 
 /** Stable section name. */
@@ -77,7 +75,6 @@ export function createPotetoModeSection(
   return { name: SECTION_NAME, order: SECTION_ORDER, interpolate: false, text };
 }
 
-/** Register the persistent section on this row. */
 export function apply(ctx: Context): void {
   assertNoAgentTeams(ctx);
   const host = ctx as unknown as SystemPromptHost;

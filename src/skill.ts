@@ -13,13 +13,10 @@ import type { Context } from "@deepseek-ai/cordis";
 import type { SkillDefinition, SkillResourceBase, SkillViewOptions } from "@deepseek-ai/dsh-skill";
 import type { JsonSchemaNode, ToolDefinition, ToolRunContext } from "@deepseek-ai/dsh-tools";
 
-/** Cordis row name. */
 export const name = "pstack-skill";
 
-/** The services this row requires. */
 export const inject = ["skills", "tools"];
 
-/** Model-facing tool name. */
 export const TOOL_NAME = "pstack_skill";
 
 const SKILL_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -53,12 +50,12 @@ export function renderLoadedSkill(result: LoadSkillResult): string {
   } else if (result.resourceBase.kind === "directory") {
     lines.push(
       `Base directory for this skill: ${escapeText(result.resourceBase.path)}`,
-      "Resolve relative paths mentioned by this skill against the base directory before using them.",
+      "Resolve relative paths mentioned by this skill against the base directory before using them. Load referenced resources only as needed.",
     );
   } else if (result.resourceBase.kind === "url") {
     lines.push(
       `Base URL for this skill: ${escapeText(result.resourceBase.url)}`,
-      "Resolve relative URLs mentioned by this skill against the base URL before using them.",
+      "Resolve relative URLs mentioned by this skill against the base URL before using them. Load referenced resources only as needed.",
     );
   } else {
     lines.push(
@@ -236,7 +233,6 @@ export function createPstackSkillTool(skills: SkillsHost): ToolDefinition {
   };
 }
 
-/** Register `pstack_skill` on one row. */
 export function apply(ctx: Context): void {
   ctx.tools.register(createPstackSkillTool(ctx.skills));
 }

@@ -9,10 +9,8 @@
 import type { Context } from "@deepseek-ai/cordis";
 import { setSandboxMode } from "@deepseek-ai/dsh-sandbox-policy";
 
-/** Cordis row name. */
 export const name = "pstack-readonly";
 
-/** Register the policy seed. */
 export function apply(ctx: Context): void {
   ctx.effect(() =>
     ctx.on("agent/created", ({ agent }) => {
