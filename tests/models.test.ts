@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { collectCatalogue, renderCatalogue, type ModelsLlm } from "../src/models.ts";
+import type { LlmRuntime } from "@deepseek-ai/dsh-llm";
+
+import { collectCatalogue, renderCatalogue } from "../src/models.ts";
 
 const signal = new AbortController().signal;
 
@@ -25,7 +27,7 @@ const llm = {
       defaultEffort: "high",
     },
   }),
-} as unknown as ModelsLlm;
+} as unknown as LlmRuntime;
 
 describe("pstack_models", () => {
   it("lists live providers, routes, and efforts", async () => {

@@ -2,28 +2,14 @@
 
 import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
-import type {} from "@deepseek-ai/dsh-llm";
+import type { LlmRuntime } from "@deepseek-ai/dsh-llm";
 import { TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
 
-import { collectCatalogue, type ModelsLlm } from "./models.ts";
+import { collectCatalogue, type CatalogueResult } from "./models.ts";
 import { modelsFilePath, readRoleConfiguration, resolveDshHome } from "./role-config.ts";
 import { saveRoleConfiguration, snapshotFromConfiguration } from "./role-editor.ts";
-import { pstackRolesRemote, REMOTE_PACKAGE, ROLES_SERVICE } from "./role-remote.ts";
+import { pstackRolesRemote, ROLES_SERVICE } from "./role-remote.ts";
 import type { RoleFileSnapshot, SaveRoleRequest, SaveRoleResult } from "./role-wire.ts";
-
-interface TypertHost {
-  register(contribution: {
-    readonly package: string;
-    readonly face: "host";
-    readonly schemas: readonly unknown[];
-    readonly model: {
-      readonly services: readonly unknown[];
-      readonly events: readonly unknown[];
-      readonly objects: readonly unknown[];
-    };
-    readonly invocations: unknown;
-  }): unknown;
-}
 
 /** Read and write `$DSH_HOME/pstack-models.mdc` for the Web settings page. */
 export class PstackRolesService extends TypertRemoteService {
@@ -34,15 +20,7 @@ export class PstackRolesService extends TypertRemoteService {
   }
 
   protected [Service.init](): void {
-    const typert = (this.ctx as unknown as { typert?: TypertHost }).typert;
-    if (typert === undefined) throw new Error("pstack-roles requires the Typert registry service");
-    typert.register({
-      package: REMOTE_PACKAGE,
-      face: "host",
-      schemas: [],
-      model: { services: [], events: [], objects: [] },
-      invocations: pstackRolesRemote.descriptors,
-    });
+    this.ctx.typert.remotes.register(pstackRolesRemote);
   }
 
   /** Current path, status, values, and per-line issues. */
@@ -51,7 +29,7 @@ export class PstackRolesService extends TypertRemoteService {
   }
 
   /** The live model directory used by the page's selectors. */
-  async catalogue(signal: AbortSignal): Promise<unknown> {
+  async catalogue(signal: AbortSignal): Promise<CatalogueResult> {
     return collectCatalogue(this.llm, undefined, signal);
   }
 
@@ -61,7 +39,7 @@ export class PstackRolesService extends TypertRemoteService {
     return saveRoleConfiguration(roleFilePath(), request, this.llm, signal);
   }
 
-  private get llm(): ModelsLlm {
+  private get llm(): LlmRuntime {
     return this.ctx.llm;
   }
 }

@@ -7,7 +7,7 @@ import { apply, inject } from "../src/client/index.ts";
 import { ROLE_COPY } from "../src/client/role-copy.ts";
 import { ROLE_MANIFEST } from "../src/role-manifest.ts";
 import type { PstackRolesNamespace } from "../src/role-remote.ts";
-import type { BundleView } from "../src/client/RecommendedPluginsPage.tsx";
+import type { BundleInfo } from "@deepseek-ai/dsh-api-remotes/client";
 import { RecommendedPluginsView } from "../src/client/RecommendedPluginsPage.tsx";
 import { catalogs, type PstackTranslations } from "../src/client/locales/index.ts";
 import { FALLBACK_LOCALE } from "../src/preset-copy.ts";
@@ -56,10 +56,15 @@ describe("pstack client", () => {
     const dictionaries = new Map<string, Dictionaries>();
     const pstackRoles = roleApi() as unknown as PstackRolesNamespace["pstackRoles"];
     const pluginManager = {
-      listBundles: async () => ({ ok: true as const, value: [] as BundleView[] }),
-      setBundleEnabled: async () => ({
+      listBundles: async () => ({ ok: true as const, value: [] as BundleInfo[] }),
+      setBundleEnabled: async (name: string) => ({
         ok: true as const,
-        value: { application: "applied" as const },
+        value: {
+          changed: true,
+          application: "applied" as const,
+          stage: "enable" as const,
+          target: name,
+        },
       }),
     };
     const slotHost = {

@@ -12,12 +12,12 @@ import { isAbsolute, join, relative, resolve } from "node:path";
 
 import type { Agent, AgentOptions } from "@deepseek-ai/dsh-agent";
 import type { Context } from "@deepseek-ai/cordis";
-import type { ReasoningEffortId } from "@deepseek-ai/dsh-llm";
-import type {} from "@deepseek-ai/dsh-working-directory";
+import type { LlmRuntime, ReasoningEffortId } from "@deepseek-ai/dsh-llm";
+import type { WorkingDirectoryService } from "@deepseek-ai/dsh-working-directory";
 import type {
   SubagentActivation,
   SubagentCapabilities,
-  SubagentRuntime as SubagentService,
+  SubagentRuntime,
 } from "@deepseek-ai/dsh-subagent";
 import type { JsonSchemaNode, ToolDefinition, ToolRunContext } from "@deepseek-ai/dsh-tools";
 
@@ -129,28 +129,12 @@ export type DelegationResult =
     };
 
 /** The live services one delegation reads. */
-export interface SubagentRuntime {
-  readonly subagents: Pick<
-    SubagentService,
-    "getProvider" | "list" | "resolveMaxDepth" | "startActivation"
-  >;
-  readonly llm: LlmHost;
-  readonly workingDirectory: Pick<WorkingDirectoryService, "ensure">;
+export interface DelegationRuntime {
+  readonly subagents: SubagentRuntime;
+  readonly llm: LlmRuntime;
+  readonly workingDirectory: WorkingDirectoryService;
   readonly dshHome: string;
   readonly potetoModeSkillPath: string;
-}
-
-/** The slice of `ctx.llm` used before starting a child. */
-export interface LlmHost {
-  resolveCallConfig(
-    config: { provider: string; model: string; reasoningEffort?: ReasoningEffortId },
-    signal?: AbortSignal,
-  ): Promise<unknown>;
-}
-
-/** The slice of `ctx.workingDirectory` used before starting a child. */
-export interface WorkingDirectoryService {
-  ensure(agent: Agent, signal?: AbortSignal): Promise<string>;
 }
 
 /** Validate the row's own config; omitted config uses the default provider. */
@@ -265,7 +249,7 @@ export function parseDelegationArgs(raw: unknown): DelegationArgs {
 /** Resolve the role file, child routes, prompt, and depth before activation starts. */
 export function planDelegation(
   args: DelegationArgs,
-  runtime: SubagentRuntime,
+  runtime: DelegationRuntime,
   config: PstackSubagentConfig = DEFAULT_CONFIG,
 ): DelegationPlan {
   const path = modelsFilePath(runtime.dshHome);
@@ -355,7 +339,7 @@ export function planDelegation(
 export async function startPlannedChildren(
   parent: Agent,
   plan: DelegationPlan,
-  runtime: SubagentRuntime,
+  runtime: DelegationRuntime,
   signal: AbortSignal,
 ): Promise<DelegationResult> {
   const provider = runtime.subagents.getProvider(plan.provider);
@@ -422,7 +406,7 @@ export async function startPlannedChildren(
 export async function delegate(
   parent: Agent,
   args: DelegationArgs,
-  runtime: SubagentRuntime,
+  runtime: DelegationRuntime,
   config: PstackSubagentConfig,
   signal: AbortSignal,
 ): Promise<DelegationResult> {
@@ -431,7 +415,7 @@ export async function delegate(
 
 export function apply(ctx: Context, rawConfig?: unknown): void {
   const config = normalizeConfig(rawConfig);
-  const runtime: SubagentRuntime = {
+  const runtime: DelegationRuntime = {
     subagents: ctx.subagents,
     llm: ctx.llm,
     workingDirectory: ctx.workingDirectory,
@@ -443,7 +427,7 @@ export function apply(ctx: Context, rawConfig?: unknown): void {
 
 /** Build the model-facing tool. Exported for tests. */
 export function createPstackSubagentTool(
-  runtime: SubagentRuntime,
+  runtime: DelegationRuntime,
   config: PstackSubagentConfig = DEFAULT_CONFIG,
 ): ToolDefinition {
   return {
@@ -646,7 +630,7 @@ function assertCapabilities(capabilities: SubagentCapabilities, plan: Delegation
 }
 
 async function preflightRoutes(
-  llm: LlmHost,
+  llm: LlmRuntime,
   parent: Agent,
   children: readonly ChildPlan[],
   signal: AbortSignal,

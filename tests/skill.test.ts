@@ -3,13 +3,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 
-import {
-  createPstackSkillTool,
-  readSkillResource,
-  renderLoadedSkill,
-  type SkillsHost,
-} from "../src/skill.ts";
-import type { SkillDefinition } from "@deepseek-ai/dsh-skill";
+import type { SkillDefinition, SkillRegistry } from "@deepseek-ai/dsh-skill";
+
+import { createPstackSkillTool, readSkillResource, renderLoadedSkill } from "../src/skill.ts";
 import type { ToolRunContext } from "@deepseek-ai/dsh-tools";
 
 const directories: string[] = [];
@@ -44,7 +40,9 @@ afterEach(() => {
 describe("pstack_skill", () => {
   it("loads a hidden skill by name", async () => {
     const definition = temporarySkill();
-    const skills: SkillsHost = { get: async (name) => (name === "how" ? definition : undefined) };
+    const skills = {
+      get: async (name: string) => (name === "how" ? definition : undefined),
+    } as unknown as SkillRegistry;
     const tool = createPstackSkillTool(skills);
     const result = await tool.execute({ name: "how" }, exec);
     expect(result).toMatchObject({ name: "how", provider: "pstack", content: "# How\n" });
@@ -70,12 +68,12 @@ describe("pstack_skill", () => {
       get: async () => {
         throw new Error("must not be called");
       },
-    });
+    } as unknown as SkillRegistry);
     await expect(tool.execute({ name: "../secret" }, exec)).rejects.toThrow("invalid skill name");
   });
 
   it("reports an unknown skill", async () => {
-    const tool = createPstackSkillTool({ get: async () => undefined });
+    const tool = createPstackSkillTool({ get: async () => undefined } as unknown as SkillRegistry);
     await expect(tool.execute({ name: "nope" }, exec)).rejects.toThrow(
       'skill "nope" is unknown or no longer available',
     );

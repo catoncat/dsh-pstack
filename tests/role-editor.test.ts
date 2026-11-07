@@ -11,7 +11,9 @@ import {
   updateRoleText,
   validateSaveRequest,
 } from "../src/role-editor.ts";
-import type { CatalogueResult, ModelsLlm } from "../src/models.ts";
+import type { LlmRuntime } from "@deepseek-ai/dsh-llm";
+
+import type { CatalogueResult } from "../src/models.ts";
 
 const directories: string[] = [];
 
@@ -38,17 +40,22 @@ const catalogue: CatalogueResult = {
   ],
 };
 
-const llm = {
-  listProviders: () =>
-    catalogue.providers.map((entry) => ({ id: entry.provider, name: entry.name })),
-  listModels: async () => [{ provider: "cpa", id: "model-a", name: "Model A" }],
-  resolveModelInfo: async (provider: string, model: string) => ({
-    provider,
-    id: model,
-    name: model,
-    reasoning: { efforts: [{ id: "low" }, { id: "high" }], defaultEffort: "high" },
-  }),
-};
+function llmFixture(overrides: Partial<Record<keyof LlmRuntime, unknown>> = {}): LlmRuntime {
+  return {
+    listProviders: () =>
+      catalogue.providers.map((entry) => ({ id: entry.provider, name: entry.name })),
+    listModels: async () => [{ provider: "cpa", id: "model-a", name: "Model A" }],
+    resolveModelInfo: async (provider: string, model: string) => ({
+      provider,
+      id: model,
+      name: model,
+      reasoning: { efforts: [{ id: "low" }, { id: "high" }], defaultEffort: "high" },
+    }),
+    ...overrides,
+  } as unknown as LlmRuntime;
+}
+
+const llm = llmFixture();
 
 describe("role editor", () => {
   it("reports every manifest role in a missing snapshot", () => {
@@ -116,7 +123,7 @@ describe("role editor", () => {
         key: "feature, refactoring",
         routes: [{ kind: "route", provider: "cpa", model: "model-a", effort: "high" }],
       },
-      llm as unknown as ModelsLlm,
+      llm as unknown as LlmRuntime,
       new AbortController().signal,
     );
     expect(result.ok).toBe(true);
@@ -130,13 +137,12 @@ describe("role editor", () => {
   it("re-reads the role file after an asynchronous catalogue lookup", async () => {
     const home = tempHome("# header\nbug-fix: cpa/model-a [low]\n");
     const path = join(home, "pstack-models.mdc");
-    const concurrentLlm = {
-      ...llm,
+    const concurrentLlm = llmFixture({
       listModels: async () => {
         writeFileSync(path, `${readFileSync(path, "utf8")}perf-issue: cpa/model-a [high]\n`);
         return [{ provider: "cpa", id: "model-a", name: "Model A" }];
       },
-    } as unknown as ModelsLlm;
+    });
     const result = await saveRoleConfiguration(
       path,
       {
@@ -157,7 +163,7 @@ describe("role editor", () => {
       listProviders() {
         throw new Error("catalogue unavailable");
       },
-    } as unknown as ModelsLlm;
+    } as unknown as LlmRuntime;
     const first = await saveRoleConfiguration(
       path,
       { key: "bug-fix", routes: [] },
@@ -183,7 +189,7 @@ describe("role editor", () => {
     const result = await saveRoleConfiguration(
       path,
       { key: "bug-fix", routes: [] },
-      llm as unknown as ModelsLlm,
+      llm as unknown as LlmRuntime,
       new AbortController().signal,
     );
     if (!result.ok) throw new Error(result.reason);
@@ -200,7 +206,7 @@ describe("role editor", () => {
       saveRoleConfiguration(
         path,
         { key: "bug-fix", routes: [] },
-        llm as unknown as ModelsLlm,
+        llm as unknown as LlmRuntime,
         controller.signal,
       ),
     ).rejects.toThrow();
@@ -216,9 +222,11 @@ describe("role editor", () => {
           throw new Error("provider failed");
         },
       },
-      { ...llm, listModels: async () => Promise.reject(new Error("models failed")) },
-      { ...llm, resolveModelInfo: async () => Promise.reject(new Error("info failed")) },
-    ] as ModelsLlm[];
+      llmFixture({ listModels: async () => Promise.reject(new Error("models failed")) }),
+      llmFixture({
+        resolveModelInfo: async () => Promise.reject(new Error("info failed")),
+      }),
+    ] as unknown as LlmRuntime[];
     for (const failing of failures) {
       const result = await saveRoleConfiguration(
         path,
@@ -243,7 +251,7 @@ describe("role editor", () => {
         listProviders() {
           throw new Error("must not be called");
         },
-      } as unknown as ModelsLlm,
+      } as unknown as LlmRuntime,
       new AbortController().signal,
     );
     expect(result).toMatchObject({ ok: false, reason: expect.stringContaining("request.key") });

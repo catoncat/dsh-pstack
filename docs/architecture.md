@@ -37,6 +37,12 @@
 
 `cordis.patch.yml` 选择公开模块并注入 the agent harness 服务。各模块通过 Cordis `inject` 获取 Host 能力；工具实现依赖 the agent harness 的工具、技能、LLM 和子代理接口，不建立独立的运行时。
 
+### 官方类型与本地投影
+
+官方 Remote、wire 和服务契约直接从对应 `@deepseek-ai/*` 包 `import type`，优先使用官方完整类型，不再为非必要收窄定义 `Pick` 或类型别名。跨包 Remote 类型统一从 `@deepseek-ai/dsh-api-remotes/client` 获取；不从某个功能包的 `typert.remote-client` 借用其他包的 namespace。角色文件、委派结果、页面草稿等本仓自有结构保留在本地；仅在官方声明缺失时保留局部服务切片。静态类型已保证的字段无需重复运行时校验。
+
+官方类型包只进入 `devDependencies` 和 workspace 的类型 catalog，不进入 `dependencies` 或 `peerDependencies`。`dsh.client.inject` 只列出需要运行时模块装载的 assembly，不因类型导入而添加条目。构建的 Host 与 Client 都将 `@deepseek-ai/*` 保持为外部依赖，不把官方运行时实现打进 `dist`。
+
 ### 角色配置
 
 ```text

@@ -1,40 +1,21 @@
 /** Browser entry for dsh-pstack: the plugin-detail configuration action. */
 
 import type { Context } from "@deepseek-ai/cordis";
-import type {} from "@deepseek-ai/dsh-api-gateway/client";
+import type { ClientRemote, RemoteResult } from "@deepseek-ai/dsh-api-remotes/client";
 import type {} from "@deepseek-ai/dsh-client-locale/client";
 import type {} from "@deepseek-ai/dsh-client-ui-renderer/client";
 import type {} from "@deepseek-ai/dsh-client-ui-settings/client";
 import type {} from "@deepseek-ai/dsh-client-ui-slots";
 import type {} from "@deepseek-ai/dsh-client-ui-plugin-manager/client";
 
-import type { CatalogueResult } from "../models.ts";
-import { pstackRolesRemote } from "../role-remote.ts";
-import type { RoleFileSnapshot, SaveRoleRequest, SaveRoleResult } from "../role-wire.ts";
+import { pstackRolesRemote, type PstackRolesNamespace } from "../role-remote.ts";
 import { createPstackConfigAction } from "./PstackConfigDialog.tsx";
 import { NS, catalogs } from "./locales/index.ts";
-import type { BundleChange, BundleView, PluginManagerApi } from "./RecommendedPluginsPage.tsx";
+import type { PluginManagerApi } from "./RecommendedPluginsPage.tsx";
 import type { RoleSettingsApi } from "./RoleSettingsPage.tsx";
 
 /** Browser services this plugin needs. `remote.pluginManager` stays optional, so roles load without it. */
 export const inject = ["remote", "slots", "locale"];
-
-interface Result<T> {
-  readonly ok: boolean;
-  readonly value?: T;
-  readonly error?: Error;
-}
-
-interface PstackRolesNamespace {
-  status(): Promise<Result<RoleFileSnapshot>>;
-  catalogue(signal?: AbortSignal): Promise<Result<CatalogueResult>>;
-  save(request: SaveRoleRequest, signal?: AbortSignal): Promise<Result<SaveRoleResult>>;
-}
-
-export interface PluginManagerNamespace {
-  listBundles(): Promise<Result<readonly BundleView[]>>;
-  setBundleEnabled(name: string, enabled: boolean): Promise<Result<unknown>>;
-}
 
 /**
  * Build a stable API whose methods resolve the manager at call time.
@@ -44,9 +25,9 @@ export interface PluginManagerNamespace {
  * recommendation tab when it is used, and a later arrival recovers on refresh.
  */
 export function createPluginManagerApi(
-  getPluginManager: () => PluginManagerNamespace | undefined,
+  getPluginManager: () => ClientRemote["pluginManager"] | undefined,
 ): PluginManagerApi {
-  const manager = (): PluginManagerNamespace => {
+  const manager = (): ClientRemote["pluginManager"] => {
     const value = getPluginManager();
     if (value === undefined) throw new Error("plugin manager is not available yet");
     return value;
@@ -54,7 +35,7 @@ export function createPluginManagerApi(
   return {
     listBundles: async () => unwrap(await manager().listBundles()),
     setBundleEnabled: async (name, enabled) =>
-      toBundleChange(unwrap(await manager().setBundleEnabled(name, enabled))),
+      unwrap(await manager().setBundleEnabled(name, enabled)),
   };
 }
 
@@ -71,20 +52,16 @@ export async function apply(ctx: Context): Promise<() => Promise<void>> {
   // Observe the plugin-manager namespace without gating the role action on it.
   // If it arrives later, the next listBundles call sees it; if it never arrives,
   // only the recommendation tab reports the problem.
-  let pluginManager: PluginManagerNamespace | undefined;
+  let pluginManager: ClientRemote["pluginManager"] | undefined;
   ctx.inject(["remote.pluginManager"], (scope: Context) => {
-    pluginManager = (scope.remote as unknown as { pluginManager?: PluginManagerNamespace })
-      .pluginManager;
+    pluginManager = scope.remote.pluginManager;
   });
   const pluginApi = createPluginManagerApi(() => pluginManager);
 
   // `$mount` above installs the namespace, so its dependency is declared only now.
   // Injecting before the await would resolve against a namespace that does not exist yet.
   ctx.inject(["remote.pstackRoles"], (scope: Context) => {
-    const remote = scope.remote as unknown as {
-      pstackRoles?: PstackRolesNamespace;
-    };
-    const pstack = remote.pstackRoles;
+    const pstack = (scope.remote as ClientRemote & PstackRolesNamespace).pstackRoles;
     if (pstack === undefined) return;
 
     const roleApi: RoleSettingsApi = {
@@ -114,54 +91,7 @@ export async function apply(ctx: Context): Promise<() => Promise<void>> {
   return disposeRemote;
 }
 
-function unwrap<T>(result: Result<T>): T {
-  if (!result.ok) throw result.error ?? new Error("remote call failed");
-  if (result.value === undefined) throw new Error("remote call returned no value");
+function unwrap<T>(result: RemoteResult<T>): T {
+  if (!result.ok) throw result.error;
   return result.value;
-}
-
-const CHANGE_APPLICATIONS = new Set<string>([
-  "applied",
-  "restart-required",
-  "overridden",
-  "failed",
-  "cancelled",
-]);
-
-/** Project the Host's ChangeResult onto the small page-facing value. Unknown outcomes report failure. */
-function toBundleChange(value: unknown): BundleChange {
-  const record =
-    typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
-  const application = record["application"];
-  if (typeof application !== "string" || !CHANGE_APPLICATIONS.has(application)) {
-    return {
-      application: "failed",
-      error: {
-        diagnostic:
-          typeof application === "string"
-            ? `unknown application ${application}`
-            : "the change returned no application",
-      },
-    };
-  }
-  const restartReason = record["restartReason"];
-  const rawError = record["error"];
-  const errorRecord =
-    typeof rawError === "object" && rawError !== null
-      ? (rawError as Record<string, unknown>)
-      : undefined;
-  const code = errorRecord?.["code"];
-  const diagnostic = errorRecord?.["diagnostic"];
-  return {
-    application: application as BundleChange["application"],
-    ...(typeof restartReason === "string" ? { restartReason } : {}),
-    ...(errorRecord === undefined
-      ? {}
-      : {
-          error: {
-            ...(typeof code === "string" ? { code } : {}),
-            ...(typeof diagnostic === "string" ? { diagnostic } : {}),
-          },
-        }),
-  };
 }

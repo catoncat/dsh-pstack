@@ -11,7 +11,9 @@ import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node
 import { dirname } from "node:path";
 import { randomUUID } from "node:crypto";
 
-import { collectCatalogue, type ModelsLlm } from "./models.ts";
+import type { LlmRuntime } from "@deepseek-ai/dsh-llm";
+
+import { collectCatalogue } from "./models.ts";
 import {
   parseRoleConfiguration,
   readRoleConfiguration,
@@ -223,7 +225,7 @@ export function removeRoleText(text: string, key: string): string {
 export async function saveRoleConfiguration(
   path: string,
   request: SaveRoleRequest,
-  llm: ModelsLlm,
+  llm: LlmRuntime,
   signal: AbortSignal,
 ): Promise<SaveRoleResult> {
   signal.throwIfAborted();

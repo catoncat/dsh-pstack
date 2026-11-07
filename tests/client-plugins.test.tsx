@@ -1,17 +1,15 @@
 // @vitest-environment happy-dom
+import type { BundleInfo, ChangeResult, ClientRemote } from "@deepseek-ai/dsh-api-remotes/client";
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 
 import {
   RecommendedPluginsView,
-  type BundleChange,
-  type BundleView,
-  type ChangeApplication,
   type PluginManagerApi,
 } from "../src/client/RecommendedPluginsPage.tsx";
 import { catalogs, type PstackTranslations } from "../src/client/locales/index.ts";
-import { createPluginManagerApi, type PluginManagerNamespace } from "../src/client/index.ts";
+import { createPluginManagerApi } from "../src/client/index.ts";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -39,8 +37,23 @@ function translations(): PstackTranslations {
   };
 }
 
-function bundle(name: string, enabled = false): BundleView {
-  return { name, enabled, availability: "available" };
+function bundle(name: string, enabled = false): BundleInfo {
+  return {
+    name,
+    enabled,
+    availability: "installation",
+    official: false,
+    installed: true,
+    optional: false,
+    removable: true,
+    updatable: false,
+    rows: [],
+    overrides: [],
+  };
+}
+
+function change(application: ChangeResult["application"]): ChangeResult {
+  return { changed: true, application, stage: "enable", target: FORGE };
 }
 
 let container: HTMLDivElement;
@@ -91,14 +104,14 @@ function message(): HTMLElement {
   return container.querySelector<HTMLElement>(".pstack-inline-message")!;
 }
 
-function apiFor(change: (name: string) => BundleChange): PluginManagerApi {
+function apiFor(result: (name: string) => ChangeResult): PluginManagerApi {
   return {
     listBundles: async () => [bundle(FORGE), bundle(SESSION_SEARCH)],
-    setBundleEnabled: async (name) => change(name),
+    setBundleEnabled: async (name) => result(name),
   };
 }
 
-const applications: readonly [ChangeApplication, string, string][] = [
+const applications: readonly [ChangeResult["application"], string, string][] = [
   ["applied", "success", "Applied change to"],
   ["restart-required", "warn", "takes effect after restart"],
   ["overridden", "warn", "was overridden"],
@@ -107,28 +120,37 @@ const applications: readonly [ChangeApplication, string, string][] = [
 ];
 
 describe("plugin manager API resolution", () => {
-  function manager(): PluginManagerNamespace {
+  function manager(): ClientRemote["pluginManager"] {
     return {
-      listBundles: async () => ({ ok: true, value: [bundle(FORGE)] }),
+      listBundles: async () => ({
+        ok: true,
+        value: [bundle(FORGE)],
+      }),
       setBundleEnabled: async () => ({
         ok: true,
-        value: { application: "restart-required", restartReason: "no-hmr" },
+        value: {
+          changed: true,
+          application: "restart-required",
+          restartReason: "no-hmr",
+          stage: "enable",
+          target: FORGE,
+        },
       }),
-    };
+    } as unknown as ClientRemote["pluginManager"];
   }
 
   it("fails only when called with no manager, then recovers when one arrives", async () => {
-    let current: PluginManagerNamespace | undefined;
+    let current: ReturnType<typeof manager> | undefined;
     const api = createPluginManagerApi(() => current);
     await expect(api.listBundles()).rejects.toThrow("plugin manager is not available yet");
     current = manager();
-    await expect(api.listBundles()).resolves.toEqual([bundle(FORGE)]);
+    await expect(api.listBundles()).resolves.toMatchObject([bundle(FORGE)]);
   });
 
   it("maps the Host change result through the current manager", async () => {
     const api = createPluginManagerApi(() => manager());
     await expect(api.setBundleEnabled(FORGE, true)).resolves.toEqual({
-      application: "restart-required",
+      ...change("restart-required"),
       restartReason: "no-hmr",
     });
   });
@@ -139,7 +161,7 @@ describe("recommended plugin change outcomes", () => {
     it(`shows a ${application} notice with a ${tone} tone`, async () => {
       await mount(
         apiFor(() => ({
-          application,
+          ...change(application),
           ...(application === "restart-required" ? { restartReason: "no-hmr" } : {}),
           ...(application === "failed" ? { error: { code: "bundle-in-use" } } : {}),
         })),
@@ -152,7 +174,7 @@ describe("recommended plugin change outcomes", () => {
   }
 
   it("names the restart reason and the failure code", async () => {
-    await mount(apiFor(() => ({ application: "restart-required", restartReason: "no-hmr" })));
+    await mount(apiFor(() => ({ ...change("restart-required"), restartReason: "no-hmr" })));
     await click(enableSwitch());
     expect(message().textContent).toContain("(no-hmr)");
 
@@ -161,7 +183,7 @@ describe("recommended plugin change outcomes", () => {
     });
     root = createRoot(container);
 
-    await mount(apiFor(() => ({ application: "failed", error: { code: "bundle-in-use" } })));
+    await mount(apiFor(() => ({ ...change("failed"), error: { code: "bundle-in-use" } })));
     await click(enableSwitch());
     expect(message().textContent).toContain("bundle-in-use");
   });
@@ -188,18 +210,14 @@ describe("enable-all bulk summary", () => {
   }
 
   it("counts every settled change", async () => {
-    await mount(apiFor(() => ({ application: "applied" })));
+    await mount(apiFor(() => change("applied")));
     await click(enableAllButton());
     expect(message().dataset["tone"]).toBe("success");
     expect(message().textContent).toContain("Enabled 2 recommended plugins");
   });
 
   it("counts settled versus unsettled outcomes", async () => {
-    await mount(
-      apiFor((name) =>
-        name === FORGE ? { application: "applied" } : { application: "cancelled" },
-      ),
-    );
+    await mount(apiFor((name) => (name === FORGE ? change("applied") : change("cancelled"))));
     await click(enableAllButton());
     expect(message().dataset["tone"]).toBe("error");
     expect(message().textContent).toContain(
@@ -208,7 +226,7 @@ describe("enable-all bulk summary", () => {
   });
 
   it("reports a restart instead of claiming all plugins are enabled", async () => {
-    await mount(apiFor(() => ({ application: "restart-required", restartReason: "no-hmr" })));
+    await mount(apiFor(() => ({ ...change("restart-required"), restartReason: "no-hmr" })));
     await click(enableAllButton());
     expect(message().dataset["tone"]).toBe("warn");
     expect(message().textContent).toContain("2 recommended plugins require a restart");
@@ -219,8 +237,8 @@ describe("enable-all bulk summary", () => {
     await mount(
       apiFor((name) =>
         name === FORGE
-          ? { application: "restart-required", restartReason: "no-hmr" }
-          : { application: "cancelled" },
+          ? { ...change("restart-required"), restartReason: "no-hmr" }
+          : change("cancelled"),
       ),
     );
     await click(enableAllButton());

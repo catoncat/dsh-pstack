@@ -4,22 +4,15 @@ import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
 import { EntryGroup } from "@deepseek-ai/cordis-plugin-loader";
 import type { PresetDefinition } from "@deepseek-ai/dsh-agent-preset-registry";
+import type { SettingsForms } from "@deepseek-ai/dsh-settings";
 import z from "@deepseek-ai/schemastery";
 
 import { presetCopyFor } from "./preset-copy.ts";
 
-/** The slice of the Host settings service used to read the Web UI locale. */
-interface SettingsHost {
-  describe(): readonly {
-    readonly ns: string;
-    readonly value?: unknown;
-  }[];
-}
-
 /** Read the explicit Web UI locale from `locale.preference`. */
 export function readWebUiLocale(ctx: Context): string | undefined {
   const host = ctx as unknown as { get(name: string): unknown };
-  const settings = host.get("settings") as SettingsHost | undefined;
+  const settings = host.get("settings") as SettingsForms | undefined;
   try {
     const value = settings?.describe().find((row) => row.ns === "locale")?.value;
     if (typeof value !== "object" || value === null || Array.isArray(value)) return undefined;
@@ -61,11 +54,6 @@ export default class LocalizedAgentPreset {
   }
 
   async *[Service.init](): AsyncGenerator<() => Promise<void>, void, unknown> {
-    const host = this.ctx as unknown as {
-      agentPresets: {
-        register(definition: PresetDefinition): Promise<() => Promise<void>>;
-      };
-    };
-    yield await host.agentPresets.register(this.config);
+    yield await this.ctx.agentPresets.register(this.config);
   }
 }

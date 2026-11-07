@@ -10,7 +10,7 @@ import {
   parseDelegationArgs,
   planDelegation,
   startPlannedChildren,
-  type SubagentRuntime,
+  type DelegationRuntime,
 } from "../src/subagent.ts";
 
 const directories: string[] = [];
@@ -40,7 +40,7 @@ function args(overrides: Record<string, unknown> = {}) {
   });
 }
 
-function fakeRuntime(dshHome: string): SubagentRuntime {
+function fakeRuntime(dshHome: string): DelegationRuntime {
   return {
     subagents: {
       getProvider: () => ({
@@ -56,7 +56,7 @@ function fakeRuntime(dshHome: string): SubagentRuntime {
     workingDirectory: { ensure: async () => "/session" },
     dshHome,
     potetoModeSkillPath: "/pkg/pstack/skills/poteto-mode/SKILL.md",
-  } as unknown as SubagentRuntime;
+  } as unknown as DelegationRuntime;
 }
 
 describe("pstack_subagent arguments and planning", () => {
@@ -114,17 +114,17 @@ describe("pstack_subagent arguments and planning", () => {
     const dshHome = home("arena runners: cpa/model-a, cpa/model-b\n");
     let starts = 0;
     const base = fakeRuntime(dshHome);
-    const runtime = {
-      ...base,
-      subagents: {
-        ...base.subagents,
-        startActivation: async () => {
-          starts += 1;
-          if (starts === 1) return { childId: "child-1" };
-          throw new Error("activation limit");
-        },
+    const subagents = {
+      getProvider: base.subagents.getProvider.bind(base.subagents),
+      list: base.subagents.list.bind(base.subagents),
+      resolveMaxDepth: base.subagents.resolveMaxDepth.bind(base.subagents),
+      startActivation: async () => {
+        starts += 1;
+        if (starts === 1) return { childId: "child-1" };
+        throw new Error("activation limit");
       },
-    } as unknown as SubagentRuntime;
+    };
+    const runtime = { ...base, subagents } as unknown as DelegationRuntime;
     const plan = planDelegation(args({ role: "arena runners" }), runtime);
     const result = await startPlannedChildren(
       { options: {} } as unknown as Agent,

@@ -10,7 +10,7 @@ import { readFile } from "node:fs/promises";
 import { resolve, sep } from "node:path";
 
 import type { Context } from "@deepseek-ai/cordis";
-import type { SkillDefinition, SkillResourceBase, SkillViewOptions } from "@deepseek-ai/dsh-skill";
+import type { SkillDefinition, SkillRegistry, SkillResourceBase } from "@deepseek-ai/dsh-skill";
 import type { JsonSchemaNode, ToolDefinition, ToolRunContext } from "@deepseek-ai/dsh-tools";
 
 export const name = "pstack-skill";
@@ -20,11 +20,6 @@ export const inject = ["skills", "tools"];
 export const TOOL_NAME = "pstack_skill";
 
 const SKILL_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-
-/** The slice of `ctx.skills` this tool reads. */
-export interface SkillsHost {
-  get(name: string, options?: SkillViewOptions): Promise<SkillDefinition | undefined>;
-}
 
 export interface SkillResourceResult {
   readonly path: string;
@@ -173,7 +168,7 @@ const TOOL_DESCRIPTION = [
 ].join("\n");
 
 /** Build the tool for one skills registry. */
-export function createPstackSkillTool(skills: SkillsHost): ToolDefinition {
+export function createPstackSkillTool(skills: SkillRegistry): ToolDefinition {
   return {
     name: TOOL_NAME,
     description: TOOL_DESCRIPTION,
