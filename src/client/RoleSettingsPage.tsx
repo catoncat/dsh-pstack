@@ -92,7 +92,7 @@ export function RoleSettingsView(props: {
 
   const dirtyFlag =
     snapshot !== undefined &&
-    snapshot.roles.some((role) => isDirty(drafts[role.key] ?? draftOf(role)));
+    snapshot.roles.some((role) => isDirty(drafts[role.key] ?? draftOf(role), role));
   useEffect(() => {
     onDirtyChange?.(dirtyFlag);
   }, [dirtyFlag, onDirtyChange]);
@@ -119,7 +119,7 @@ export function RoleSettingsView(props: {
 
   const draftFor = (role: RoleView): RoleDraft => drafts[role.key] ?? draftOf(role);
   const dirtyKeys = snapshot.roles
-    .filter((role) => isDirty(draftFor(role)))
+    .filter((role) => isDirty(draftFor(role), role))
     .map((role) => role.key);
   const dirtyCount = dirtyKeys.length;
   const anyBusy = Object.values(drafts).some((draft) => draft.busy);
@@ -131,7 +131,10 @@ export function RoleSettingsView(props: {
   );
   const canClearAll = snapshot.roles.some((role) => {
     const draft = drafts[role.key] ?? draftOf(role);
-    return draft.routes.length > 0 && (role.configured || isDirty(draft));
+    return (
+      (role.configured || isDirty(draft, role)) &&
+      !(draft.routes.length === 1 && draft.routes[0]?.kind === "inherit")
+    );
   });
   const fileStatus = statusPresentation(snapshot, t);
 
@@ -187,7 +190,10 @@ export function RoleSettingsView(props: {
       Object.fromEntries(
         snapshot.roles.map((role) => {
           const draft = current[role.key] ?? draftOf(role);
-          return [role.key, { ...draft, routes: [], message: undefined, busy: false }];
+          return [
+            role.key,
+            { ...draft, routes: inheritedRoutes(), message: undefined, busy: false },
+          ];
         }),
       ),
     );
@@ -205,23 +211,27 @@ export function RoleSettingsView(props: {
       };
     });
     try {
-      const result = await api.save({ key, routes: draft.routes });
+      const result = await api.save({
+        key,
+        routes: isClearDraft(
+          draft,
+          snapshot.roles.find((role) => role.key === key),
+        )
+          ? []
+          : draft.routes,
+      });
       if (result.ok) {
         const savedRole = result.snapshot.roles.find((entry) => entry.key === key);
         setSnapshot(result.snapshot);
         setDrafts((current) => {
           const currentDraft = current[key];
           if (currentDraft === undefined) return current;
-          const routes =
-            savedRole === undefined
-              ? draft.routes
-              : savedRole.routes.map((route) => ({ ...route }));
           return {
             ...current,
             [key]: {
               ...currentDraft,
-              routes,
-              baseline: routes,
+              routes: draft.routes,
+              baseline: savedRole?.routes ?? draft.routes,
               busy: false,
               message: { tone: "success", text: common("saved") },
             },
@@ -405,18 +415,16 @@ function RoleCard(props: {
   const copy = isRoleKey(role.key) ? ROLE_COPY[role.key] : undefined;
   const name = copy === undefined ? role.key : t(copy.nameKey);
   const description = copy === undefined ? "" : t(copy.descriptionKey);
-  const dirty = isDirty(draft);
+  const dirty = isDirty(draft, role);
   const controlsDisabled = disabled || draft.busy;
   const incomplete = draft.routes.some(
     (route) =>
       route.kind === "route" && (route.provider.trim() === "" || route.model.trim() === ""),
   );
-  const canClearRole = draft.routes.length > 0 && (role.configured || dirty);
-  const displayedRoutes =
-    draft.routes.length === 0
-      ? [{ kind: "inherit" as const, alias: "inherit-parent" as const }]
-      : draft.routes;
-  const clearRole = (): void => onRoutesChange([]);
+  const canClearRole =
+    (role.configured || dirty) &&
+    !(draft.routes.length === 1 && draft.routes[0]?.kind === "inherit");
+  const clearRole = (): void => onRoutesChange(inheritedRoutes());
   const status =
     role.issues.length > 0
       ? { tone: "error" as StatusTone, label: t("roleInvalid") }
@@ -460,7 +468,7 @@ function RoleCard(props: {
         </div>
       )}
       <div className="pstack-route-list">
-        {displayedRoutes.map((route, index) => (
+        {draft.routes.map((route, index) => (
           <RouteRow
             key={`${role.key}-${index}`}
             roleName={name}
@@ -479,13 +487,16 @@ function RoleCard(props: {
             translations={translations}
           />
         ))}
-        {dirty && draft.routes.length === 0 ? (
+        {role.configured &&
+        dirty &&
+        draft.routes.length === 1 &&
+        draft.routes[0]?.kind === "inherit" ? (
           <p className="pstack-role-desc">{t("clearHint")}</p>
         ) : null}
       </div>
       <footer className="pstack-role-foot">
         <div className="pstack-role-foot-actions">
-          {role.shape === "list" || draft.routes.length === 0 ? (
+          {role.shape === "list" ? (
             <Button
               variant="outline"
               size="sm"
@@ -690,17 +701,32 @@ function RouteRow(props: {
   );
 }
 
-function draftOf(role: RoleView): RoleDraft {
-  const routes = role.routes.map((route) => ({ ...route }));
-  return { routes, baseline: routes.map((route) => ({ ...route })), busy: false };
+function inheritedRoutes(): RouteView[] {
+  return [{ kind: "inherit", alias: "inherit-parent" }];
 }
 
-function isDirty(draft: RoleDraft): boolean {
+function draftOf(role: RoleView): RoleDraft {
+  const routes =
+    role.routes.length === 0 ? inheritedRoutes() : role.routes.map((route) => ({ ...route }));
+  return { routes, baseline: role.routes, busy: false };
+}
+
+function isDirty(draft: RoleDraft, role: RoleView): boolean {
+  if (!role.configured && signature(draft.routes) === signature(inheritedRoutes())) return false;
   return signature(draft.routes) !== signature(draft.baseline);
 }
 
 function signature(routes: readonly RouteView[]): string {
   return JSON.stringify(routes);
+}
+
+function isClearDraft(draft: RoleDraft, role: RoleView | undefined): boolean {
+  return (
+    role !== undefined &&
+    draft.routes.length === 1 &&
+    draft.routes[0]?.kind === "inherit" &&
+    (role.routes.length === 0 || signature(draft.routes) !== signature(draft.baseline))
+  );
 }
 
 function statusPresentation(

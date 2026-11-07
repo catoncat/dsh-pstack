@@ -232,22 +232,65 @@ describe("role drafts across tabs", () => {
 });
 
 describe("clear as deletion", () => {
-  it("shows a removal hint, offers Add route on an empty single role, and saves routes: []", async () => {
+  it("edits an unconfigured role directly without adding a route", async () => {
+    const controller = makeRoleApi();
+    controller.api.status = async () => snapshotFor(false);
+    await openRoles(controller.api);
+
+    const card = document.querySelector<HTMLElement>(".pstack-role-card")!;
+    const provider = card.querySelector<HTMLSelectElement>(
+      'select[aria-label="Bug fix Provider"]',
+    )!;
+    expect(provider.value).toBe("__inherit__:inherit-parent");
+    expect(buttonByText(card, "Add route")).toBeUndefined();
+    expect(buttonByText(card, "Save").disabled).toBe(true);
+    expect(card.textContent).toContain("Not configured");
+
+    await act(async () => {
+      provider.value = "cpa";
+      provider.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await flush();
+
+    expect(provider.value).toBe("cpa");
+    expect(card.querySelector<HTMLSelectElement>('select[aria-label="Bug fix Model"]')?.value).toBe(
+      "model-a",
+    );
+    expect(buttonByText(card, "Save").disabled).toBe(false);
+    expect(card.textContent).toContain("Not configured");
+
+    await click(buttonByText(card, "Save"));
+    expect(controller.saves).toEqual([
+      { key: "bug-fix", routes: [{ kind: "route", provider: "cpa", model: "model-a" }] },
+    ]);
+    expect(card.textContent).toContain("Configured");
+  });
+
+  it("keeps one editable inherited row after Clear and saves routes: []", async () => {
     const controller = makeRoleApi();
     await openRoles(controller.api);
 
     const card = document.querySelector<HTMLElement>(".pstack-role-card")!;
-    expect(buttonByText(card, "Add route")).toBeUndefined();
-
     await click(buttonByText(card, "Clear"));
 
     expect(card.textContent).toContain("Saving removes this role's line.");
-    expect(
-      card.querySelector<HTMLSelectElement>('select[aria-label="Bug fix Provider"]')?.value,
-    ).toBe("__inherit__:inherit-parent");
+    const provider = card.querySelector<HTMLSelectElement>(
+      'select[aria-label="Bug fix Provider"]',
+    )!;
+    expect(provider.value).toBe("__inherit__:inherit-parent");
     expect(buttonByText(card, "Clear").disabled).toBe(true);
-    expect(buttonByText(card, "Add route")).toBeInstanceOf(HTMLButtonElement);
+    expect(buttonByText(card, "Add route")).toBeUndefined();
 
+    await act(async () => {
+      provider.value = "cpa";
+      provider.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await flush();
+    expect(provider.value).toBe("cpa");
+    expect(card.textContent).not.toContain("Saving removes this role's line.");
+    expect(buttonByText(card, "Save").disabled).toBe(false);
+
+    await click(buttonByText(card, "Clear"));
     await click(buttonByText(card, "Save"));
 
     expect(controller.saves).toEqual([{ key: "bug-fix", routes: [] }]);
@@ -258,7 +301,7 @@ describe("clear as deletion", () => {
     ).toBe("__inherit__:inherit-parent");
     expect(saved.textContent).not.toContain("Saving removes this role's line.");
     expect(buttonByText(saved, "Clear").disabled).toBe(true);
-    expect(buttonByText(saved, "Add route")).toBeInstanceOf(HTMLButtonElement);
+    expect(buttonByText(saved, "Add route")).toBeUndefined();
   });
 
   it("restores the baseline on reset instead of clearing", async () => {
