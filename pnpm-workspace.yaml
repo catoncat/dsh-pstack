@@ -1,5 +1,5 @@
 ignoreWorkspaceRootCheck: true
-catalogMode: prefer
+catalogMode: strict
 minimumReleaseAgeExcludePrune: true
 trustPolicy: no-downgrade
 
@@ -30,19 +30,23 @@ catalogs:
     "@deepseek-ai/dsh-agent": 0.2.2-rc.1
     "@deepseek-ai/dsh-agent-preset-registry": 0.2.2-rc.1
     "@deepseek-ai/dsh-api-gateway": 0.2.2-rc.1
+    "@deepseek-ai/dsh-api-remotes": 0.2.2-rc.1
     "@deepseek-ai/dsh-client-locale": 0.2.2-rc.1
     "@deepseek-ai/dsh-client-ui-plugin-manager": 0.2.2-rc.1
     "@deepseek-ai/dsh-client-ui-renderer": 0.2.2-rc.1
     "@deepseek-ai/dsh-client-ui-settings": 0.2.2-rc.1
     "@deepseek-ai/dsh-client-ui-slots": 0.2.2-rc.1
     "@deepseek-ai/dsh-llm": 0.2.2-rc.1
+    "@deepseek-ai/dsh-plugin-manager": 0.2.2-rc.1
     "@deepseek-ai/dsh-sandbox-policy": 0.2.2-rc.1
+    "@deepseek-ai/dsh-settings": 0.2.2-rc.1
     "@deepseek-ai/dsh-skill": 0.2.2-rc.1
     "@deepseek-ai/dsh-subagent": 0.2.2-rc.1
     "@deepseek-ai/dsh-tools": 0.2.2-rc.1
     "@deepseek-ai/dsh-typert-protocol": 0.2.2-rc.1
     "@deepseek-ai/dsh-working-directory": 0.2.2-rc.1
     "@deepseek-ai/schemastery": 3.19.0
+    "@deepseek-ai/dsh-typert-registry": 0.2.2-rc.1
   ui:
     react: ^18.3.1
     react-dom: ^18.3.1
@@ -50,6 +54,7 @@ catalogs:
     "@types/react-dom": ~18.3.0
   testing:
     js-yaml: ^5.5.0
+    happy-dom: ^21.0.4
 
 overrides:
   vite@*: "catalog:cli"

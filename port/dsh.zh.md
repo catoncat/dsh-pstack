@@ -76,7 +76,9 @@ DeepSeek Harness 没有 Cursor Automations、Bugbot、Cursor 云代理或内置 
 | `/loop` | 自动继续用 `create_goal`，定时心跳用 `schedule_create`，可观察事件用后台 `bash` watcher。它们不订阅 forge 事件。 |
 | `/automate` | 用 `writing-for-agents` 把已验证的工作模式写成个人技能。需要历史证据时用 Optional plugins 里的 session-search 后备。 |
 | Custom Mode | 新建会话时选择随包 `poteto-mode` 根 preset 使用标准工具面，或选择 `poteto-mode-creator` 使用创造模式工具面。两者都把完整技能常驻系统提示直到会话结束。如果会话使用其它 preset，就在每个任务调用 `/poteto-mode`。 |
-| `/visualize` | 图表用 Mermaid。安装了 `pele@1.9.0` 时用 `pstack_render` 的 `kind: "pele"` 把 `.mmd` 渲染为 SVG；报告缺依赖时返回 Mermaid 文本。安装了 ffmpeg 与 ImageMagick 时用 `pstack_render` 的 `kind: "video"` 渲染幻灯片视频；否则返回文字摘要并单独报告缺依赖。 |
+| `/visualize` | 图表用 Mermaid。DSH 没有内置图表渲染器，返回 Mermaid 文本，不要声称已生成图片。 |
+| `statechart` | 图表用 Mermaid。DSH 没有内置 SVG 渲染器，忽略 `references/render.md` 的渲染步骤，返回 `chart.mmd` 文本，不要声称已生成图片。 |
+| `ketchup-video` | 视频用文字摘要。DSH 没有内置视频渲染器，不要声称已生成视频。 |
 | `control-ui`、`control-cli`、`cursor-team-kit` | 包内 vendored `control-ui` 与 `control-cli` 指令技能。浏览器与 PTY 依赖写在其 `SKILL.md`；需要时启用 `@deepseek-ai/dsh-browser-use` 或实验性持久终端 bundle。不可用的 GUI 或视频证据标记为跳过。 |
 
 ## 可选插件

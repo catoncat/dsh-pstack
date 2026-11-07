@@ -21,7 +21,7 @@
     <tr>
       <td align="center"><strong>58</strong><br /><sub>pstack 技能</sub></td>
       <td align="center"><strong>23</strong><br /><sub>playbook</sub></td>
-      <td align="center"><strong>5</strong><br /><sub>原生工具</sub></td>
+      <td align="center"><strong>4</strong><br /><sub>原生工具</sub></td>
       <td align="center"><strong>5</strong><br /><sub>agent preset</sub></td>
       <td align="center"><strong>5</strong><br /><sub>随包脚本</sub></td>
     </tr>
@@ -39,11 +39,11 @@
 
 ---
 
-`dsh-pstack` 将 [pstack](https://github.com/cursor/plugins/tree/main/pstack) 移植到 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH），保留其技能、playbook 与参考文档，并提供原生技能路由、按角色配置模型、按角色路由的子代理和可选本地渲染。
+`dsh-pstack` 将 [pstack](https://github.com/cursor/plugins/tree/main/pstack) 移植到 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH），保留其技能、playbook 与参考文档，并提供原生技能路由、按角色配置模型和按角色路由的子代理。
 
 完整的移植审查见[能力审核](./port/audit.md)与[运行时映射](./port/dsh.zh.md)。
 
-当前审核覆盖 68 项 Cursor 能力：39 项直接映射、2 项官方插件、18 项插件实现、9 项有意舍弃。
+当前审核覆盖 68 项 Cursor 能力：39 项直接映射、2 项官方插件、16 项插件实现、11 项有意舍弃。
 
 > [!IMPORTANT]
 > 要求 DSH `>=0.2.2-rc.1`、Node.js `>=24.21.1`。
@@ -124,7 +124,6 @@
 | `pstack_models` | 列出可用的 provider、model 和 reasoning effort。 |
 | `pstack_roles` | 展示角色 shape 与自动面板状态，确保委派时使用正确的参数。 |
 | `pstack_subagent` | 应用角色路由与 agent preset，支持并行子代理。 |
-| `pstack_render` | 通过已安装的本地渲染器生成 Mermaid 图和幻灯片视频，不静默安装工具。 |
 
 ### 🎭 Agent preset
 
@@ -157,10 +156,6 @@
 | `docs-drift` | `authored` | 代码变化后检查和修复文档漂移。 |
 
 vendored 技能的来源与哈希记录在 [`skills/skills-lock.json`](./skills/skills-lock.json)。
-
-### 🎨 可选渲染
-
-安装了 `pele@1.9.0` 时，`pstack_render` 通过 Pele 渲染 Mermaid 图；系统有 ffmpeg 和 ImageMagick 时，它渲染幻灯片视频。缺少渲染器时返回明确的 `status: missing` 和安装提示。
 
 ## 🔌 可选 DSH 插件
 
@@ -197,7 +192,7 @@ vendored 技能的来源与哈希记录在 [`skills/skills-lock.json`](./skills/
 
 配置页默认推荐 Change requests & worktrees 和会话搜索，不会自动启用任何插件。
 
-未启用可选插件时，依赖它的步骤会标记为 skipped 或 blocked，不会标记为通过。没有 forge bundle 时通过 `bash` 使用 `gh` 与 `git worktree add`。安装与降级方案见 [DSH 适配文档](./pstack/docs/harness/dsh.md#optional-plugins)。
+未启用可选插件时，依赖它的步骤会标记为 skipped 或 blocked，不会标记为通过。没有 forge bundle 时通过 `bash` 使用 `gh` 与 `git worktree add`。安装与降级方案见 [DSH 适配文档](./port/dsh.zh.md#可选插件)。
 
 ## ⚠️ 仍存在的缺口
 
@@ -210,9 +205,12 @@ vendored 技能的来源与哈希记录在 [`skills/skills-lock.json`](./skills/
 | PR 编排 | 没有模型侧变更请求工具，也没有 Agent Teams 的 PR frontier 与 ledger；`watch-pr` 仍提供 stack verdict。 |
 | 模式切换 | 没有 Option+Enter 开关或会话中切换模式的入口。新建会话时选择 `poteto-mode` 或 `poteto-mode-creator`；其它 preset 每个任务调用 `/poteto-mode`。 |
 | 事件驱动循环 | 不订阅 forge 事件；本地 goal、定时任务和 watcher 并非等价替代。 |
-| 视频证据 | 没有内置录屏与逐帧验证，需要外部录屏或 FFmpeg 工具。 |
+| 图表渲染 | 不提供内置渲染器。图表以 Mermaid 文本返回，需要图片时自行用外部工具渲染。 |
+| 视频证据 | 没有内置视频渲染、录屏与逐帧验证，需要外部录屏或 FFmpeg 工具。 |
 | 桌面覆盖 | computer use 仅支持 macOS PTC Session，Windows 支持尚不完整。 |
 | MCP 发现 | 不会自动发现证据类别，需要显式配置并识别 MCP 工具。 |
+
+插件以 Node.js 为基线。`watch-pr` 还需要 Bun、网络和已登录的 `gh`。`statechart` 还需要 Node、Bun 或 Deno 之一，以及 mise、Java、TLC 和首次运行的网络。详见[脚本登记](./port/README.md#脚本登记)。
 
 ## 📦 兼容性
 

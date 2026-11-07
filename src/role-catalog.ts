@@ -11,13 +11,10 @@ import type { JsonSchemaNode, ToolDefinition } from "@deepseek-ai/dsh-tools";
 
 import { ROLE_MANIFEST, type RoleSpec } from "./role-manifest.ts";
 
-/** Cordis row name. */
 export const name = "pstack-role-catalog";
 
-/** The service this row requires. */
 export const inject = ["tools"];
 
-/** Model-facing tool name. */
 export const TOOL_NAME = "pstack_roles";
 
 export interface RoleCapability {
@@ -129,7 +126,6 @@ export function createPstackRolesTool(): ToolDefinition {
   };
 }
 
-/** Register the tool on one row. */
 export function apply(ctx: Context): void {
   ctx.tools.register(createPstackRolesTool());
 }

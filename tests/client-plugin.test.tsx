@@ -7,7 +7,7 @@ import { apply, inject } from "../src/client/index.ts";
 import { ROLE_COPY } from "../src/client/role-copy.ts";
 import { ROLE_MANIFEST } from "../src/role-manifest.ts";
 import type { PstackRolesNamespace } from "../src/role-remote.ts";
-import type { BundleView } from "../src/client/RecommendedPluginsPage.tsx";
+import type { BundleInfo } from "@deepseek-ai/dsh-api-remotes/client";
 import { RecommendedPluginsView } from "../src/client/RecommendedPluginsPage.tsx";
 import { catalogs, type PstackTranslations } from "../src/client/locales/index.ts";
 import { FALLBACK_LOCALE } from "../src/preset-copy.ts";
@@ -31,17 +31,17 @@ function translationsFrom(language = FALLBACK_LOCALE): PstackTranslations {
 }
 
 function roleApi() {
+  const snapshot = {
+    path: "/tmp/pstack-models.mdc",
+    status: "missing" as const,
+    roles: [],
+    issues: [],
+    canSave: true,
+  };
   return {
-    status: async () => ({
-      path: "/tmp/pstack-models.mdc",
-      status: "missing" as const,
-      roles: [],
-      issues: [],
-      canSave: true,
-    }),
-    catalogue: async () => ({ providers: [], truncated: false }),
-    save: async () => ({ ok: false as const, reason: "not used" }),
-    saveBudget: async () => ({ ok: false as const, reason: "not used" }),
+    status: async () => ({ ok: true as const, value: snapshot }),
+    catalogue: async () => ({ ok: true as const, value: { providers: [], truncated: false } }),
+    save: async () => ({ ok: true as const, value: { ok: false as const, reason: "not used" } }),
   };
 }
 
@@ -56,8 +56,16 @@ describe("pstack client", () => {
     const dictionaries = new Map<string, Dictionaries>();
     const pstackRoles = roleApi() as unknown as PstackRolesNamespace["pstackRoles"];
     const pluginManager = {
-      listBundles: async () => ({ ok: true as const, value: [] as BundleView[] }),
-      setBundleEnabled: async () => ({ ok: true as const, value: undefined }),
+      listBundles: async () => ({ ok: true as const, value: [] as BundleInfo[] }),
+      setBundleEnabled: async (name: string) => ({
+        ok: true as const,
+        value: {
+          changed: true,
+          application: "applied" as const,
+          stage: "enable" as const,
+          target: name,
+        },
+      }),
     };
     const slotHost = {
       inject: (_name: string, register: () => void) => register(),
@@ -93,7 +101,7 @@ describe("pstack client", () => {
     } as unknown as Context;
 
     await apply(ctx);
-    expect(inject).toEqual(["remote", "slots", "locale", "remote.pluginManager"]);
+    expect(inject).toEqual(["remote", "slots", "locale"]);
     expect([...dictionaries.keys()].sort()).toEqual([
       "pstack.common",
       "pstack.config",
@@ -148,5 +156,10 @@ describe("pstack client", () => {
         ).toBeTruthy();
       }
     }
+  });
+
+  it("keeps ROLE_COPY keys in lockstep with the role manifest", () => {
+    const manifestKeys = ROLE_MANIFEST.map((role) => role.key).sort();
+    expect(Object.keys(ROLE_COPY).sort()).toEqual(manifestKeys);
   });
 });

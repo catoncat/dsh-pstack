@@ -21,7 +21,7 @@
     <tr>
       <td align="center"><strong>58</strong><br /><sub>pstack skills</sub></td>
       <td align="center"><strong>23</strong><br /><sub>playbooks</sub></td>
-      <td align="center"><strong>5</strong><br /><sub>native tools</sub></td>
+      <td align="center"><strong>4</strong><br /><sub>native tools</sub></td>
       <td align="center"><strong>5</strong><br /><sub>agent presets</sub></td>
       <td align="center"><strong>5</strong><br /><sub>bundled scripts</sub></td>
     </tr>
@@ -39,11 +39,11 @@
 
 ---
 
-`dsh-pstack` ports [pstack](https://github.com/cursor/plugins/tree/main/pstack) to [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH). It includes the upstream skills, playbooks, and references, and adds skill routing, role-based model configuration, role-routed subagents, and optional local rendering.
+`dsh-pstack` ports [pstack](https://github.com/cursor/plugins/tree/main/pstack) to [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH). It includes the upstream skills, playbooks, and references, and adds skill routing, role-based model configuration, and role-routed subagents.
 
-See the [capability audit](./port/audit.md) and [runtime mapping](./port/dsh.md) for the complete porting review.
+See the [capability audit (in Chinese)](./port/audit.md) and [runtime mapping](./port/dsh.md) for the complete porting review.
 
-The current review covers 68 Cursor-facing capabilities: 39 direct mappings, 2 official plugins, 18 plugin implementations, and 9 deliberate omissions.
+The current review covers 68 Cursor-facing capabilities: 39 direct mappings, 2 official plugins, 16 plugin implementations, and 11 deliberate omissions.
 
 > [!IMPORTANT]
 > Requires DSH `>=0.2.2-rc.1` and Node.js `>=24.21.1`.
@@ -124,7 +124,6 @@ Use pstack skills when you want to start workflows directly from a Session.
 | `pstack_models` | Lists available providers, models, and reasoning efforts. |
 | `pstack_roles` | Shows role shapes and automatic-panel status so delegation uses the correct parameters. |
 | `pstack_subagent` | Applies role routing and agent presets. Supports parallel subagents. |
-| `pstack_render` | Renders Mermaid diagrams and slide videos through installed local renderers without installing them. |
 
 ### 🎭 Agent presets
 
@@ -157,10 +156,6 @@ These skills fill gaps that pstack leaves in real projects. They are not part of
 | `docs-drift` | `authored` | Finds and repairs documentation drift as code changes. |
 
 [`skills/skills-lock.json`](./skills/skills-lock.json) records the sources and hashes of vendored skills.
-
-### 🎨 Optional rendering
-
-`pstack_render` renders Mermaid diagrams through Pele when `pele@1.9.0` is installed, and slide videos through ffmpeg and ImageMagick when those commands are available. A missing renderer returns a clear `status: missing` result and an install hint.
 
 ## 🔌 Optional DSH plugins
 
@@ -210,9 +205,12 @@ These limitations remain even when every recommended plugin is enabled.
 | PR orchestration | No model-side change-request tool or Agent Teams PR frontier and ledger. `watch-pr` still provides stack verdicts. |
 | Mode switching | No Option+Enter toggle or mid-session mode switch. Select `poteto-mode` or `poteto-mode-creator` at session creation; other presets invoke `/poteto-mode` for each task. |
 | Event-driven loops | No forge event subscription. Local goals, schedules, and watchers are not equivalent. |
-| Media evidence | No built-in video recording or frame-level verification. Use external recording or FFmpeg tools. |
+| Diagram rendering | No built-in renderer. Charts return Mermaid text; render an image with your own tools when needed. |
+| Media evidence | No built-in video rendering, recording, or frame-level verification. Use external recording or FFmpeg tools. |
 | Desktop coverage | Computer use is limited to macOS PTC Sessions. Windows support is incomplete. |
 | MCP discovery | No automatic evidence-category discovery. Configure and identify MCP tools explicitly. |
+
+Node.js is the plugin baseline. `watch-pr` also needs Bun, network access, and a logged-in `gh`. `statechart` also needs Node, Bun, or Deno, plus mise, Java, TLC, and network on first run. See the [script registry](./port/README.md#脚本登记) for details.
 
 ## 📦 Compatibility
 

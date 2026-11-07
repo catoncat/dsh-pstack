@@ -79,6 +79,7 @@ describe("role manifest and parser", () => {
     expect(readRoleConfiguration(join(homeWithRoles(undefined), "pstack-models.mdc")).status).toBe(
       "missing",
     );
+    expect(readRoleConfiguration(homeWithRoles(undefined)).status).toBe("unreadable");
   });
 
   it("expands automatic panels and selects a list entry", () => {

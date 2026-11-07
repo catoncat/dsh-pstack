@@ -17,11 +17,30 @@ function restoreRoleFile() {
   else writeFileSync(roleFile, previous, "utf8");
 }
 
+const EFFORT_ORDER = ["max", "xhigh", "high", "medium", "low", "off"];
+
+export function highestEffortRoute(routes) {
+  const groups = new Map();
+  for (const route of routes) {
+    const key = `${route.provider}/${route.model}`;
+    groups.set(key, [...(groups.get(key) ?? []), route]);
+  }
+  const candidates = [...groups.values()].filter(
+    (group) => group.length >= 2 && group.every((route) => EFFORT_ORDER.includes(route.effort)),
+  );
+  return candidates[0]?.toSorted(
+    (left, right) => EFFORT_ORDER.indexOf(left.effort) - EFFORT_ORDER.indexOf(right.effort),
+  )[0];
+}
+
 export default {
   id: "CASE-PSTACK-SUBAGENT-ROUTE-01",
   title: "pstack_subagent 按角色路由并调整思考等级",
   build(routes) {
-    const route = routes[0];
+    const route = highestEffortRoute(routes);
+    if (route === undefined) {
+      return { skip: "路由用例需要一个至少声明两种已知思考等级的模型，不支持自定义词表" };
+    }
     return {
       setup() {
         setupRoleFile(`bug-fix: ${route.provider}/${route.model}\n`);
@@ -47,17 +66,19 @@ export default {
           return bad(`pstack_subagent roleIndex=${JSON.stringify(input.roleIndex)}，期望 null`);
         if (input.agent !== "general")
           return bad(`pstack_subagent agent=${JSON.stringify(input.agent)}，期望 general`);
-        if (input.reasoningEffort !== "max")
+        if (input.reasoningEffort !== route.effort)
           return bad(
-            `pstack_subagent reasoningEffort=${JSON.stringify(input.reasoningEffort)}，期望 max`,
+            `pstack_subagent reasoningEffort=${JSON.stringify(input.reasoningEffort)}，期望 ${route.effort}`,
           );
         const text = resultText(subagentCalls[0]);
         const routeLabel = `${route.provider}/${route.model}`;
         if (!text.includes(`route=${routeLabel}`))
           return bad(`子代理结果未报告角色路由 ${routeLabel}：${text.slice(0, 300)}`);
-        if (!text.includes("effort=max"))
-          return bad(`子代理结果未报告思考等级 max：${text.slice(0, 300)}`);
-        return ok(`pstack_subagent 一次按 bug-fix 路由启动子代理，route=${routeLabel}，effort=max`);
+        if (!text.includes(`effort=${route.effort}`))
+          return bad(`子代理结果未报告思考等级 ${route.effort}：${text.slice(0, 300)}`);
+        return ok(
+          `pstack_subagent 一次按 bug-fix 路由启动子代理，route=${routeLabel}，effort=${route.effort}`,
+        );
       },
     };
   },

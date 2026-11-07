@@ -1,16 +1,19 @@
 /**
  * Role-file editing behind the settings page.
  *
- * A save changes exactly one role line and leaves every other byte intact.
- * Every route is validated against the live model catalogue before the first
- * byte is written, so a rejected save leaves the file unchanged.
+ * A save changes or removes one logical role entry and preserves the other
+ * logical lines. The editor normalizes line endings and the final newline.
+ * Concrete routes are validated against the live model catalogue before the
+ * first byte is written, so a rejected save leaves the file unchanged.
  */
 
 import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { randomUUID } from "node:crypto";
 
-import { collectCatalogue, type ModelsLlm } from "./models.ts";
+import type { LlmRuntime } from "@deepseek-ai/dsh-llm";
+
+import { collectCatalogue } from "./models.ts";
 import {
   parseRoleConfiguration,
   readRoleConfiguration,
@@ -19,14 +22,13 @@ import {
   type Route,
 } from "./role-config.ts";
 import { ROLE_MANIFEST, findRole, normalizeRoleName } from "./role-manifest.ts";
-import type {
-  RoleFileSnapshot,
-  RoleView,
-  RouteView,
-  SaveBudgetRequest,
-  SaveBudgetResult,
-  SaveRoleRequest,
-  SaveRoleResult,
+import {
+  parseSaveRoleRequest,
+  type RoleFileSnapshot,
+  type RoleView,
+  type RouteView,
+  type SaveRoleRequest,
+  type SaveRoleResult,
 } from "./role-wire.ts";
 
 /** Project one parsed file onto the manifest. */
@@ -89,26 +91,38 @@ export function validateSaveRequest(
   request: SaveRoleRequest,
   catalogue: Awaited<ReturnType<typeof collectCatalogue>>,
 ): { ok: true; key: string; routes: readonly Route[] } | { ok: false; reason: string } {
-  if (typeof request !== "object" || request === null || !Array.isArray(request.routes)) {
+  if (
+    typeof request !== "object" ||
+    request === null ||
+    typeof request.key !== "string" ||
+    !Array.isArray(request.routes)
+  ) {
     return { ok: false, reason: "the save request must carry a role key and a route list" };
   }
   const spec = findRole(request.key);
   if (spec === undefined)
     return { ok: false, reason: `unknown pstack role ${JSON.stringify(request.key)}` };
-  if (spec.shape === "single" && request.routes.length !== 1) {
-    return { ok: false, reason: `role "${spec.key}" holds a single route; save exactly one` };
+  if (spec.shape === "single" && request.routes.length > 1) {
+    return { ok: false, reason: `role "${spec.key}" holds at most one route` };
   }
-  if (request.routes.length === 0) {
-    return { ok: false, reason: `role "${spec.key}" must keep at least one route` };
-  }
+  if (request.routes.length === 0) return { ok: true, key: spec.key, routes: [] };
   const routes: Route[] = [];
   for (const [index, route] of request.routes.entries()) {
+    if (typeof route !== "object" || route === null) {
+      return { ok: false, reason: `route ${index + 1} must be an object` };
+    }
     if (route.kind === "inherit") {
       if (route.alias !== "inherit-parent" && route.alias !== "auto") {
         return { ok: false, reason: `route ${index + 1} has an unknown inheritance alias` };
       }
       routes.push({ kind: "inherit", alias: route.alias });
       continue;
+    }
+    if (route.kind !== "route") {
+      return { ok: false, reason: `route ${index + 1} has an unknown kind` };
+    }
+    if (typeof route.provider !== "string" || typeof route.model !== "string") {
+      return { ok: false, reason: `route ${index + 1} needs provider and model strings` };
     }
     const provider = route.provider.trim();
     const model = route.model.trim();
@@ -141,6 +155,9 @@ export function validateSaveRequest(
         reason: `model ${JSON.stringify(`${provider}/${model}`)} failed discovery: ${modelEntry.error}`,
       };
     }
+    if (route.effort !== undefined && typeof route.effort !== "string") {
+      return { ok: false, reason: `route ${index + 1} has a non-string effort` };
+    }
     const effort = route.effort?.trim();
     if (effort !== undefined && effort !== "" && !modelEntry.efforts.includes(effort)) {
       return {
@@ -171,7 +188,7 @@ export function renderRoleValue(routes: readonly Route[]): string {
     .join(", ");
 }
 
-/** Replace or append one role line, leaving every other line unchanged. */
+/** Replace or append one role line, preserving the other logical lines. */
 export function updateRoleText(text: string, key: string, value: string): string {
   const target = normalizeRoleName(key);
   const lines = text === "" ? [] : text.replace(/\n$/, "").split(/\r?\n/);
@@ -192,58 +209,33 @@ export function updateRoleText(text: string, key: string, value: string): string
   return `${lines.join("\n")}\n`;
 }
 
-/** Replace, append, or remove the budget comment line, leaving every other line unchanged. */
-export function updateBudgetText(text: string, budget: string): string {
-  const normalized = budget.trim();
+/** Remove every matching role line. Clearing an absent role is a no-op. */
+export function removeRoleText(text: string, key: string): string {
+  const target = normalizeRoleName(key);
   const lines = text === "" ? [] : text.replace(/\n$/, "").split(/\r?\n/);
-  const index = lines.findIndex((line) => /^#\s*budget\s*:/i.test(line.trim()));
-  if (index >= 0) {
-    if (normalized === "") lines.splice(index, 1);
-    else lines[index] = `# budget: ${normalized}`;
-  } else if (normalized !== "") {
-    lines.unshift(`# budget: ${normalized}`);
-  }
-  return lines.length === 0 ? "" : `${lines.join("\n")}\n`;
+  const remaining = lines.filter((line) => {
+    const colon = line.indexOf(":");
+    return colon === -1 || normalizeRoleName(line.slice(0, colon)) !== target;
+  });
+  if (remaining.length === lines.length) return text;
+  return remaining.length === 0 ? "" : `${remaining.join("\n")}\n`;
 }
 
 /** Save one role and return the reloaded snapshot. */
 export async function saveRoleConfiguration(
   path: string,
   request: SaveRoleRequest,
-  llm: ModelsLlm,
+  llm: LlmRuntime,
   signal: AbortSignal,
 ): Promise<SaveRoleResult> {
-  const current = readRoleConfiguration(path);
-  if (current.status === "unreadable") {
-    return { ok: false, reason: `the role file is unreadable: ${current.reason}` };
-  }
-  const catalogue = await collectCatalogue(llm, undefined, signal);
   signal.throwIfAborted();
-  const validation = validateSaveRequest(request, catalogue);
-  if (!validation.ok) return validation;
-
-  let text = "";
-  if (current.status === "loaded") {
-    try {
-      text = readFileSync(path, "utf8");
-    } catch (error) {
-      return { ok: false, reason: `the role file could not be read: ${describeError(error)}` };
-    }
-  }
-  const next = updateRoleText(text, validation.key, renderRoleValue(validation.routes));
+  let parsed: SaveRoleRequest;
   try {
-    writeAtomically(path, next);
+    parsed = parseSaveRoleRequest(request);
   } catch (error) {
-    return { ok: false, reason: `the role file could not be written: ${describeError(error)}` };
+    return { ok: false, reason: describeError(error) };
   }
-  return { ok: true, snapshot: snapshotFromConfiguration(parseRoleConfiguration(next, path)) };
-}
 
-/** Save the budget line and return the reloaded snapshot. */
-export function saveBudgetConfiguration(
-  path: string,
-  request: SaveBudgetRequest,
-): SaveBudgetResult {
   const current = readRoleConfiguration(path);
   if (current.status === "unreadable") {
     return { ok: false, reason: `the role file is unreadable: ${current.reason}` };
@@ -256,7 +248,40 @@ export function saveBudgetConfiguration(
       return { ok: false, reason: `the role file could not be read: ${describeError(error)}` };
     }
   }
-  const next = updateBudgetText(text, request.budget);
+
+  let next: string;
+  if (parsed.routes.length === 0) {
+    const validation = validateSaveRequest(parsed, { providers: [], truncated: false });
+    if (!validation.ok) return validation;
+    next = removeRoleText(text, validation.key);
+  } else {
+    let catalogue: Awaited<ReturnType<typeof collectCatalogue>>;
+    try {
+      catalogue = await collectCatalogue(llm, undefined, signal);
+    } catch (error) {
+      signal.throwIfAborted();
+      return {
+        ok: false,
+        reason: `the model catalogue could not be loaded: ${describeError(error)}`,
+      };
+    }
+    signal.throwIfAborted();
+    const validation = validateSaveRequest(parsed, catalogue);
+    if (!validation.ok) return validation;
+    if (current.status === "loaded") {
+      try {
+        text = readFileSync(path, "utf8");
+      } catch (error) {
+        return { ok: false, reason: `the role file could not be read: ${describeError(error)}` };
+      }
+    }
+    next = updateRoleText(text, validation.key, renderRoleValue(validation.routes));
+  }
+
+  if (next === text) {
+    return { ok: true, snapshot: snapshotFromConfiguration(readRoleConfiguration(path)) };
+  }
+
   try {
     writeAtomically(path, next);
   } catch (error) {
@@ -272,7 +297,9 @@ function writeAtomically(path: string, text: string): void {
     writeFileSync(temporary, text, "utf8");
     renameSync(temporary, path);
   } catch (error) {
-    rmSync(temporary, { force: true });
+    try {
+      rmSync(temporary, { force: true });
+    } catch {}
     throw error;
   }
 }

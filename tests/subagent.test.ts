@@ -5,11 +5,12 @@ import { afterEach, describe, expect, it } from "vite-plus/test";
 
 import type { Agent } from "@deepseek-ai/dsh-agent";
 import {
+  createPstackSubagentTool,
   normalizeConfig,
   parseDelegationArgs,
   planDelegation,
   startPlannedChildren,
-  type SubagentRuntime,
+  type DelegationRuntime,
 } from "../src/subagent.ts";
 
 const directories: string[] = [];
@@ -39,7 +40,7 @@ function args(overrides: Record<string, unknown> = {}) {
   });
 }
 
-function fakeRuntime(dshHome: string): SubagentRuntime {
+function fakeRuntime(dshHome: string): DelegationRuntime {
   return {
     subagents: {
       getProvider: () => ({
@@ -55,7 +56,7 @@ function fakeRuntime(dshHome: string): SubagentRuntime {
     workingDirectory: { ensure: async () => "/session" },
     dshHome,
     potetoModeSkillPath: "/pkg/pstack/skills/poteto-mode/SKILL.md",
-  } as unknown as SubagentRuntime;
+  } as unknown as DelegationRuntime;
 }
 
 describe("pstack_subagent arguments and planning", () => {
@@ -107,6 +108,69 @@ describe("pstack_subagent arguments and planning", () => {
     );
     expect(result.kind).toBe("activation");
     expect(result.children[0]?.childId).toBe("child-1");
+  });
+
+  it("keeps started child ids when a later activation fails", async () => {
+    const dshHome = home("arena runners: cpa/model-a, cpa/model-b\n");
+    let starts = 0;
+    const base = fakeRuntime(dshHome);
+    const subagents = {
+      getProvider: base.subagents.getProvider.bind(base.subagents),
+      list: base.subagents.list.bind(base.subagents),
+      resolveMaxDepth: base.subagents.resolveMaxDepth.bind(base.subagents),
+      startActivation: async () => {
+        starts += 1;
+        if (starts === 1) return { childId: "child-1" };
+        throw new Error("activation limit");
+      },
+    };
+    const runtime = { ...base, subagents } as unknown as DelegationRuntime;
+    const plan = planDelegation(args({ role: "arena runners" }), runtime);
+    const result = await startPlannedChildren(
+      { options: {} } as unknown as Agent,
+      plan,
+      runtime,
+      new AbortController().signal,
+    );
+    expect(result).toMatchObject({
+      kind: "partial",
+      children: [{ childId: "child-1" }],
+      failure: { index: 1, total: 2, reason: "activation limit" },
+    });
+    const rendered = createPstackSubagentTool(runtime).output?.render({}, result as never) as {
+      text: string;
+    }[];
+    expect(rendered[0]?.text).toContain("started 1 of 2 children");
+    expect(rendered[0]?.text).toContain("child-1");
+    expect(rendered[0]?.text).toContain("activation limit");
+  });
+
+  it("selects a list entry and reports the selection", () => {
+    const runtime = fakeRuntime(home("swarm workers: cpa/model-a, cpa/model-b\n"));
+    const plan = planDelegation(args({ role: "swarm workers", roleIndex: 1 }), runtime);
+    expect(plan.children.map((child) => child.routeLabel)).toEqual(["cpa/model-b"]);
+    expect(plan.diagnostics.join("\n")).toContain("entry 2 was selected");
+  });
+
+  it("reports a missing role line and preserves slash-containing model ids", () => {
+    const missing = planDelegation(args({ role: "bug-fix" }), fakeRuntime(home()));
+    expect(missing.children[0]?.routeLabel).toBe("inherit-parent");
+    expect(missing.diagnostics.join("\n")).toContain("has no line");
+
+    const routed = planDelegation(
+      args({ role: "bug-fix" }),
+      fakeRuntime(home("bug-fix: magpie/workbuddy/deepseek-v4.1-flash [high]\n")),
+    );
+    expect(routed.children[0]?.routeLabel).toBe("magpie/workbuddy/deepseek-v4.1-flash [high]");
+  });
+
+  it("rejects a depth above the configured cap", () => {
+    expect(() =>
+      planDelegation(args({ maxDepth: 3 }), fakeRuntime(home()), {
+        provider: "spawn",
+        maxDepth: 2,
+      }),
+    ).toThrow(/exceeds/);
   });
 
   it("rejects maxDepth 0 before planning", () => {

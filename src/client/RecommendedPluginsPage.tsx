@@ -1,6 +1,7 @@
 /** Related official plugins for the pstack plugin configuration dialog. */
 
 import { useEffect, useState, type ReactElement } from "react";
+import type { BundleInfo, ChangeResult } from "@deepseek-ai/dsh-api-remotes/client";
 
 import {
   IconAlert,
@@ -18,24 +19,15 @@ import {
   type IconComponent,
 } from "./icons.tsx";
 import { ensurePstackStyles } from "./styles.ts";
+import { Toast, type ToastMessage } from "./toast.tsx";
 import { Button, IconButton, Spinner, Status, Switch, type StatusTone } from "./ui.tsx";
 import type { PstackTranslations, PluginsKey } from "./locales/index.ts";
 
 ensurePstackStyles();
 
-export interface BundleView {
-  readonly name: string;
-  readonly description?: string;
-  readonly enabled: boolean;
-  readonly installed: boolean;
-  readonly availability: string;
-  readonly error?: { readonly code?: string; readonly diagnostic?: string };
-  readonly readOnlyReason?: string;
-}
-
 export interface PluginManagerApi {
-  listBundles(): Promise<readonly BundleView[]>;
-  setBundleEnabled(name: string, enabled: boolean): Promise<void>;
+  listBundles(): Promise<readonly BundleInfo[]>;
+  setBundleEnabled(name: string, enabled: boolean): Promise<ChangeResult>;
 }
 
 type PluginGroupId = "recommended" | "normal" | "conflict";
@@ -128,18 +120,23 @@ const PLUGIN_GROUPS: readonly PluginGroup[] = [
 
 const ALL = "__all__";
 
+type PluginNoticeTone = "success" | "warn" | "error" | "neutral";
+
+interface PluginNotice {
+  readonly tone: PluginNoticeTone;
+  readonly text: string;
+}
+
 export function RecommendedPluginsView(props: {
   api: PluginManagerApi | undefined;
   translations: PstackTranslations;
 }): ReactElement {
-  const [bundles, setBundles] = useState<readonly BundleView[]>([]);
+  const [bundles, setBundles] = useState<readonly BundleInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
   const [busy, setBusy] = useState<string | undefined>();
-  const [messages, setMessages] = useState<Record<string, string>>({});
-  const [allMessage, setAllMessage] = useState<
-    { tone: "success" | "error"; text: string } | undefined
-  >();
+  const [messages, setMessages] = useState<Record<string, PluginNotice>>({});
+  const [toast, setToast] = useState<ToastMessage | undefined>();
   const { api, translations } = props;
   const t = translations.plugins;
   const common = translations.common;
@@ -166,12 +163,12 @@ export function RecommendedPluginsView(props: {
   }, [api, t]);
 
   const byName = new Map(bundles.map((bundle) => [bundle.name, bundle]));
-  const available = (bundle: BundleView | undefined): boolean =>
+  const available = (bundle: BundleInfo | undefined): boolean =>
     bundle !== undefined &&
     bundle.availability !== "missing" &&
     bundle.error === undefined &&
     bundle.readOnlyReason === undefined;
-  const switchable = (bundle: BundleView | undefined, group: PluginGroupId): boolean =>
+  const switchable = (bundle: BundleInfo | undefined, group: PluginGroupId): boolean =>
     available(bundle) && (group !== "conflict" || bundle?.enabled === true);
   const recommended = PLUGIN_GROUPS.find((group) => group.id === "recommended")!;
   const recommendedEnabled = recommended.plugins.filter(
@@ -182,18 +179,29 @@ export function RecommendedPluginsView(props: {
     return switchable(bundle, "recommended") && bundle?.enabled !== true;
   }).length;
 
-  const toggle = async (bundle: BundleView): Promise<void> => {
+  const toggle = async (bundle: BundleInfo): Promise<void> => {
     if (api === undefined) return;
     setBusy(bundle.name);
-    setAllMessage(undefined);
-    setMessages((current) => ({ ...current, [bundle.name]: "" }));
+    setToast(undefined);
+    setMessages((current) => {
+      const next = { ...current };
+      delete next[bundle.name];
+      return next;
+    });
     try {
-      await api.setBundleEnabled(bundle.name, !bundle.enabled);
+      const change = await api.setBundleEnabled(bundle.name, !bundle.enabled);
+      setMessages((current) => ({
+        ...current,
+        [bundle.name]: changeNotice(t, bundle.name, change),
+      }));
       await load();
     } catch (reason) {
       setMessages((current) => ({
         ...current,
-        [bundle.name]: t("pluginChangeFailed", { name: bundle.name, reason: messageOf(reason) }),
+        [bundle.name]: {
+          tone: "error",
+          text: t("pluginChangeFailed", { name: bundle.name, reason: messageOf(reason) }),
+        },
       }));
     } finally {
       setBusy(undefined);
@@ -205,29 +213,34 @@ export function RecommendedPluginsView(props: {
     const targets = recommended.plugins
       .map((plugin) => byName.get(plugin.name))
       .filter(
-        (bundle): bundle is BundleView =>
+        (bundle): bundle is BundleInfo =>
           bundle !== undefined && switchable(bundle, "recommended") && !bundle.enabled,
       );
     if (targets.length === 0) return;
     setBusy(ALL);
-    setAllMessage(undefined);
-    let failed = 0;
+    setToast(undefined);
+    let settled = 0;
+    let restarts = 0;
+    let unsettled = 0;
     for (const bundle of targets) {
       try {
-        await api.setBundleEnabled(bundle.name, true);
+        const change = await api.setBundleEnabled(bundle.name, true);
+        if (change.application === "restart-required") restarts += 1;
+        if (isSettled(change.application)) settled += 1;
+        else unsettled += 1;
       } catch {
-        failed += 1;
+        unsettled += 1;
       }
     }
     await load();
     setBusy(undefined);
-    setAllMessage({
-      tone: failed === 0 ? "success" : "error",
-      text:
-        failed === 0
-          ? t("enableAllDone", { count: targets.length })
-          : t("enableAllFailed", { count: failed }),
-    });
+    setToast(
+      unsettled > 0
+        ? { tone: "error", text: t("enableAllPartial", { settled, restarts, unsettled }) }
+        : restarts > 0
+          ? { tone: "warn", text: t("enableAllRestart", { count: restarts }) }
+          : { tone: "success", text: t("enableAllDone", { count: settled }) },
+    );
   };
 
   return (
@@ -280,16 +293,7 @@ export function RecommendedPluginsView(props: {
           <span>{error}</span>
         </div>
       )}
-      {allMessage === undefined ? null : (
-        <span
-          className="pstack-inline-message"
-          data-tone={allMessage.tone}
-          style={{ marginBottom: 10 }}
-        >
-          {allMessage.tone === "success" ? <IconCheck size={12} /> : <IconAlert size={12} />}
-          {allMessage.text}
-        </span>
-      )}
+      <Toast message={toast} />
       <div className="pstack-plugin-groups">
         {PLUGIN_GROUPS.map((group) => {
           const enabledInGroup = group.plugins.filter(
@@ -317,6 +321,7 @@ export function RecommendedPluginsView(props: {
                   const title = t(plugin.titleKey);
                   const action = bundle?.enabled === true ? t("disablePlugin") : t("enablePlugin");
                   const PluginIcon = plugin.icon;
+                  const message = messages[plugin.name];
                   return (
                     <li key={plugin.name}>
                       <article
@@ -337,12 +342,12 @@ export function RecommendedPluginsView(props: {
                           </div>
                           <p className="pstack-plugin-desc">{t(plugin.descriptionKey)}</p>
                           <code className="pstack-plugin-id">{plugin.name}</code>
-                          {messages[plugin.name] ? (
-                            <span className="pstack-inline-message" data-tone="error">
-                              <IconAlert size={12} />
-                              {messages[plugin.name]}
+                          {message === undefined ? null : (
+                            <span className="pstack-inline-message" data-tone={message.tone}>
+                              <NoticeIcon tone={message.tone} />
+                              {message.text}
                             </span>
-                          ) : null}
+                          )}
                         </div>
                         <div className="pstack-plugin-end">
                           <Switch
@@ -368,7 +373,7 @@ export function RecommendedPluginsView(props: {
 }
 
 function bundleStatus(
-  bundle: BundleView | undefined,
+  bundle: BundleInfo | undefined,
   group: PluginGroupId,
   t: PstackTranslations["plugins"],
 ): { label: string; tone: StatusTone } {
@@ -387,4 +392,56 @@ function bundleStatus(
 
 function messageOf(reason: unknown): string {
   return reason instanceof Error ? reason.message : String(reason);
+}
+
+function isSettled(application: ChangeResult["application"]): boolean {
+  return application === "applied" || application === "restart-required";
+}
+
+function changeNotice(
+  t: PstackTranslations["plugins"],
+  name: string,
+  change: ChangeResult,
+): PluginNotice {
+  switch (change.application) {
+    case "applied":
+      return { tone: "success", text: t("pluginChangeApplied", { name }) };
+    case "restart-required":
+      return {
+        tone: "warn",
+        text:
+          change.restartReason === undefined
+            ? t("pluginChangeRestart", { name })
+            : t("pluginChangeRestartReason", { name, reason: change.restartReason }),
+      };
+    case "overridden":
+      return { tone: "warn", text: t("pluginChangeOverridden", { name }) };
+    case "cancelled":
+      return { tone: "neutral", text: t("pluginChangeCancelled", { name }) };
+    case "failed":
+      return {
+        tone: "error",
+        text: t("pluginChangeFailed", {
+          name,
+          reason: describeChangeError(t, change.error),
+        }),
+      };
+  }
+}
+
+function describeChangeError(
+  t: PstackTranslations["plugins"],
+  error: ChangeResult["error"],
+): string {
+  if (error === undefined) return t("pluginChangeUnknownReason");
+  const parts = [error.code, error.diagnostic].filter(
+    (part): part is string => part !== undefined && part.trim() !== "",
+  );
+  return parts.length === 0 ? t("pluginChangeUnknownReason") : parts.join(": ");
+}
+
+function NoticeIcon({ tone }: { readonly tone: PluginNoticeTone }): ReactElement | null {
+  if (tone === "success") return <IconCheck size={12} />;
+  if (tone === "neutral") return null;
+  return <IconAlert size={12} />;
 }

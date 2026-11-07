@@ -19,7 +19,6 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { createRequire } from "node:module";
 import {
   existsSync,
   lstatSync,
@@ -31,9 +30,7 @@ import {
 } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-
-const require = createRequire(import.meta.url);
-const yaml = require("js-yaml");
+import yaml from "js-yaml";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = dirname(HERE);
@@ -453,8 +450,8 @@ function main() {
       console.log(`- ${c.id} SKIP  ${built.skip}`);
       continue;
     }
-    built.setup?.();
     try {
+      built.setup?.();
       process.stdout.write(`- ${c.id} 跑… `);
       const run = runHeadless(
         built.prompt,

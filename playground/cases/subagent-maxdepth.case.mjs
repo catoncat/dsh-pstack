@@ -25,16 +25,15 @@ export default {
             detail: `pstack_subagent agent=${JSON.stringify(input.agent)}，期望 general`,
           };
         }
-        const zeroCalls = subagentCalls.filter((call) => call.input?.maxDepth === 0);
-        if (zeroCalls.length > 0) {
+        if (input.maxDepth !== 1) {
           return {
             ok: false,
-            detail: `检测到 ${zeroCalls.length} 次 maxDepth:0 调用：${JSON.stringify(zeroCalls.map((call) => call.input))}`,
+            detail: `普通子代理 maxDepth=${JSON.stringify(input.maxDepth)}，期望安全默认值 1`,
           };
         }
         return {
           ok: true,
-          detail: `调用 ${subagentCalls.length} 次，未出现 maxDepth:0；参数：${JSON.stringify(subagentCalls.map((call) => call.input))}`,
+          detail: `普通子代理使用安全默认 maxDepth=1，参数：${JSON.stringify(input)}`,
         };
       },
     };

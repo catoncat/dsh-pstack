@@ -5,7 +5,7 @@
 ## 固定边界
 
 - 根 `pstack/` 只放生成的插件树。生成器可以整体替换该目录，不允许把手工文件放在其中。
-- 根 `port/` 保存生成器、扫描器、审核记录、`audit.lock.json`、本文件、`dsh.md` 和仅供审核的 `dsh.zh.md`。英文适配文档进入生成树，中文版本不被生成树引用。
+- 根 `port/` 保存生成器、扫描器、审核记录、`audit.lock.json`、本文件、`dsh.md` 和中文用户与审核参考 `dsh.zh.md`。英文适配文档进入生成树，中文版本不被生成树引用，由 `README.zh.md` 直接链接。
 - `port/dsh.md` 是当前适配文案的唯一手写来源，必须按 `port/audit.md` 的处置、当前 `cordis.patch.yml` 和实现维护。可选插件表以包名为主键，不另外维护编号。
 - 插件源码、测试、扩展登记和回归记录都在生成树之外。生成器不会修改这些内容。
 - 根 `package.json` 的 `exports` 由根 `vite.config.ts` 生成。主 pack 的 `entry` 为 `./src/*.ts`；仅第一个 pack 的 `customExports` 补齐非源码入口。其他 pack 使用 `exports: false`。
@@ -81,6 +81,18 @@
 6. 验证生成树中的链接、适配提示和已确认行为。
 
 脚本原样复制，保留依赖文件和可执行权限，不重写为 Node。为每个脚本登记用途、解释器、外部命令和限制。非常用能力不默认提供插件内补偿。环境不满足时明确报告不可用，不将跳过算作适配成功。
+
+### 脚本登记
+
+随包生成树包含以下五个可执行入口脚本。
+
+| 入口 | 用途 | 解释器 | 外部命令与运行时 | 重要限制 |
+|:--|:--|:--|:--|:--|
+| `check-plan` | 校验 multi-phase-plan 的计划文件 | `#!/usr/bin/env node` | 无外部命令，Node 运行时 | 无 |
+| `watch-pr` | babysit 与 shipping 轮询 PR 状态 | `#!/usr/bin/env bun` | Bun、网络、`gh`（含登录）、`git`；首次运行 `bun install --frozen-lockfile` 写 `node_modules` | 只支持 GitHub，不支持 Origin；缺 Bun 或未登录 `gh` 时不可用 |
+| `worktree-audit` | worktree-cleanup 的工作树分类审计 | `#!/usr/bin/env bash` | `git`、`gh`（PR 状态，可用 `origin` CLI 替代）、`jq`，以及 `awk`、`sed`、`grep`、`sort`、`head`、`du`、`stat`、`date` 等基础命令 | 只读审计，可能执行 `git fetch`；无 `gh` 或 `origin` 登录时缺少 PR 状态 |
+| `log` | show-me-your-work 追加 TSV 决策日志 | `#!/usr/bin/env bash` | `date`、`mkdir`、`printf`、`tr` | 无 |
+| `statechart` | TLA+ 模型检查与 Mermaid 状态图 | `#!/bin/sh`，按版本依次选择 Node 22.18 至 22.x 或 23.6 以上、Bun 1.1.5 以上、Deno 2.0 以上 | `mise`、`java`、`tlc`；首次 `mise install` 需网络 | 首次运行需网络安装 TLC 与 `java@temurin-25`；缺 TLC 时只输出 Mermaid 文本 |
 
 ## 从 1 到 100
 

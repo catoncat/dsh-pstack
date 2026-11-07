@@ -21,11 +21,16 @@ export default {
   id: "CASE-PSTACK-SUBAGENT-PANEL-01",
   title: "pstack_subagent 自动面板启动多个子代理",
   build(routes) {
-    const route = routes[0];
-    const entry = `${route.provider}/${route.model}`;
+    const distinct = [
+      ...new Map(routes.map((route) => [`${route.provider}/${route.model}`, route])).values(),
+    ];
+    if (distinct.length < 2) {
+      return { skip: "自动面板用例需要两个不同的 provider/model 路由" };
+    }
+    const entries = distinct.slice(0, 2).map((route) => `${route.provider}/${route.model}`);
     return {
       setup() {
-        setupRoleFile(`arena runners: ${entry}, ${entry}\n`);
+        setupRoleFile(`arena runners: ${entries.join(", ")}\n`);
       },
       cleanup: restoreRoleFile,
       prompt: [
@@ -43,9 +48,14 @@ export default {
         const text = resultText(subagentCalls[0]);
         if (!text.includes("started 2 children"))
           return bad(`自动面板没有启动两个子代理：${text.slice(0, 300)}`);
-        const routeOccurrences = text.split(`route=${entry}`).length - 1;
-        if (routeOccurrences < 2) return bad(`结果未报告两条 ${entry} 路由：${text.slice(0, 300)}`);
-        return ok(`pstack_subagent 一次启动 arena runners 自动面板，两个子代理均使用 ${entry}`);
+        for (const entry of entries) {
+          if (!text.includes(`route=${entry}`))
+            return bad(`结果未报告 ${entry} 路由：${text.slice(0, 300)}`);
+        }
+        if (text.includes("not a cross-model panel")) {
+          return bad(`不同路由仍被诊断为非跨模型面板：${text.slice(0, 300)}`);
+        }
+        return ok(`pstack_subagent 一次启动 arena runners 自动面板，使用 ${entries.join(" 与 ")}`);
       },
     };
   },

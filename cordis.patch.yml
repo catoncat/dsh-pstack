@@ -5,7 +5,8 @@
 # cursor-team-kit skills, and authored project skills at bundled rank 600.
 # `pstack-models` reports the live route catalogue; `pstack-role-catalog` reports
 # role shapes; `pstack-subagent` delegates one child per selected route. The
-# preset rows below own the child personas and tool compositions.
+# preset rows below own the child personas and tool compositions. There is no
+# rendering row; charts stay Mermaid text and video rendering is not provided.
 - insert:
     - id: pstack
       name: dsh-pstack
@@ -41,8 +42,6 @@
       config:
         provider: spawn
         maxDepth: 2
-    - id: pstack-render
-      name: dsh-pstack/render
     - id: preset-poteto-mode
       name: "dsh-pstack/preset"
       config:

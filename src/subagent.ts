@@ -12,12 +12,12 @@ import { isAbsolute, join, relative, resolve } from "node:path";
 
 import type { Agent, AgentOptions } from "@deepseek-ai/dsh-agent";
 import type { Context } from "@deepseek-ai/cordis";
-import type { ReasoningEffortId } from "@deepseek-ai/dsh-llm";
-import type {} from "@deepseek-ai/dsh-working-directory";
+import type { LlmRuntime, ReasoningEffortId } from "@deepseek-ai/dsh-llm";
+import type { WorkingDirectoryService } from "@deepseek-ai/dsh-working-directory";
 import type {
   SubagentActivation,
   SubagentCapabilities,
-  SubagentRuntime as SubagentService,
+  SubagentRuntime,
 } from "@deepseek-ai/dsh-subagent";
 import type { JsonSchemaNode, ToolDefinition, ToolRunContext } from "@deepseek-ai/dsh-tools";
 
@@ -32,13 +32,10 @@ import {
   type RouteSelection,
 } from "./role-config.ts";
 
-/** Cordis row name. */
 export const name = "pstack-subagent";
 
-/** The services this row requires. */
 export const inject = ["tools", "subagents", "llm", "workingDirectory"];
 
-/** Model-facing tool name. */
 export const TOOL_NAME = "pstack_subagent";
 
 /** Default backend when the row does not name one. */
@@ -110,35 +107,34 @@ export interface ChildRecord {
   readonly maxDepth?: number;
 }
 
-export interface DelegationResult {
-  readonly kind: "activation" | "activations";
-  readonly children: readonly ChildRecord[];
-  readonly diagnostics: readonly string[];
+export interface DelegationFailure {
+  readonly index: number;
+  readonly total: number;
+  readonly label: string;
+  readonly routeLabel: string;
+  readonly reason: string;
 }
+
+export type DelegationResult =
+  | {
+      readonly kind: "activation" | "activations";
+      readonly children: readonly ChildRecord[];
+      readonly diagnostics: readonly string[];
+    }
+  | {
+      readonly kind: "partial";
+      readonly children: readonly ChildRecord[];
+      readonly diagnostics: readonly string[];
+      readonly failure: DelegationFailure;
+    };
 
 /** The live services one delegation reads. */
-export interface SubagentRuntime {
-  readonly subagents: Pick<
-    SubagentService,
-    "getProvider" | "list" | "resolveMaxDepth" | "startActivation"
-  >;
-  readonly llm: LlmHost;
-  readonly workingDirectory: Pick<WorkingDirectoryService, "ensure">;
+export interface DelegationRuntime {
+  readonly subagents: SubagentRuntime;
+  readonly llm: LlmRuntime;
+  readonly workingDirectory: WorkingDirectoryService;
   readonly dshHome: string;
   readonly potetoModeSkillPath: string;
-}
-
-/** The slice of `ctx.llm` used before starting a child. */
-export interface LlmHost {
-  resolveCallConfig(
-    config: { provider: string; model: string; reasoningEffort?: ReasoningEffortId },
-    signal?: AbortSignal,
-  ): Promise<unknown>;
-}
-
-/** The slice of `ctx.workingDirectory` used before starting a child. */
-export interface WorkingDirectoryService {
-  ensure(agent: Agent, signal?: AbortSignal): Promise<string>;
 }
 
 /** Validate the row's own config; omitted config uses the default provider. */
@@ -219,7 +215,7 @@ export function parseDelegationArgs(raw: unknown): DelegationArgs {
   if (role !== null && (typeof role !== "string" || role.trim() === "")) {
     throw new Error("role must be a non-empty string or null");
   }
-  if (roleIndex !== null && (!isNonNegativeInteger(roleIndex) || roleIndex === null)) {
+  if (roleIndex !== null && !isNonNegativeInteger(roleIndex)) {
     throw new Error("roleIndex must be a non-negative integer or null");
   }
   if (roleIndex !== null && role === null) throw new Error("roleIndex requires a non-null role");
@@ -250,10 +246,10 @@ export function parseDelegationArgs(raw: unknown): DelegationArgs {
   };
 }
 
-/** Resolve the role file, child routes, prompt, and depth without Host calls. */
+/** Resolve the role file, child routes, prompt, and depth before activation starts. */
 export function planDelegation(
   args: DelegationArgs,
-  runtime: SubagentRuntime,
+  runtime: DelegationRuntime,
   config: PstackSubagentConfig = DEFAULT_CONFIG,
 ): DelegationPlan {
   const path = modelsFilePath(runtime.dshHome);
@@ -343,7 +339,7 @@ export function planDelegation(
 export async function startPlannedChildren(
   parent: Agent,
   plan: DelegationPlan,
-  runtime: SubagentRuntime,
+  runtime: DelegationRuntime,
   signal: AbortSignal,
 ): Promise<DelegationResult> {
   const provider = runtime.subagents.getProvider(plan.provider);
@@ -365,22 +361,38 @@ export async function startPlannedChildren(
 
   const records: ChildRecord[] = [];
   for (const child of children) {
-    signal.throwIfAborted();
-    const activation = await runtime.subagents.startActivation({
-      provider: plan.provider,
-      label: child.label,
-      request: {
-        prompt: [{ type: "text", text: plan.prompt }],
-        parent,
-        ...(child.agentPreset === undefined ? {} : { agentPreset: child.agentPreset }),
-        ...(child.cwd === undefined ? {} : { cwd: child.cwd }),
-        ...(child.agentOptions === undefined ? {} : { agentOptions: child.agentOptions }),
-        ...(child.maxDepth === undefined ? {} : { maxDepth: child.maxDepth }),
-      },
-      signal,
-      delivery: "parent",
-    });
-    records.push(recordFor(child, activation));
+    try {
+      signal.throwIfAborted();
+      const activation = await runtime.subagents.startActivation({
+        provider: plan.provider,
+        label: child.label,
+        request: {
+          prompt: [{ type: "text", text: plan.prompt }],
+          parent,
+          ...(child.agentPreset === undefined ? {} : { agentPreset: child.agentPreset }),
+          ...(child.cwd === undefined ? {} : { cwd: child.cwd }),
+          ...(child.agentOptions === undefined ? {} : { agentOptions: child.agentOptions }),
+          ...(child.maxDepth === undefined ? {} : { maxDepth: child.maxDepth }),
+        },
+        signal,
+        delivery: "parent",
+      });
+      records.push(recordFor(child, activation));
+    } catch (error) {
+      if (records.length === 0) throw error;
+      return {
+        kind: "partial",
+        children: records,
+        diagnostics: plan.diagnostics,
+        failure: {
+          index: child.index,
+          total: child.total,
+          label: child.label,
+          routeLabel: child.routeLabel,
+          reason: describeError(error),
+        },
+      };
+    }
   }
 
   return {
@@ -394,17 +406,16 @@ export async function startPlannedChildren(
 export async function delegate(
   parent: Agent,
   args: DelegationArgs,
-  runtime: SubagentRuntime,
+  runtime: DelegationRuntime,
   config: PstackSubagentConfig,
   signal: AbortSignal,
 ): Promise<DelegationResult> {
   return startPlannedChildren(parent, planDelegation(args, runtime, config), runtime, signal);
 }
 
-/** Register `pstack_subagent` for this row. */
 export function apply(ctx: Context, rawConfig?: unknown): void {
   const config = normalizeConfig(rawConfig);
-  const runtime: SubagentRuntime = {
+  const runtime: DelegationRuntime = {
     subagents: ctx.subagents,
     llm: ctx.llm,
     workingDirectory: ctx.workingDirectory,
@@ -416,7 +427,7 @@ export function apply(ctx: Context, rawConfig?: unknown): void {
 
 /** Build the model-facing tool. Exported for tests. */
 export function createPstackSubagentTool(
-  runtime: SubagentRuntime,
+  runtime: DelegationRuntime,
   config: PstackSubagentConfig = DEFAULT_CONFIG,
 ): ToolDefinition {
   return {
@@ -500,7 +511,7 @@ const OUTPUT_SCHEMA: JsonSchemaNode = {
   type: "object",
   additionalProperties: false,
   properties: {
-    kind: { type: "string", enum: ["activation", "activations"] },
+    kind: { type: "string", enum: ["activation", "activations", "partial"] },
     children: {
       type: "array",
       items: {
@@ -519,20 +530,34 @@ const OUTPUT_SCHEMA: JsonSchemaNode = {
       },
     },
     diagnostics: { type: "array", items: { type: "string" } },
+    failure: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        index: { type: "integer" },
+        total: { type: "integer" },
+        label: { type: "string" },
+        routeLabel: { type: "string" },
+        reason: { type: "string" },
+      },
+      required: ["index", "total", "label", "routeLabel", "reason"],
+    },
   },
   required: ["kind", "children", "diagnostics"],
 };
 
 function renderDelegation(result: DelegationResult): string {
   const lines = [
-    result.kind === "activation"
-      ? `started 1 child: ${result.children[0]?.childId ?? "(none)"}`
-      : `started ${result.children.length} children:`,
+    result.kind === "partial"
+      ? `started ${result.children.length} of ${result.failure.total} children; entry ${result.failure.index + 1} failed: ${result.failure.reason}`
+      : result.kind === "activation"
+        ? `started 1 child: ${result.children[0]?.childId ?? "(none)"}`
+        : `started ${result.children.length} children:`,
     ...result.children.map(
       (child) =>
         `- ${child.childId} (${child.label}) agent=${child.agent} role=${child.role} route=${child.route}${child.effort === undefined ? "" : ` effort=${child.effort}`}${child.maxDepth === undefined ? "" : ` maxDepth=${child.maxDepth}`}`,
     ),
-    "Results arrive as completion notices; do not poll for them.",
+    "Results from started children arrive as completion notices; do not poll for them.",
   ];
   if (result.diagnostics.length > 0) {
     lines.push("", "Diagnostics:", ...result.diagnostics.map((line) => `- ${line}`));
@@ -605,7 +630,7 @@ function assertCapabilities(capabilities: SubagentCapabilities, plan: Delegation
 }
 
 async function preflightRoutes(
-  llm: LlmHost,
+  llm: LlmRuntime,
   parent: Agent,
   children: readonly ChildPlan[],
   signal: AbortSignal,

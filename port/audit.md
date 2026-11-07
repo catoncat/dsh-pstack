@@ -1,6 +1,17 @@
 # pstack 能力审核
 
-本文件是本轮 0→1 的审核记录。事实按 DSH 0.2.2-rc.1 与 pstack 上游 `ae5650fe` 取证，处置结论由你确认。审核完成后，本文件作为插件实现的依据。
+本文件是本轮 0→1 的审核记录。事实按下方基线取证，处置结论由你确认。审核完成后，本文件作为插件实现的依据。
+
+## 本轮基线
+
+- DSH：`@deepseek-ai/dsh` 0.2.2-rc.1。
+- 能力基线：DSH Web profile 的标准模式。headless 只用于 playground 自动化，不参与能力判定。
+- pstack：`upstream/cursor-plugins` 提交 `ae5650febf4320793844c12c4adaa937f417f8da`，插件版本 0.15.36。
+- 审核日期：2026-11-05。
+- 工具清单取自运行时 `Tool.listTools`。官方插件状态取自当前 Web profile 的 `dsh.profile.bundles`。
+- `list_subagent_models` 由 `@deepseek-ai/dsh-tool-subagent` 的 `modelDiscovery` 注册。`modelDiscovery` 为 false 时工具根本不注册，不是隐藏或空列表。默认 false，Web 与 Desktop 标准预设设为 true，headless、SDK、ACP 不包含。
+- `subagent` 的 `agent_preset` 由 `allowedAgentPresets` 开启。预设是 Cordis 插件组合，子代理启动时按所选预设挂载，系统提示与工具随组合加载。
+- 扫描器：`node port/scan.mjs` 输出 `.audit/scan/capability-scan.tsv`，覆盖 136 个 Markdown 文件与 50 个脚本或配置文件。`node port/scan.mjs --check port/audit.md` 校验本文件引用的行号。
 
 ## 处置状态
 
@@ -21,12 +32,14 @@
 | 已确认处置 | 68 |
 | 待确认处置 | 0 |
 | 技能 | 58 |
-| 脚本入口 | 7 |
+| 脚本入口 | 5 |
 | 引用校验 | 234 |
 | 🟢 直接映射 | 39 |
 | 🔵 官方插件 | 2 |
-| 🟠 插件实现 | 18 |
-| 🔴 舍弃 | 9 |
+| 🟠 插件实现 | 16 |
+| 🔴 舍弃 | 11 |
+
+`脚本入口` 只统计随包可执行入口（check-plan、watch-pr、worktree-audit、log、statechart），不含 Java 测试辅助、Cursor Automations 等运行时能力项。
 
 | 分类 | 能力 | 推荐分布 |
 |:--|--:|:--|
@@ -36,7 +49,7 @@
 | [D 路径与历史](#cat-d) | 5 | 🟢 直接映射 4 · 🔴 舍弃 1 |
 | [E Cursor 平台](#cat-e) | 14 | 🟢 直接映射 7 · 🔵 官方插件 1 · 🟠 插件实现 1 · 🔴 舍弃 5 |
 | [F 其他 Cursor 插件](#cat-f) | 6 | 🔵 官方插件 1 · 🟠 插件实现 3 · 🔴 舍弃 2 |
-| [G 运行时与脚本](#cat-g) | 14 | 🟢 直接映射 12 · 🟠 插件实现 2 |
+| [G 运行时与脚本](#cat-g) | 14 | 🟢 直接映射 12 · 🔴 舍弃 2 |
 
 ## 按推荐分组
 
@@ -44,8 +57,8 @@
 |:--|--:|:--|
 | 🟢 直接映射 | 39 | [CAP-002](#cap-002) [CAP-003](#cap-003) [CAP-005](#cap-005) [CAP-006](#cap-006) [CAP-007](#cap-007) [CAP-008](#cap-008) [CAP-009](#cap-009) [CAP-010](#cap-010) [CAP-014](#cap-014) [CAP-018](#cap-018) [CAP-019](#cap-019) [CAP-020](#cap-020) [CAP-021](#cap-021) [CAP-022](#cap-022) [CAP-026](#cap-026) [CAP-027](#cap-027) [CAP-030](#cap-030) [CAP-031](#cap-031) [CAP-032](#cap-032) [CAP-034](#cap-034) [CAP-037](#cap-037) [CAP-038](#cap-038) [CAP-040](#cap-040) [CAP-042](#cap-042) [CAP-043](#cap-043) [CAP-044](#cap-044) [CAP-045](#cap-045) [CAP-054](#cap-054) [CAP-055](#cap-055) [CAP-056](#cap-056) [CAP-057](#cap-057) [CAP-058](#cap-058) [CAP-059](#cap-059) [CAP-060](#cap-060) [CAP-061](#cap-061) [CAP-062](#cap-062) [CAP-063](#cap-063) [CAP-064](#cap-064) [CAP-067](#cap-067) |
 | 🔵 官方插件 | 2 | [CAP-041](#cap-041) [CAP-050](#cap-050) |
-| 🟠 插件实现 | 18 | [CAP-001](#cap-001) [CAP-004](#cap-004) [CAP-011](#cap-011) [CAP-013](#cap-013) [CAP-015](#cap-015) [CAP-016](#cap-016) [CAP-017](#cap-017) [CAP-023](#cap-023) [CAP-024](#cap-024) [CAP-025](#cap-025) [CAP-028](#cap-028) [CAP-029](#cap-029) [CAP-048](#cap-048) [CAP-049](#cap-049) [CAP-051](#cap-051) [CAP-065](#cap-065) [CAP-066](#cap-066) [CAP-068](#cap-068) |
-| 🔴 舍弃 | 9 | [CAP-012](#cap-012) [CAP-033](#cap-033) [CAP-035](#cap-035) [CAP-036](#cap-036) [CAP-039](#cap-039) [CAP-046](#cap-046) [CAP-047](#cap-047) [CAP-052](#cap-052) [CAP-053](#cap-053) |
+| 🟠 插件实现 | 16 | [CAP-001](#cap-001) [CAP-004](#cap-004) [CAP-011](#cap-011) [CAP-013](#cap-013) [CAP-015](#cap-015) [CAP-016](#cap-016) [CAP-017](#cap-017) [CAP-023](#cap-023) [CAP-024](#cap-024) [CAP-025](#cap-025) [CAP-028](#cap-028) [CAP-029](#cap-029) [CAP-048](#cap-048) [CAP-049](#cap-049) [CAP-051](#cap-051) [CAP-068](#cap-068) |
+| 🔴 舍弃 | 11 | [CAP-012](#cap-012) [CAP-033](#cap-033) [CAP-035](#cap-035) [CAP-036](#cap-036) [CAP-039](#cap-039) [CAP-046](#cap-046) [CAP-047](#cap-047) [CAP-052](#cap-052) [CAP-053](#cap-053) [CAP-065](#cap-065) [CAP-066](#cap-066) |
 
 ## 字段说明
 
@@ -138,21 +151,10 @@
 | [CAP-062](#cap-062) | 决策日志脚本 | 🟢 直接映射 | 无 | 直接映射 | |
 | [CAP-063](#cap-063) | statechart 脚本树 | 🟢 直接映射 | 依赖 Bun 或 Node 的 TypeScript 执行、mise、TLC、Java 与网络 | 直接映射 | |
 | [CAP-064](#cap-064) | 依赖安装器 | 🟢 直接映射 | 离线环境不可用 | 直接映射 | |
-| [CAP-065](#cap-065) | Pele 图表渲染 | 🟠 插件实现 | 宿主默认没有安装 `pele@1.9.0` | 插件实现 | |
-| [CAP-066](#cap-066) | 视频渲染 | 🟠 插件实现 | 本机没有 ffmpeg、convert 或 magick | 插件实现 | |
+| [CAP-065](#cap-065) | Pele 图表渲染 | 🔴 舍弃 | 不提供内置图表渲染器，图表以 Mermaid 文本返回 | 舍弃 | |
+| [CAP-066](#cap-066) | 视频渲染 | 🔴 舍弃 | 不提供内置视频渲染，需要时由用户使用外部工具 | 舍弃 | |
 | [CAP-067](#cap-067) | 性能测量 工具链 | 🟢 直接映射 | 本机缺少 `py-spy` | 直接映射 | |
 | [CAP-068](#cap-068) | Custom Mode 自定义模式 | 🟠 插件实现 | 标准模式没有常驻技能的根 preset | 插件实现 | |
-
-## 本轮基线
-
-- DSH：`@deepseek-ai/dsh` 0.2.2-rc.1。
-- 能力基线：DSH Web profile 的标准模式。headless 只用于 playground 自动化，不参与能力判定。
-- pstack：`upstream/cursor-plugins` 提交 `ae5650febf4320793844c12c4adaa937f417f8da`，插件版本 0.15.36。
-- 审核日期：2026-11-05。
-- 工具清单取自运行时 `Tool.listTools`。官方插件状态取自当前 Web profile 的 `dsh.profile.bundles`。
-- `list_subagent_models` 由 `@deepseek-ai/dsh-tool-subagent` 的 `modelDiscovery` 注册。`modelDiscovery` 为 false 时工具根本不注册，不是隐藏或空列表。默认 false，Web 与 Desktop 标准预设设为 true，headless、SDK、ACP 不包含。
-- `subagent` 的 `agent_preset` 由 `allowedAgentPresets` 开启。预设是 Cordis 插件组合，子代理启动时按所选预设挂载，系统提示与工具随组合加载。
-- 扫描器：`node port/scan.mjs` 输出 `.audit/scan/capability-scan.tsv`，覆盖 136 个 Markdown 文件与 50 个脚本或配置文件。`node port/scan.mjs --check port/audit.md` 校验本文件引用的行号。
 
 ## 判定顺序
 
@@ -394,7 +396,7 @@
 | 🧰 标准模式 | DSH 标准模式没有同名命令。可以用 Mermaid 文本或自写脚本生成图表。`statechart` 属于本插件技能，不属于标准模式。 |
 | 🧩 官方插件 | 无。 |
 | 🕳️ 剩余缺口 | 没有开箱即用的图表命令，也没有内置图表渲染器。 |
-| ⚔️ 冲突 | Mermaid、`statechart` 和自写脚本都能出图，但没有统一命令。走 `statechart` 需要 TLA+ 模型，简单图表反而更重。 |
+| ⚔️ 冲突 | Mermaid 文本与自写脚本都能出图，但没有统一命令。`statechart` 只输出 Mermaid 文本，而且需要 TLA+ 模型，简单图表反而更重。 |
 | 🚧 最终遗留 | 没有开箱即用的 `/visualize` 命令，图表能力取决于外部渲染器或模型手写 Mermaid。 |
 | 💡 推荐 | 🔴 舍弃。统一图表命令不实现，需要图表时由技能正文要求模型手写 Mermaid。 |
 | ✅ 处置 | 舍弃 |
@@ -1204,7 +1206,7 @@
 
 <a id="cat-g"></a>
 
-## G 运行时与脚本　🟢 直接映射 12 · 🟠 插件实现 2
+## G 运行时与脚本　🟢 直接映射 12 · 🔴 舍弃 2
 
 <a id="cap-054"></a>
 
@@ -1379,7 +1381,7 @@
 | 🧰 标准模式 | `sh` 启动器选择 TypeScript 运行时，调用 `statechart.ts`。首次运行用 mise 安装 TLC 与 Java。 |
 | 🧩 官方插件 | 无。 |
 | 🕳️ 剩余缺口 | 依赖 Bun 或 Node 的 TypeScript 执行、mise、TLC、Java 与网络。TLC 缺失时正式检查不可用。 |
-| ⚔️ 冲突 | `statechart` 与 Pele 都能出图，Pele 是外部渲染器，Mermaid 是内置文本。 |
+| ⚔️ 冲突 | `statechart` 输出 Mermaid 文本，不提供图片渲染；需要图片时由用户在插件之外生成。 |
 | 🚧 最终遗留 | TLC 与 Java 需要 mise 安装，首次运行依赖网络。 |
 | 💡 推荐 | 🟢 直接映射。`statechart` 原样运行。TLC、Java 或网络缺失时报告不可用，只输出 Mermaid 文本，不声称完成形式化检查。 |
 | ✅ 处置 | 直接映射 |
@@ -1406,26 +1408,26 @@
 
 <a id="cap-065"></a>
 
-### CAP-065 Pele 图表渲染　🟠 插件实现
+### CAP-065 Pele 图表渲染　🔴 舍弃
 
 | 维度 | 内容 |
 |:--|:--|
 | 📍 使用位置 | `skills/statechart/references/render.md:3`、`skills/statechart/references/render.md:7`、`skills/statechart/references/render.md:9`、`skills/statechart/SKILL.md:76` |
 | 🖱️ Cursor 行为 | statechart 用 npm 包 `pele@1.9.0` 把 `.mmd` 渲染成 SVG，API 在 `https://pele.run/api`。 |
-| 🧰 标准模式 | DSH 标准模式没有图表渲染器。`pele` 是本地 npm 包，安装后 `render` 同步输出 SVG，无运行时依赖。 |
+| 🧰 标准模式 | DSH 标准模式没有图表渲染器。本插件也不提供；用户可自行安装 `pele` 并在插件之外调用。 |
 | 🧩 官方插件 | 无。 |
-| 🕳️ 剩余缺口 | 宿主默认没有安装 `pele@1.9.0`。安装需要网络与用户同意。 |
-| 🛠️ 插件要求与验收 | 插件提供可选的 Pele 渲染步骤。缺失时说明并询问是否安装到缓存目录，安装后调用 `render` 输出 SVG；不安装时返回 Mermaid 文本。验收：安装后渲染一张 500 状态图；未安装时报告并回退 Mermaid。 |
-| ⚔️ 冲突 | Pele 与 Mermaid 是两条渲染路径。Pele 需要安装依赖，Mermaid 文本始终可用。约定优先 Pele，缺依赖时回退 Mermaid。 |
-| 🚧 最终遗留 | Pele 安装需要网络与用户同意，离线时只能给 Mermaid 文本。 |
-| 💡 推荐 | 🟠 插件实现。缺少 `pele` 时说明并询问是否安装到缓存目录；安装后支持 SVG 渲染，不安装则返回 Mermaid 文本。 |
-| ✅ 处置 | 插件实现 |
+| 🕳️ 剩余缺口 | 本插件不提供内置图表渲染器。 |
+| 🛠️ 插件要求与验收 | 无。插件不实现渲染步骤。 |
+| ⚔️ 冲突 | Mermaid 文本与外部渲染器是两条路径。插件只输出 Mermaid 文本，需要图片时由用户自行渲染。 |
+| 🚧 最终遗留 | 没有内置 SVG 输出，图片需用户在插件之外生成。 |
+| 💡 推荐 | 🔴 舍弃。不提供图表渲染；statechart 只输出 Mermaid 文本，用户需要图片时自行渲染。 |
+| ✅ 处置 | 舍弃 |
 
 [返回审核清单](#审核清单)
 
 <a id="cap-066"></a>
 
-### CAP-066 视频渲染　🟠 插件实现
+### CAP-066 视频渲染　🔴 舍弃
 
 | 维度 | 内容 |
 |:--|:--|
@@ -1433,12 +1435,12 @@
 | 🖱️ Cursor 行为 | ketchup-video 要求把幻灯片渲染成带字幕的无声 mp4，逐帧检查字幕可读性与停留时长。 |
 | 🧰 标准模式 | DSH 没有视频生成工具。只能通过 `bash` 调用外部渲染器。 |
 | 🧩 官方插件 | 无。 |
-| 🕳️ 剩余缺口 | 本机没有 ffmpeg、convert 或 magick。安装后可以渲染，未安装时整条能力不可用。 |
-| 🛠️ 插件要求与验收 | 插件提供可选的视频渲染步骤。缺少 ffmpeg 与 ImageMagick 时说明并询问是否安装；安装后按 `ketchup-video` 生成 mp4。验收：用两页幻灯片渲染一段 5 秒视频并抽帧检查字幕。 |
-| ⚔️ 冲突 | 视频渲染依赖外部渲染器。`ketchup` 与 `ketchup-video` 共用截图素材，渲染失败时只回复文字摘要。 |
-| 🚧 最终遗留 | 不安装 ffmpeg 与 ImageMagick 时视频能力不可用。 |
-| 💡 推荐 | 🟠 插件实现。缺少 ffmpeg 或 ImageMagick 时说明并询问是否安装；安装后支持视频渲染，不安装则只返回文字摘要。 |
-| ✅ 处置 | 插件实现 |
+| 🕳️ 剩余缺口 | 本插件不提供内置视频渲染器。 |
+| 🛠️ 插件要求与验收 | 无。插件不实现视频渲染步骤。 |
+| ⚔️ 冲突 | `ketchup` 与 `ketchup-video` 共用截图素材。插件只提供文字摘要，视频需用户在插件之外生成。 |
+| 🚧 最终遗留 | 没有内置视频输出，`ketchup-video` 只能说明无法渲染。 |
+| 💡 推荐 | 🔴 舍弃。不提供视频渲染；需要视频时由用户使用外部工具。 |
+| ✅ 处置 | 舍弃 |
 
 [返回审核清单](#审核清单)
 

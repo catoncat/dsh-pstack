@@ -47,12 +47,6 @@ const CSS = `
   font-weight: 500;
   line-height: 24px;
 }
-.pstack-subtitle {
-  margin: 2px 0 0;
-  color: var(--dsw-alias-label-tertiary);
-  font-size: 12px;
-  line-height: 18px;
-}
 .pstack-tabs-row {
   padding: 6px 24px 0;
 }
@@ -131,12 +125,6 @@ const CSS = `
 .pstack-section-head > div:first-child {
   flex: 1;
   min-width: 0;
-}
-.pstack-section-title {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 500;
-  line-height: 24px;
 }
 .pstack-section-desc {
   margin: 4px 0 0;
@@ -560,14 +548,6 @@ const CSS = `
   cursor: default;
   opacity: 0.6;
 }
-.pstack-route-hint {
-  display: flex;
-  align-items: center;
-  height: 32px;
-  color: var(--dsw-alias-label-tertiary);
-  font-size: 12px;
-  line-height: 18px;
-}
 .pstack-role-foot {
   display: flex;
   align-items: center;
@@ -586,6 +566,33 @@ const CSS = `
   gap: 8px;
   margin-left: auto;
 }
+.pstack-toast {
+  position: fixed;
+  z-index: 1002;
+  top: max(24px, var(--dsh-frame-overlay-top, 24px));
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100vw - 48px);
+  padding: 8px 12px;
+  border-radius: var(--dsw-radius-md);
+  background: var(--dsw-alias-bg-layer-1);
+  color: var(--dsw-alias-label-primary);
+  box-shadow: var(--dsw-elevation-prominent);
+  font-size: 12px;
+  line-height: 18px;
+  transform: translateX(-50%);
+}
+.pstack-toast[data-tone="success"] {
+  color: var(--dsw-alias-state-success-primary);
+}
+.pstack-toast[data-tone="warn"] {
+  color: var(--dsw-alias-state-warn-primary);
+}
+.pstack-toast[data-tone="error"] {
+  color: var(--dsw-alias-state-error-primary);
+}
 .pstack-inline-message {
   display: inline-flex;
   align-items: center;
@@ -597,6 +604,9 @@ const CSS = `
 .pstack-inline-message[data-tone="success"] {
   color: var(--dsw-alias-state-success-primary);
 }
+.pstack-inline-message[data-tone="warn"] {
+  color: var(--dsw-alias-state-warn-primary);
+}
 .pstack-inline-message[data-tone="error"] {
   color: var(--dsw-alias-state-error-primary);
 }
@@ -604,6 +614,7 @@ const CSS = `
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
+  white-space: nowrap;
   gap: 8px;
   margin-top: 8px;
   color: var(--dsw-alias-label-tertiary);
@@ -616,6 +627,9 @@ const CSS = `
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: var(--ds-font-family-code);
+}
+.pstack-file-meta > span:not(.pstack-status) {
+  flex: none;
 }
 .pstack-notice {
   display: flex;

@@ -5,14 +5,13 @@
  * copied to `dist/pstack/`, and vendored skills to `dist/skills/vendored/`.
  */
 
-import { basename, dirname, join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
-/** The package root, from either `dist/*.mjs` or `dist/internal/*.mjs`. */
-export const PACKAGE_ROOT =
-  basename(here) === "internal" ? resolve(here, "..", "..") : resolve(here, "..");
+/** The package root, from a bundled entry in `dist/`. */
+export const PACKAGE_ROOT = resolve(here, "..");
 
 /** The shipped output tree. */
 export const DIST_ROOT = join(PACKAGE_ROOT, "dist");

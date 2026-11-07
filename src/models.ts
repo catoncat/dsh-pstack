@@ -10,20 +10,14 @@ import type { Context } from "@deepseek-ai/cordis";
 import type { LlmModelInfo, LlmResolvedModelInfo, LlmRuntime } from "@deepseek-ai/dsh-llm";
 import type { JsonSchemaNode, ToolDefinition, ToolRunContext } from "@deepseek-ai/dsh-tools";
 
-/** Cordis row name. */
 export const name = "pstack-models";
 
-/** The services this row requires. */
 export const inject = ["llm", "tools"];
 
-/** Model-facing tool name. */
 export const TOOL_NAME = "pstack_models";
 
 const MAX_PROVIDERS = 64;
 const MAX_MODELS = 200;
-
-/** The slice of `ctx.llm` used by the directory. */
-export type ModelsLlm = Pick<LlmRuntime, "listProviders" | "listModels" | "resolveModelInfo">;
 
 export interface ModelEntry {
   readonly route: string;
@@ -52,7 +46,7 @@ export interface CatalogueResult {
 
 /** Collect the live catalogue with bounded provider/model counts. */
 export async function collectCatalogue(
-  llm: ModelsLlm,
+  llm: LlmRuntime,
   providerFilter: string | undefined,
   signal: AbortSignal,
 ): Promise<CatalogueResult> {
@@ -214,7 +208,7 @@ const TOOL_DESCRIPTION = [
 ].join("\n");
 
 /** Build `pstack_models` for one LLM service. */
-export function createPstackModelsTool(llm: ModelsLlm): ToolDefinition {
+export function createPstackModelsTool(llm: LlmRuntime): ToolDefinition {
   return {
     name: TOOL_NAME,
     description: TOOL_DESCRIPTION,
@@ -248,7 +242,6 @@ export function createPstackModelsTool(llm: ModelsLlm): ToolDefinition {
   };
 }
 
-/** Register the directory on one row. */
 export function apply(ctx: Context): void {
   ctx.tools.register(createPstackModelsTool(ctx.llm));
 }
