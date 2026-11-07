@@ -3,7 +3,6 @@
 const en = {
   close: "Close",
   refresh: "Refresh",
-  loading: "Loading…",
   retry: "Retry",
   save: "Save",
   saving: "Saving…",
@@ -13,7 +12,6 @@ const en = {
 const zh = {
   close: "关闭",
   refresh: "刷新",
-  loading: "加载中…",
   retry: "重试",
   save: "保存",
   saving: "保存中…",

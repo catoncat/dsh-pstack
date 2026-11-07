@@ -1,6 +1,6 @@
 /** Plugin-detail action and configuration dialog for dsh-pstack. */
 
-import { useEffect, useId, useState, type ReactElement } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type ReactElement } from "react";
 import { createPortal } from "react-dom";
 import type { PropsRuntime } from "@deepseek-ai/dsh-client-ui-slots";
 import type {} from "@deepseek-ai/dsh-client-ui-plugin-manager/client";
@@ -14,6 +14,15 @@ import type { PstackTranslations } from "./locales/index.ts";
 
 ensurePstackStyles();
 
+const FOCUSABLE_SELECTOR = [
+  "button:not([disabled])",
+  "[href]",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  '[tabindex]:not([tabindex="-1"])',
+].join(",");
+
 export interface PstackConfigDialogProps {
   readonly roleApi: RoleSettingsApi;
   readonly pluginApi: PluginManagerApi | undefined;
@@ -25,34 +34,94 @@ type ConfigTab = "plugins" | "roles";
 
 export function PstackConfigDialog(props: PstackConfigDialogProps): ReactElement | null {
   const [tab, setTab] = useState<ConfigTab>("plugins");
+  const [visited, setVisited] = useState<ReadonlySet<ConfigTab>>(
+    () => new Set<ConfigTab>(["plugins"]),
+  );
+  const [rolesDirty, setRolesDirty] = useState(false);
   const titleId = useId();
   const tabsId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
   const { roleApi, pluginApi, translations, onClose } = props;
+
+  const dirtyRef = useRef(false);
+  dirtyRef.current = rolesDirty;
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  const requestClose = useCallback(() => {
+    if (dirtyRef.current) {
+      const confirm = typeof window === "undefined" ? undefined : window.confirm;
+      if (
+        typeof confirm === "function" &&
+        !confirm.call(window, translations.roles("confirmDiscardChanges"))
+      ) {
+        return;
+      }
+    }
+    onCloseRef.current();
+  }, [translations]);
+
+  const selectTab = (next: ConfigTab): void => {
+    setTab(next);
+    setVisited((current) => (current.has(next) ? current : new Set([...current, next])));
+  };
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") {
+        event.preventDefault();
+        requestClose();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const panel = panelRef.current;
+      if (panel === null) return;
+      // Skip the inactive panel: its subtree carries `hidden`, so its controls are not tabbable.
+      const focusables = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
+        (element) => element.closest("[hidden]") === null,
+      );
+      if (focusables.length === 0) {
+        event.preventDefault();
+        panel.focus();
+        return;
+      }
+      const first = focusables[0]!;
+      const last = focusables[focusables.length - 1]!;
+      const active = document.activeElement;
+      const outside = active === null || !panel.contains(active);
+      if (event.shiftKey) {
+        if (active === first || outside) {
+          event.preventDefault();
+          last.focus();
+        }
+        return;
+      }
+      if (active === last || outside) {
+        event.preventDefault();
+        first.focus();
+      }
     };
-    const previous = document.body.style.overflow;
+    const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     document.addEventListener("keydown", onKeyDown);
     return () => {
-      document.body.style.overflow = previous;
+      document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [onClose]);
+  }, [requestClose]);
 
   if (typeof document === "undefined") return null;
 
   return createPortal(
     <div className="pstack-overlay" role="presentation">
-      <div className="pstack-mask" aria-hidden="true" onClick={onClose} />
+      <div className="pstack-mask" aria-hidden="true" onClick={requestClose} />
       <div
         className="pstack-panel"
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
+        ref={panelRef}
       >
         <header className="pstack-header">
           <div>
@@ -63,7 +132,7 @@ export function PstackConfigDialog(props: PstackConfigDialogProps): ReactElement
           <IconButton
             label={translations.common("close")}
             className="pstack-icon-btn-plain"
-            onClick={onClose}
+            onClick={requestClose}
             autoFocus
           >
             <IconClose size={14} />
@@ -73,7 +142,7 @@ export function PstackConfigDialog(props: PstackConfigDialogProps): ReactElement
           <SegmentedTabs
             label={translations.config("tabsLabel")}
             value={tab}
-            onChange={setTab}
+            onChange={selectTab}
             items={[
               {
                 value: "plugins",
@@ -90,17 +159,31 @@ export function PstackConfigDialog(props: PstackConfigDialogProps): ReactElement
             ]}
           />
         </div>
-        <main
-          className="pstack-body"
-          role="tabpanel"
-          id={`${tabsId}-${tab}-panel`}
-          aria-labelledby={`${tabsId}-${tab}`}
-        >
-          {tab === "plugins" ? (
-            <RecommendedPluginsView api={pluginApi} translations={translations} />
-          ) : (
-            <RoleSettingsView api={roleApi} translations={translations} />
-          )}
+        <main className="pstack-body">
+          {visited.has("plugins") ? (
+            <div
+              hidden={tab !== "plugins"}
+              id={`${tabsId}-plugins-panel`}
+              role="tabpanel"
+              aria-labelledby={`${tabsId}-plugins`}
+            >
+              <RecommendedPluginsView api={pluginApi} translations={translations} />
+            </div>
+          ) : null}
+          {visited.has("roles") ? (
+            <div
+              hidden={tab !== "roles"}
+              id={`${tabsId}-roles-panel`}
+              role="tabpanel"
+              aria-labelledby={`${tabsId}-roles`}
+            >
+              <RoleSettingsView
+                api={roleApi}
+                translations={translations}
+                onDirtyChange={setRolesDirty}
+              />
+            </div>
+          ) : null}
         </main>
       </div>
     </div>,
@@ -118,6 +201,17 @@ export function createPstackConfigAction(
     props: PropsRuntime<"plugins.detail.actions">,
   ): ReactElement | null {
     const [open, setOpen] = useState(false);
+    const triggerRef = useRef<HTMLButtonElement | null>(null);
+    const wasOpen = useRef(false);
+
+    useEffect(() => {
+      if (open) return;
+      if (!wasOpen.current) return;
+      wasOpen.current = false;
+      // Return focus where it started so keyboard users are not dropped at document top.
+      triggerRef.current?.focus();
+    }, [open]);
+
     if (props.subject.kind !== "bundle" || props.subject.pkg.name !== "dsh-pstack") return null;
     return (
       <>
@@ -125,7 +219,11 @@ export function createPstackConfigAction(
           variant="outline"
           size="sm"
           icon={<IconSettings size={13} />}
-          onClick={() => setOpen(true)}
+          onClick={(event) => {
+            triggerRef.current = event.currentTarget;
+            wasOpen.current = true;
+            setOpen(true);
+          }}
         >
           {translations.config("configureAction")}
         </Button>

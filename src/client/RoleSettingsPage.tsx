@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactElement } from "react";
 
 import type { CatalogueResult, ModelEntry } from "../models.ts";
+import { isRoleKey } from "../role-manifest.ts";
 import type {
   RoleFileSnapshot,
   RoleView,
@@ -52,8 +53,9 @@ interface BulkMessage {
 export function RoleSettingsView(props: {
   api: RoleSettingsApi;
   translations: PstackTranslations;
+  onDirtyChange?: (dirty: boolean) => void;
 }): ReactElement {
-  const { api, translations } = props;
+  const { api, translations, onDirtyChange } = props;
   const t = translations.roles;
   const common = translations.common;
   const [snapshot, setSnapshot] = useState<RoleFileSnapshot | undefined>();
@@ -88,6 +90,13 @@ export function RoleSettingsView(props: {
     void load();
   }, [api, t]);
 
+  const dirtyFlag =
+    snapshot !== undefined &&
+    snapshot.roles.some((role) => isDirty(drafts[role.key] ?? draftOf(role)));
+  useEffect(() => {
+    onDirtyChange?.(dirtyFlag);
+  }, [dirtyFlag, onDirtyChange]);
+
   if (loading && snapshot === undefined) {
     return (
       <div className="pstack-loading">
@@ -120,9 +129,10 @@ export function RoleSettingsView(props: {
         route.kind === "route" && (route.provider.trim() === "" || route.model.trim() === ""),
     ),
   );
-  const canClearAll = Object.values(drafts).some((draft) =>
-    draft.routes.some((route) => !isInheritParent(route)),
-  );
+  const canClearAll = snapshot.roles.some((role) => {
+    const draft = drafts[role.key] ?? draftOf(role);
+    return draft.routes.length > 0 && (role.configured || isDirty(draft));
+  });
   const fileStatus = statusPresentation(snapshot, t);
 
   const updateRoutes = (key: string, routes: RouteView[]): void => {
@@ -177,10 +187,7 @@ export function RoleSettingsView(props: {
       Object.fromEntries(
         snapshot.roles.map((role) => {
           const draft = current[role.key] ?? draftOf(role);
-          return [
-            role.key,
-            { ...draft, routes: [inheritRoute()], message: undefined, busy: false },
-          ];
+          return [role.key, { ...draft, routes: [], message: undefined, busy: false }];
         }),
       ),
     );
@@ -205,7 +212,10 @@ export function RoleSettingsView(props: {
         setDrafts((current) => {
           const currentDraft = current[key];
           if (currentDraft === undefined) return current;
-          const routes = savedRole === undefined ? draft.routes : routesOf(savedRole);
+          const routes =
+            savedRole === undefined
+              ? draft.routes
+              : savedRole.routes.map((route) => ({ ...route }));
           return {
             ...current,
             [key]: {
@@ -276,7 +286,7 @@ export function RoleSettingsView(props: {
             <Status tone={fileStatus.tone} label={fileStatus.label} />
             <span>{t("file")}</span>
             <code className="pstack-file-path" title={snapshot.path}>
-              {t("filePath")}
+              {snapshot.path}
             </code>
           </div>
         </div>
@@ -392,7 +402,7 @@ function RoleCard(props: {
   const { role, draft, catalogue, translations, disabled, onRoutesChange, onSave, onReset } = props;
   const t = translations.roles;
   const common = translations.common;
-  const copy = ROLE_COPY[role.key];
+  const copy = isRoleKey(role.key) ? ROLE_COPY[role.key] : undefined;
   const name = copy === undefined ? role.key : t(copy.nameKey);
   const description = copy === undefined ? "" : t(copy.descriptionKey);
   const dirty = isDirty(draft);
@@ -401,8 +411,12 @@ function RoleCard(props: {
     (route) =>
       route.kind === "route" && (route.provider.trim() === "" || route.model.trim() === ""),
   );
-  const canClearRole = draft.routes.some((route) => !isInheritParent(route));
-  const clearRole = (): void => onRoutesChange([inheritRoute()]);
+  const canClearRole = draft.routes.length > 0 && (role.configured || dirty);
+  const displayedRoutes =
+    draft.routes.length === 0
+      ? [{ kind: "inherit" as const, alias: "inherit-parent" as const }]
+      : draft.routes;
+  const clearRole = (): void => onRoutesChange([]);
   const status =
     role.issues.length > 0
       ? { tone: "error" as StatusTone, label: t("roleInvalid") }
@@ -446,7 +460,7 @@ function RoleCard(props: {
         </div>
       )}
       <div className="pstack-route-list">
-        {draft.routes.map((route, index) => (
+        {displayedRoutes.map((route, index) => (
           <RouteRow
             key={`${role.key}-${index}`}
             roleName={name}
@@ -465,10 +479,13 @@ function RoleCard(props: {
             translations={translations}
           />
         ))}
+        {dirty && draft.routes.length === 0 ? (
+          <p className="pstack-role-desc">{t("clearHint")}</p>
+        ) : null}
       </div>
       <footer className="pstack-role-foot">
         <div className="pstack-role-foot-actions">
-          {role.shape === "list" ? (
+          {role.shape === "list" || draft.routes.length === 0 ? (
             <Button
               variant="outline"
               size="sm"
@@ -674,20 +691,8 @@ function RouteRow(props: {
 }
 
 function draftOf(role: RoleView): RoleDraft {
-  const routes = routesOf(role);
+  const routes = role.routes.map((route) => ({ ...route }));
   return { routes, baseline: routes.map((route) => ({ ...route })), busy: false };
-}
-
-function routesOf(role: RoleView): RouteView[] {
-  return role.routes.length === 0 ? [inheritRoute()] : role.routes.map((route) => ({ ...route }));
-}
-
-function inheritRoute(): RouteView {
-  return { kind: "inherit", alias: "inherit-parent" };
-}
-
-function isInheritParent(route: RouteView): boolean {
-  return route.kind === "inherit" && route.alias === "inherit-parent";
 }
 
 function isDirty(draft: RoleDraft): boolean {

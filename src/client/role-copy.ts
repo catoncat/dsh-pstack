@@ -1,5 +1,6 @@
 /** Locale keys for the display name and scenario of every pstack role. */
 
+import type { RoleKey } from "../role-manifest.ts";
 import type { RolesKey } from "./locales/index.ts";
 
 export interface RoleCopy {
@@ -7,7 +8,7 @@ export interface RoleCopy {
   readonly descriptionKey: RolesKey;
 }
 
-export const ROLE_COPY: Readonly<Record<string, RoleCopy>> = {
+export const ROLE_COPY: Record<RoleKey, RoleCopy> = {
   "feature, refactoring": {
     nameKey: "roleFeatureName",
     descriptionKey: "roleFeatureDescription",

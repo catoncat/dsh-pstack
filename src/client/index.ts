@@ -13,11 +13,11 @@ import { pstackRolesRemote } from "../role-remote.ts";
 import type { RoleFileSnapshot, SaveRoleRequest, SaveRoleResult } from "../role-wire.ts";
 import { createPstackConfigAction } from "./PstackConfigDialog.tsx";
 import { NS, catalogs } from "./locales/index.ts";
-import type { BundleView, PluginManagerApi } from "./RecommendedPluginsPage.tsx";
+import type { BundleChange, BundleView, PluginManagerApi } from "./RecommendedPluginsPage.tsx";
 import type { RoleSettingsApi } from "./RoleSettingsPage.tsx";
 
-/** Browser services this plugin needs. */
-export const inject = ["remote", "slots", "locale", "remote.pluginManager"];
+/** Browser services this plugin needs. `remote.pluginManager` stays optional, so roles load without it. */
+export const inject = ["remote", "slots", "locale"];
 
 interface Result<T> {
   readonly ok: boolean;
@@ -38,23 +38,16 @@ interface PluginManagerNamespace {
 
 export async function apply(ctx: Context): Promise<() => Promise<void>> {
   const disposeRemote = await ctx.remote.$mount(pstackRolesRemote);
+  ctx.effect(() => ctx.locale.register(NS.common, catalogs.common), "pstack-config.locale.common");
+  ctx.effect(() => ctx.locale.register(NS.config, catalogs.config), "pstack-config.locale.config");
   ctx.effect(
-    () => ctx.locale.register(NS.common, { ...catalogs.common }),
-    "pstack-config.locale.common",
-  );
-  ctx.effect(
-    () => ctx.locale.register(NS.config, { ...catalogs.config }),
-    "pstack-config.locale.config",
-  );
-  ctx.effect(
-    () => ctx.locale.register(NS.plugins, { ...catalogs.plugins }),
+    () => ctx.locale.register(NS.plugins, catalogs.plugins),
     "pstack-config.locale.plugins",
   );
-  ctx.effect(
-    () => ctx.locale.register(NS.roles, { ...catalogs.roles }),
-    "pstack-config.locale.roles",
-  );
+  ctx.effect(() => ctx.locale.register(NS.roles, catalogs.roles), "pstack-config.locale.roles");
 
+  // `$mount` above installs the namespace, so its dependency is declared only now.
+  // Injecting before the await would resolve against a namespace that does not exist yet.
   ctx.inject(["remote.pstackRoles"], (scope: Context) => {
     const remote = scope.remote as unknown as {
       pstackRoles?: PstackRolesNamespace;
@@ -74,9 +67,8 @@ export async function apply(ctx: Context): Promise<() => Promise<void>> {
         ? undefined
         : {
             listBundles: async () => unwrap(await pluginManager.listBundles()),
-            setBundleEnabled: async (name, enabled) => {
-              unwrap(await pluginManager.setBundleEnabled(name, enabled));
-            },
+            setBundleEnabled: async (name, enabled) =>
+              toBundleChange(unwrap(await pluginManager.setBundleEnabled(name, enabled))),
           };
     const translations = {
       common: ctx.locale.bind(NS.common),
@@ -104,4 +96,50 @@ function unwrap<T>(result: Result<T>): T {
   if (!result.ok) throw result.error ?? new Error("remote call failed");
   if (result.value === undefined) throw new Error("remote call returned no value");
   return result.value;
+}
+
+const CHANGE_APPLICATIONS = new Set<string>([
+  "applied",
+  "restart-required",
+  "overridden",
+  "failed",
+  "cancelled",
+]);
+
+/** Project the Host's ChangeResult onto the small page-facing value. Unknown outcomes report failure. */
+function toBundleChange(value: unknown): BundleChange {
+  const record =
+    typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
+  const application = record["application"];
+  if (typeof application !== "string" || !CHANGE_APPLICATIONS.has(application)) {
+    return {
+      application: "failed",
+      error: {
+        diagnostic:
+          typeof application === "string"
+            ? `unknown application ${application}`
+            : "the change returned no application",
+      },
+    };
+  }
+  const restartReason = record["restartReason"];
+  const rawError = record["error"];
+  const errorRecord =
+    typeof rawError === "object" && rawError !== null
+      ? (rawError as Record<string, unknown>)
+      : undefined;
+  const code = errorRecord?.["code"];
+  const diagnostic = errorRecord?.["diagnostic"];
+  return {
+    application: application as BundleChange["application"],
+    ...(typeof restartReason === "string" ? { restartReason } : {}),
+    ...(errorRecord === undefined
+      ? {}
+      : {
+          error: {
+            ...(typeof code === "string" ? { code } : {}),
+            ...(typeof diagnostic === "string" ? { diagnostic } : {}),
+          },
+        }),
+  };
 }
