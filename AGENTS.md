@@ -32,6 +32,12 @@ release. Add a tool name to select part of the graph. For example, run
 
 # AGENTS.md
 
+## Project docs
+
+- 修改模块前阅读 `docs/architecture.md`；模块边界或入口变化时同步更新。
+- 为概念命名时阅读 `docs/glossary.md`；引入新概念时补充术语。
+- 开始任何仓库任务前，阅读 `docs/decisions/AGENTS.md`，按其中的查找规则阅读与任务相关的记录。
+
 ## Porting
 
 - 移植或升级 pstack、DSH 前读 `port/README.md`。其中保存能力审核、扩展保留目标和重建回归规则。
