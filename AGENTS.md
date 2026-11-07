@@ -38,6 +38,18 @@ release. Add a tool name to select part of the graph. For example, run
 - 为概念命名时阅读 `docs/glossary.md`；引入新概念时补充术语。
 - 开始任何仓库任务前，阅读 `docs/decisions/AGENTS.md`，按其中的查找规则阅读与任务相关的记录。
 
+## Dependencies
+
+- 所有 pnpm workspace 依赖先按用途归入 `pnpm-workspace.yaml` 的命名 `catalogs`，再用 `vp add --save-dev --save-catalog-name <分类>` 安装。
+- 依赖声明只使用 `catalog:<分类>`，禁止裸 `catalog:`、直接版本号或写入顶层 `catalog:`。
+- `pnpm-workspace.yaml` 保持 `catalogMode: strict`，依赖分类与 lockfile 由安装命令和约定保证，不另写策略测试。
+- 生成树 `pstack/` 中的上游脚本 `package.json` 由生成器复制，不属于 pnpm workspace，不按本规则改写。
+
+## Tests
+
+- 新增测试用例优先写 TypeScript 文件（`tests/*.test.ts` 或 `tests/*.test.tsx`）。
+- 非必要不写 JavaScript 测试文件（`.mjs` / `.js`）；只有测试对象本身是 JS/Node 模块且无法从 TS 测试覆盖时才使用。
+
 ## Porting
 
 - 移植或升级 pstack、DSH 前读 `port/README.md`。其中保存能力审核、扩展保留目标和重建回归规则。

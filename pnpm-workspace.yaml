@@ -1,5 +1,5 @@
 ignoreWorkspaceRootCheck: true
-catalogMode: prefer
+catalogMode: strict
 minimumReleaseAgeExcludePrune: true
 trustPolicy: no-downgrade
 

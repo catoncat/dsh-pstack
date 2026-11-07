@@ -22,7 +22,7 @@ afterEach(() => {
   document.body.innerHTML = "";
 });
 
-async function render(message: ToastMessage | undefined, duration = 0): Promise<void> {
+async function render(message: ToastMessage | undefined, duration = 60_000): Promise<void> {
   await act(async () => {
     root.render(createElement(Toast, { message, duration }));
   });
@@ -30,7 +30,7 @@ async function render(message: ToastMessage | undefined, duration = 0): Promise<
 
 describe("shared Toast", () => {
   it("renders outside the caller and expires after the requested duration", async () => {
-    await render({ tone: "success", text: "Shared feedback" });
+    await render({ tone: "success", text: "Shared feedback" }, 0);
     const toast = document.body.querySelector<HTMLElement>(".pstack-toast")!;
     expect(toast.parentElement).toBe(document.body);
     expect(toast.getAttribute("role")).toBe("status");
