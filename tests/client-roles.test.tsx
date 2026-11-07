@@ -317,6 +317,32 @@ describe("clear as deletion", () => {
   });
 });
 
+describe("bulk save feedback", () => {
+  it("shows a temporary toast instead of an inline list message", async () => {
+    const controller = makeRoleApi();
+    await openRoles(controller.api);
+    const effort = document.querySelector<HTMLSelectElement>(
+      'select[aria-label="Bug fix Reasoning effort"]',
+    )!;
+    await act(async () => {
+      effort.value = "low";
+      effort.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await click(buttonByText(document.body, "Save all (1)"));
+
+    const toast = document.body.querySelector<HTMLElement>('[role="status"]')!;
+    expect(toast.className).toBe("pstack-toast");
+    expect(toast.parentElement).toBe(document.body);
+    expect(toast.textContent).toBe("Saved 1 roles");
+    expect(container.textContent).not.toContain("Saved 1 roles");
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 3100));
+    });
+    expect(document.body.querySelector(".pstack-toast")).toBeNull();
+  }, 6000);
+});
+
 describe("unsaved-close confirmation", () => {
   it("keeps the dialog open when discard is declined and closes when accepted", async () => {
     const controller = makeRoleApi();

@@ -566,6 +566,30 @@ const CSS = `
   gap: 8px;
   margin-left: auto;
 }
+.pstack-toast {
+  position: fixed;
+  z-index: 1002;
+  top: max(24px, var(--dsh-frame-overlay-top, 24px));
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100vw - 48px);
+  padding: 8px 12px;
+  border-radius: var(--dsw-radius-md);
+  background: var(--dsw-alias-bg-layer-1);
+  color: var(--dsw-alias-label-primary);
+  box-shadow: var(--dsw-elevation-prominent);
+  font-size: 12px;
+  line-height: 18px;
+  transform: translateX(-50%);
+}
+.pstack-toast[data-tone="success"] {
+  color: var(--dsw-alias-state-success-primary);
+}
+.pstack-toast[data-tone="error"] {
+  color: var(--dsw-alias-state-error-primary);
+}
 .pstack-inline-message {
   display: inline-flex;
   align-items: center;

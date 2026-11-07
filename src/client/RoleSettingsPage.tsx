@@ -25,6 +25,7 @@ import {
 } from "./icons.tsx";
 import { ROLE_COPY } from "./role-copy.ts";
 import { ensurePstackStyles } from "./styles.ts";
+import { Toast, type ToastMessage } from "./toast.tsx";
 import { Button, IconButton, Spinner, Status, type StatusTone } from "./ui.tsx";
 import type { PstackTranslations } from "./locales/index.ts";
 
@@ -45,11 +46,6 @@ interface RoleDraft {
 
 type DraftMap = Readonly<Record<string, RoleDraft>>;
 
-interface BulkMessage {
-  readonly tone: "success" | "error";
-  readonly text: string;
-}
-
 export function RoleSettingsView(props: {
   api: RoleSettingsApi;
   translations: PstackTranslations;
@@ -64,7 +60,7 @@ export function RoleSettingsView(props: {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
   const [bulkBusy, setBulkBusy] = useState<"save" | undefined>();
-  const [bulkMessage, setBulkMessage] = useState<BulkMessage | undefined>();
+  const [bulkMessage, setBulkMessage] = useState<ToastMessage | undefined>();
 
   const applySnapshot = (next: RoleFileSnapshot): void => {
     setSnapshot(next);
@@ -374,12 +370,7 @@ export function RoleSettingsView(props: {
           </ul>
         </div>
       )}
-      {bulkMessage === undefined ? null : (
-        <span className="pstack-inline-message" data-tone={bulkMessage.tone}>
-          {bulkMessage.tone === "success" ? <IconCheck size={12} /> : <IconAlert size={12} />}
-          {bulkMessage.text}
-        </span>
-      )}
+      <Toast message={bulkMessage} />
       <div className="pstack-role-list">
         {snapshot.roles.map((role) => (
           <RoleCard
