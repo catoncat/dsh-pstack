@@ -1,6 +1,6 @@
 /** The shared route grammar for the role file, wire codec, and editor. */
 
-import { INHERIT_ALIASES, type InheritAlias } from "./role-manifest.ts";
+import { INHERIT_ALIASES, type InheritAlias, type RoleSpec } from "./role-manifest.ts";
 
 /** One resolved child route. */
 export type Route =
@@ -112,4 +112,15 @@ export function renderRouteValue(routes: readonly Route[]): string {
 /** Type guard for a concrete route. */
 export function isRoute(route: Route): route is Extract<Route, { kind: "route" }> {
   return route.kind === "route";
+}
+
+/** The single-route shape rule shared by the file parser and the save validator. */
+export function validateRoleRouteShape(
+  spec: RoleSpec,
+  routes: { readonly length: number },
+): string | undefined {
+  if (spec.shape === "single" && routes.length > 1) {
+    return "a single-route role cannot hold a comma-separated list";
+  }
+  return undefined;
 }

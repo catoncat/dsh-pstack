@@ -30,7 +30,7 @@ import {
   type Route,
 } from "./role-config.ts";
 import { ROLE_MANIFEST, findRole } from "./role-manifest.ts";
-import { renderRouteValue, validateRouteParts } from "./route.ts";
+import { renderRouteValue, validateRoleRouteShape, validateRouteParts } from "./route.ts";
 import {
   parseSaveRoleRequest,
   type RoleFileSnapshot,
@@ -104,8 +104,9 @@ export function validateSaveRequest(
   const spec = findRole(request.key);
   if (spec === undefined)
     return { ok: false, reason: `unknown pstack role ${JSON.stringify(request.key)}` };
-  if (spec.shape === "single" && request.routes.length > 1) {
-    return { ok: false, reason: `role "${spec.key}" holds at most one route` };
+  const shapeIssue = validateRoleRouteShape(spec, request.routes);
+  if (shapeIssue !== undefined) {
+    return { ok: false, reason: shapeIssue };
   }
   if (request.routes.length === 0) return { ok: true, key: spec.key, routes: [] };
   const routes: Route[] = [];

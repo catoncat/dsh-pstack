@@ -2,7 +2,7 @@
 
 import { budgetLineValue } from "./budget.ts";
 import { findRole, normalizeRoleName, type RoleSpec } from "./role-manifest.ts";
-import { parseRouteValue, type Route } from "./route.ts";
+import { parseRouteValue, validateRoleRouteShape, type Route } from "./route.ts";
 
 /** One recognized role line. */
 export interface RoleEntry {
@@ -94,9 +94,8 @@ export function parseRoleFileDocument(text: string, path: string): RoleFileDocum
 
       const parsed = parseRouteValue(rawLine.slice(colon + 1));
       const entryIssues = [...parsed.issues];
-      if (spec.shape === "single" && parsed.routes.length > 1) {
-        entryIssues.push("a single-route role cannot hold a comma-separated list");
-      }
+      const shapeIssue = validateRoleRouteShape(spec, parsed.routes);
+      if (shapeIssue !== undefined) entryIssues.push(shapeIssue);
       for (const issue of entryIssues) issues.push({ line, message: `${rawKey}: ${issue}` });
 
       lines.push({
