@@ -251,7 +251,7 @@ describe("enable-all bulk summary", () => {
     await click(enableAllButton());
     expect(toast().dataset["tone"]).toBe("error");
     expect(toast().textContent).toContain(
-      "Changed 1 recommended plugins, 1 require a restart, 1 not applied",
+      "Changed 0 recommended plugins, 1 require a restart, 1 not applied",
     );
   });
 });

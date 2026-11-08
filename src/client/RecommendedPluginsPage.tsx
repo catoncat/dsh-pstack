@@ -19,6 +19,7 @@ import {
   type IconComponent,
 } from "./icons.tsx";
 import { ensurePstackStyles } from "./styles.ts";
+import { messageOf } from "./message.ts";
 import { Toast, type ToastMessage } from "./toast.tsx";
 import { Button, IconButton, Spinner, Status, Switch, type StatusTone } from "./ui.tsx";
 import type { PstackTranslations, PluginsKey } from "./locales/index.ts";
@@ -226,8 +227,8 @@ export function RecommendedPluginsView(props: {
       try {
         const change = await api.setBundleEnabled(bundle.name, true);
         if (change.application === "restart-required") restarts += 1;
-        if (isSettled(change.application)) settled += 1;
-        else unsettled += 1;
+        if (change.application === "applied") settled += 1;
+        else if (change.application !== "restart-required") unsettled += 1;
       } catch {
         unsettled += 1;
       }
@@ -388,14 +389,6 @@ function bundleStatus(
   return bundle.enabled
     ? { label: t("pluginEnabled"), tone: "success" }
     : { label: t("pluginDisabled"), tone: "neutral" };
-}
-
-function messageOf(reason: unknown): string {
-  return reason instanceof Error ? reason.message : String(reason);
-}
-
-function isSettled(application: ChangeResult["application"]): boolean {
-  return application === "applied" || application === "restart-required";
 }
 
 function changeNotice(

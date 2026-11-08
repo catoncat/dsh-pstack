@@ -9,7 +9,7 @@ import { IconClose, IconSettings } from "./icons.tsx";
 import { RecommendedPluginsView, type PluginManagerApi } from "./RecommendedPluginsPage.tsx";
 import { RoleSettingsView, type RoleSettingsApi } from "./RoleSettingsPage.tsx";
 import { ensurePstackStyles } from "./styles.ts";
-import { Button, IconButton, SegmentedTabs } from "./ui.tsx";
+import { Button, IconButton, SegmentedTabs, confirmDiscard } from "./ui.tsx";
 import type { PstackTranslations } from "./locales/index.ts";
 
 ensurePstackStyles();
@@ -44,19 +44,15 @@ export function PstackConfigDialog(props: PstackConfigDialogProps): ReactElement
   const { roleApi, pluginApi, translations, onClose } = props;
 
   const dirtyRef = useRef(false);
-  dirtyRef.current = rolesDirty;
+  useEffect(() => {
+    dirtyRef.current = rolesDirty;
+  }, [rolesDirty]);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
   const requestClose = useCallback(() => {
-    if (dirtyRef.current) {
-      const confirm = typeof window === "undefined" ? undefined : window.confirm;
-      if (
-        typeof confirm === "function" &&
-        !confirm.call(window, translations.roles("confirmDiscardChanges"))
-      ) {
-        return;
-      }
+    if (dirtyRef.current && !confirmDiscard(translations.roles("confirmDiscardChanges"))) {
+      return;
     }
     onCloseRef.current();
   }, [translations]);
@@ -154,7 +150,7 @@ export function PstackConfigDialog(props: PstackConfigDialogProps): ReactElement
                 value: "roles",
                 label: translations.config("tabRoles"),
                 id: `${tabsId}-roles`,
-                panelId: `${tabsId}-roles-panel`,
+                panelId: visited.has("roles") ? `${tabsId}-roles-panel` : undefined,
               },
             ]}
           />

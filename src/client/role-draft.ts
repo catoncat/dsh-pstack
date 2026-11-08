@@ -1,0 +1,40 @@
+/** Draft algebra for the role settings page. */
+
+import type { RoleView, RouteView } from "../role-wire.ts";
+
+export interface RoleDraft {
+  readonly routes: RouteView[];
+  readonly baseline: readonly RouteView[];
+  readonly busy: boolean;
+  readonly message?: { readonly tone: "success" | "error"; readonly text: string };
+}
+
+export type DraftMap = Readonly<Record<string, RoleDraft>>;
+
+export function inheritedRoutes(): RouteView[] {
+  return [{ kind: "inherit", alias: "inherit-parent" }];
+}
+
+export function draftOf(role: RoleView): RoleDraft {
+  const routes =
+    role.routes.length === 0 ? inheritedRoutes() : role.routes.map((route) => ({ ...route }));
+  return { routes, baseline: role.routes, busy: false };
+}
+
+export function isDirty(draft: RoleDraft, role: RoleView): boolean {
+  if (!role.configured && signature(draft.routes) === signature(inheritedRoutes())) return false;
+  return signature(draft.routes) !== signature(draft.baseline);
+}
+
+export function signature(routes: readonly RouteView[]): string {
+  return JSON.stringify(routes);
+}
+
+export function isClearDraft(draft: RoleDraft, role: RoleView | undefined): boolean {
+  return (
+    role !== undefined &&
+    draft.routes.length === 1 &&
+    draft.routes[0]?.kind === "inherit" &&
+    (role.routes.length === 0 || signature(draft.routes) !== signature(draft.baseline))
+  );
+}
