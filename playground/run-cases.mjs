@@ -44,6 +44,24 @@ const REPORT_DIR = join(DSH_HOME, "cases-report");
 const CONFIG_FILE = join(HERE, "config.json");
 const DSH_BIN = process.env.DSH_BIN || "dsh";
 const CASE_TIMEOUT = Number(process.env.PSTACK_CASE_TIMEOUT_MS ?? 180000);
+let activeCleanup;
+
+function runActiveCleanup() {
+  const cleanup = activeCleanup;
+  activeCleanup = undefined;
+  try {
+    cleanup?.();
+  } catch {
+    // A failed cleanup must not hide the case result.
+  }
+}
+
+for (const signal of ["SIGINT", "SIGTERM"]) {
+  process.once(signal, () => {
+    runActiveCleanup();
+    process.exit(130);
+  });
+}
 
 // ---------------------------------------------------------------------------
 // CLI
@@ -451,6 +469,7 @@ function main() {
       continue;
     }
     try {
+      activeCleanup = built.cleanup;
       built.setup?.();
       process.stdout.write(`- ${c.id} 跑… `);
       const run = runHeadless(
@@ -470,7 +489,7 @@ function main() {
       results.push({ id: c.id, title: c.title, status, detail: outcome.detail });
       console.log(`${status}  ${outcome.detail}`);
     } finally {
-      built.cleanup?.();
+      runActiveCleanup();
     }
   }
 
