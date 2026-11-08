@@ -231,23 +231,33 @@ export async function saveRoleConfiguration(
   if (current.status === "unreadable") {
     return { ok: false, reason: `the role file is unreadable: ${current.reason}` };
   }
+
+  // Read the role file at most once per path. The concrete-route branch reads it after the
+  // catalogue await so a concurrent writer between validation and save is not clobbered.
   let text = "";
-  if (current.status === "loaded") {
+  const readText = (): { ok: true; text: string } | { ok: false; reason: string } => {
+    if (current.status !== "loaded") return { ok: true, text: "" };
     try {
-      text = readFileSync(path, "utf8");
+      return { ok: true, text: readFileSync(path, "utf8") };
     } catch (error) {
       return { ok: false, reason: `the role file could not be read: ${describeError(error)}` };
     }
-  }
+  };
 
   let next: string;
   if (parsed.routes.length === 0) {
     const validation = validateSaveRequest(parsed, { providers: [], truncated: false });
     if (!validation.ok) return validation;
+    const read = readText();
+    if (!read.ok) return read;
+    text = read.text;
     next = removeRoleText(text, validation.key);
   } else if (parsed.routes.every((route) => route.kind === "inherit")) {
     const validation = validateSaveRequest(parsed, { providers: [], truncated: false });
     if (!validation.ok) return validation;
+    const read = readText();
+    if (!read.ok) return read;
+    text = read.text;
     next = updateRoleText(text, validation.key, renderRouteValue(validation.routes));
   } else {
     let catalogue: Awaited<ReturnType<typeof collectCatalogue>>;
@@ -263,13 +273,9 @@ export async function saveRoleConfiguration(
     signal.throwIfAborted();
     const validation = validateSaveRequest(parsed, catalogue);
     if (!validation.ok) return validation;
-    if (current.status === "loaded") {
-      try {
-        text = readFileSync(path, "utf8");
-      } catch (error) {
-        return { ok: false, reason: `the role file could not be read: ${describeError(error)}` };
-      }
-    }
+    const read = readText();
+    if (!read.ok) return read;
+    text = read.text;
     next = updateRoleText(text, validation.key, renderRouteValue(validation.routes));
   }
 
