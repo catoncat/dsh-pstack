@@ -15,8 +15,6 @@ interface PluginRow {
 }
 
 const PSTACK_ROWS: PluginRow[] = [
-  { id: "pstack-skill", name: "dsh-pstack", indent: 10 },
-  { id: "pstack-subagent", name: "dsh-pstack/subagent", indent: 10 },
   { id: "poteto-mode-section", name: "dsh-pstack/poteto-mode", indent: 10 },
 ];
 
@@ -82,15 +80,22 @@ describe("poteto-mode preset parity", () => {
     );
   });
 
-  it("keeps the pstack row config in both root presets", () => {
+  it("keeps the pstack skills and prompt section in both root presets", () => {
     const poteto = presetLines(PATCH, "preset-poteto-mode").join("\n");
     const creator = presetLines(PATCH, "preset-poteto-mode-creator").join("\n");
     for (const source of [poteto, creator]) {
       expect(source).toContain('name: "@deepseek-ai/dsh-skill-filesystem"');
-      expect(source).toContain("id: pstack-subagent");
-      expect(source).toContain("maxDepth: 2");
+      expect(source).toContain("id: poteto-mode-section");
     }
     expect(PATCH).toContain("dist/pstack/skills");
     expect(creator).toContain("customSkillDirs");
+    // The pstack tools live once at the bundle level, not inside each root preset.
+    expect(PATCH).toContain("    - id: pstack-subagent");
+    expect(PATCH).toContain("    - id: pstack-models");
+    expect(PATCH).toContain("    - id: pstack-roles");
+    for (const source of [poteto, creator]) {
+      expect(source).not.toContain("id: pstack-subagent");
+      expect(source).not.toContain("id: pstack-skill");
+    }
   });
 });

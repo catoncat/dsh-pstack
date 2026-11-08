@@ -158,13 +158,6 @@
           - id: tool-plugin-market
             name: "@deepseek-ai/dsh-plugin-market/tools"
             disabled: true
-          - id: pstack-skill
-            name: dsh-pstack
-          - id: pstack-subagent
-            name: dsh-pstack/subagent
-            config:
-              provider: spawn
-              maxDepth: 2
           - id: poteto-mode-section
             name: dsh-pstack/poteto-mode
 
@@ -289,13 +282,6 @@
           - id: tool-plugin-market
             name: "@deepseek-ai/dsh-plugin-market/tools"
             disabled: !!js "!ctx.get('profileContext')"
-          - id: pstack-skill
-            name: dsh-pstack
-          - id: pstack-subagent
-            name: dsh-pstack/subagent
-            config:
-              provider: spawn
-              maxDepth: 2
           - id: poteto-mode-section
             name: dsh-pstack/poteto-mode
 

@@ -66,8 +66,8 @@ describe("createPotetoModeSection", () => {
 describe("poteto-mode root preset", () => {
   it("declares the root preset with the standard groups and pstack rows", () => {
     const patch = readFileSync("cordis.patch.yml", "utf8");
-    const start = patch.indexOf("- id: preset-poteto-mode");
-    const end = patch.indexOf("- id: preset-poteto-agent", start);
+    const start = patch.indexOf("    - id: preset-poteto-mode\n");
+    const end = patch.indexOf("    - id: preset-poteto-mode-creator\n", start);
     expect(start).toBeGreaterThan(-1);
     expect(end).toBeGreaterThan(start);
 
@@ -89,8 +89,8 @@ describe("poteto-mode root preset", () => {
 describe("poteto-mode creator root preset", () => {
   it("declares the Creator variant with tool-cordis and agent-preset skills", () => {
     const patch = readFileSync("cordis.patch.yml", "utf8");
-    const start = patch.indexOf("- id: preset-poteto-mode-creator");
-    const end = patch.indexOf("- id: preset-poteto-agent", start);
+    const start = patch.indexOf("    - id: preset-poteto-mode-creator\n");
+    const end = patch.indexOf("    - id: preset-poteto-agent\n", start);
     expect(start).toBeGreaterThan(-1);
     expect(end).toBeGreaterThan(start);
 
