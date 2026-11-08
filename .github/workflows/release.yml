@@ -41,6 +41,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Check compatibility metadata
+        run: pnpm exec vpx port/release-compatibility.ts --check
+
       - name: Resolve npm dist-tag
         id: dist-tag
         run: |

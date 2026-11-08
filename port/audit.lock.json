@@ -2,6 +2,7 @@
   "schemaVersion": 1,
   "baseline": {
     "id": "dsh-0.2.2-rc.1@pstack-ae5650febf4320793844c12c4adaa937f417f8da",
+    "compatibilityKey": "dsh-0.2.2-rc.1+port-v1",
     "previous": null,
     "transition": "initial"
   },

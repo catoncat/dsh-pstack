@@ -57,7 +57,7 @@
   },
   "scripts": {
     "prepare": "vp config && skills experimental_sync -y -a universal --copy && skills add ./skills/authored -y -a universal",
-    "prerelease": "vp run build && vp run typecheck && vp test",
+    "prerelease": "vp run build && vp run typecheck && vp test && vp run compatibility:check",
     "release": "bumpp",
     "prepublishOnly": "vp run build"
   },

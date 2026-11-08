@@ -73,6 +73,10 @@ export default defineConfig({
         command: "node port/generate.mjs --check",
         cache: false,
       },
+      "compatibility:check": {
+        command: "vpx port/release-compatibility.ts --check",
+        cache: false,
+      },
       playground: {
         command: "node playground/start.mjs",
         cache: false,

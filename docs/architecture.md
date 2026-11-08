@@ -1,6 +1,6 @@
 # 项目架构
 
-本文描述 `dsh-pstack` 当前的模块边界、依赖方向和扩展入口。用户使用方式见根 README；移植审核与重建规则见 `port/README.md`。
+本文描述 `dsh-pstack` 当前的模块边界、依赖方向和扩展入口。用户使用方式见根 README；移植、上游升级、生成树及其构建边界按 `port/AGENTS.md` 执行。
 
 ## 系统边界
 
@@ -28,6 +28,7 @@
 | 角色与插件页面 | `src/client/RoleSettingsPage.tsx`、`src/client/RecommendedPluginsPage.tsx` | 编辑角色草稿并展示保存结果；展示关联插件及其变更结果。 |
 | Client 支撑 | `src/client/ui.tsx`、`src/client/icons.tsx`、`src/client/styles.ts`、`src/client/locales/`、`src/client/role-copy.ts` | 提供本插件的 UI 组件、样式、翻译和角色展示文案。 |
 | 移植与生成 | `port/generate.mjs`、`port/scan.mjs`、`port/dsh.md`、`port/audit.md`、`port/audit.lock.json` | 从固定上游生成 `pstack/`；扫描能力、校验审核引用和当前基线处置。 |
+| 发布元数据 | `port/release-compatibility.ts`、`bump.config.ts` | 按显式兼容键同步双语 README 的版本表；每个 `x.y` 保留最新 `z`，新兼容键新增行，并把双语 README 加入发布提交。 |
 | 构建与打包 | `vite.config.ts`、`package.json` | 分别构建 Host 与浏览器 Client；导出 Host 模块，复制生成树和技能资源。 |
 | 自动化验证 | `tests/`、`playground/start.mjs`、`playground/cases-run.mjs` | 运行单元和 DOM 交互测试；在真实 the agent harness playground 中验证插件和模型驱动用例。 |
 
