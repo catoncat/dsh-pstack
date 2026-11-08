@@ -6,6 +6,7 @@ import type { PropsRuntime } from "@deepseek-ai/dsh-client-ui-slots";
 import type {} from "@deepseek-ai/dsh-client-ui-plugin-manager/client";
 
 import { IconClose, IconSettings } from "./icons.tsx";
+import { useFocusTrap } from "./focus-trap.ts";
 import { RecommendedPluginsView, type PluginManagerApi } from "./RecommendedPluginsPage.tsx";
 import { RoleSettingsView, type RoleSettingsApi } from "./RoleSettingsPage.tsx";
 import { ensurePstackStyles } from "./styles.ts";
@@ -13,15 +14,6 @@ import { Button, IconButton, SegmentedTabs, confirmDiscard } from "./ui.tsx";
 import type { PstackTranslations } from "./locales/index.ts";
 
 ensurePstackStyles();
-
-const FOCUSABLE_SELECTOR = [
-  "button:not([disabled])",
-  "[href]",
-  "input:not([disabled])",
-  "select:not([disabled])",
-  "textarea:not([disabled])",
-  '[tabindex]:not([tabindex="-1"])',
-].join(",");
 
 export interface PstackConfigDialogProps {
   readonly roleApi: RoleSettingsApi;
@@ -48,7 +40,9 @@ export function PstackConfigDialog(props: PstackConfigDialogProps): ReactElement
     dirtyRef.current = rolesDirty;
   }, [rolesDirty]);
   const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   const requestClose = useCallback(() => {
     if (dirtyRef.current && !confirmDiscard(translations.roles("confirmDiscardChanges"))) {
@@ -62,50 +56,11 @@ export function PstackConfigDialog(props: PstackConfigDialogProps): ReactElement
     setVisited((current) => (current.has(next) ? current : new Set([...current, next])));
   };
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        requestClose();
-        return;
-      }
-      if (event.key !== "Tab") return;
-      if (document.querySelector(".pstack-budget-overlay") !== null) return;
-      const panel = panelRef.current;
-      if (panel === null) return;
-      // Skip the inactive panel: its subtree carries `hidden`, so its controls are not tabbable.
-      const focusables = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
-        (element) => element.closest("[hidden]") === null,
-      );
-      if (focusables.length === 0) {
-        event.preventDefault();
-        panel.focus();
-        return;
-      }
-      const first = focusables[0]!;
-      const last = focusables[focusables.length - 1]!;
-      const active = document.activeElement;
-      const outside = active === null || !panel.contains(active);
-      if (event.shiftKey) {
-        if (active === first || outside) {
-          event.preventDefault();
-          last.focus();
-        }
-        return;
-      }
-      if (active === last || outside) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [requestClose]);
+  useFocusTrap(panelRef, requestClose, true, {
+    suspended: () => document.querySelector(".pstack-budget-overlay") !== null,
+    lockScroll: true,
+    skipHidden: true,
+  });
 
   if (typeof document === "undefined") return null;
 

@@ -1,6 +1,6 @@
 /** Role model configuration page for the pstack plugin dialog. */
 
-import { useEffect, useState, type ReactElement } from "react";
+import { useEffect, useRef, useState, type ReactElement } from "react";
 
 import type { CatalogueResult } from "../models.ts";
 import type { BudgetApplyRequest } from "../budget.ts";
@@ -16,7 +16,7 @@ import { BudgetDialog, budgetLabel } from "./BudgetDialog.tsx";
 import { messageOf } from "./message.ts";
 import { RoleCard } from "./RoleCard.tsx";
 import { draftOf, inheritedRoutes, isClearDraft, isDirty, type DraftMap } from "./role-draft.ts";
-import { routeIsInvalid } from "./role-selectors.ts";
+import { routeIsIncomplete, routeIsInvalid } from "./role-selectors.ts";
 import { ensurePstackStyles } from "./styles.ts";
 import { Toast, type ToastMessage } from "./toast.tsx";
 import { Button, IconButton, Spinner, Status, confirmDiscard, type StatusTone } from "./ui.tsx";
@@ -26,9 +26,9 @@ ensurePstackStyles();
 
 export interface RoleSettingsApi {
   status(): Promise<RoleFileSnapshot>;
-  catalogue(): Promise<CatalogueResult>;
-  save(request: SaveRoleRequest): Promise<SaveRoleResult>;
-  budget(request: BudgetApplyRequest): Promise<BudgetApplyResult>;
+  catalogue(signal?: AbortSignal): Promise<CatalogueResult>;
+  save(request: SaveRoleRequest, signal?: AbortSignal): Promise<SaveRoleResult>;
+  budget(request: BudgetApplyRequest, signal?: AbortSignal): Promise<BudgetApplyResult>;
 }
 
 export function RoleSettingsView(props: {
@@ -48,6 +48,9 @@ export function RoleSettingsView(props: {
   const [bulkBusy, setBulkBusy] = useState<"save" | undefined>();
   const [bulkMessage, setBulkMessage] = useState<ToastMessage | undefined>();
   const [budgetOpen, setBudgetOpen] = useState(false);
+  const abortRef = useRef<AbortController | undefined>(undefined);
+
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   const applySnapshot = (next: RoleFileSnapshot): void => {
     setSnapshot(next);
@@ -55,15 +58,22 @@ export function RoleSettingsView(props: {
   };
 
   const load = async (): Promise<void> => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     setLoading(true);
     setError(undefined);
     setRefreshMessage(undefined);
     setBulkMessage(undefined);
     try {
-      const [nextSnapshot, nextCatalogue] = await Promise.all([api.status(), api.catalogue()]);
+      const [nextSnapshot, nextCatalogue] = await Promise.all([
+        api.status(),
+        api.catalogue(controller.signal),
+      ]);
       applySnapshot(nextSnapshot);
       setCatalogue(nextCatalogue);
     } catch (reason) {
+      if (controller.signal.aborted) return;
       const message = t("rolesLoadFailed", { message: messageOf(reason) });
       if (snapshot === undefined) setError(message);
       else setRefreshMessage({ tone: "error", text: message });
@@ -109,14 +119,11 @@ export function RoleSettingsView(props: {
     .map((role) => role.key);
   const dirtyCount = dirtyKeys.length;
   const anyBusy = Object.values(drafts).some((draft) => draft.busy);
-  const anyIncomplete = Object.values(drafts).some((draft) =>
-    draft.routes.some(
-      (route) =>
-        route.kind === "route" && (route.provider.trim() === "" || route.model.trim() === ""),
-    ),
+  const anyIncomplete = dirtyKeys.some((key) =>
+    (drafts[key]?.routes ?? []).some(routeIsIncomplete),
   );
-  const anyInvalid = Object.values(drafts).some((draft) =>
-    draft.routes.some((route) => routeIsInvalid(route, catalogue)),
+  const anyInvalid = dirtyKeys.some((key) =>
+    (drafts[key]?.routes ?? []).some((route) => routeIsInvalid(route, catalogue)),
   );
   const canClearAll = snapshot.roles.some((role) => {
     const draft = drafts[role.key] ?? draftOf(role);
@@ -200,15 +207,18 @@ export function RoleSettingsView(props: {
       };
     });
     try {
-      const result = await api.save({
-        key,
-        routes: isClearDraft(
-          draft,
-          snapshot.roles.find((role) => role.key === key),
-        )
-          ? []
-          : draft.routes,
-      });
+      const result = await api.save(
+        {
+          key,
+          routes: isClearDraft(
+            draft,
+            snapshot.roles.find((role) => role.key === key),
+          )
+            ? []
+            : draft.routes,
+        },
+        abortRef.current?.signal,
+      );
       if (result.ok) {
         const savedRole = result.snapshot.roles.find((entry) => entry.key === key);
         setSnapshot(result.snapshot);
@@ -310,7 +320,9 @@ export function RoleSettingsView(props: {
             variant="outline"
             size="sm"
             icon={<IconEraser size={13} />}
-            disabled={!canClearAll || bulkBusy !== undefined || anyBusy || loading}
+            disabled={
+              !canClearAll || !snapshot.canSave || bulkBusy !== undefined || anyBusy || loading
+            }
             onClick={clearAll}
           >
             {t("clearAll")}
@@ -382,9 +394,10 @@ export function RoleSettingsView(props: {
           snapshot={snapshot}
           catalogue={catalogue}
           translations={translations}
-          onApply={(request) => api.budget(request)}
+          onApply={(request, signal) => api.budget(request, signal)}
           onApplied={onBudgetApplied}
           onClose={() => setBudgetOpen(false)}
+          signal={abortRef.current?.signal}
         />
       ) : null}
       <Toast message={refreshMessage} />

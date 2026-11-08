@@ -17,7 +17,13 @@ import {
 } from "./icons.tsx";
 import { ROLE_COPY } from "./role-copy.ts";
 import { isDirty, inheritedRoutes, type RoleDraft } from "./role-draft.ts";
-import { effortChoices, modelChoices, providerLabel, routeIsInvalid } from "./role-selectors.ts";
+import {
+  effortChoices,
+  modelChoices,
+  providerLabel,
+  routeIsIncomplete,
+  routeIsInvalid,
+} from "./role-selectors.ts";
 import { Button, IconButton, Spinner, Status, type StatusTone } from "./ui.tsx";
 import type { PstackTranslations } from "./locales/index.ts";
 
@@ -39,11 +45,9 @@ export function RoleCard(props: {
   const description = copy === undefined ? "" : t(copy.descriptionKey);
   const dirty = isDirty(draft, role);
   const controlsDisabled = disabled || draft.busy;
-  const incomplete = draft.routes.some(
-    (route) =>
-      route.kind === "route" && (route.provider.trim() === "" || route.model.trim() === ""),
-  );
+  const incomplete = draft.routes.some(routeIsIncomplete);
   const invalid = draft.routes.some((route) => routeIsInvalid(route, catalogue));
+  const routeProblem = incomplete || invalid;
   const canClearRole =
     (role.configured || dirty) &&
     !(draft.routes.length === 1 && draft.routes[0]?.kind === "inherit");
@@ -51,9 +55,11 @@ export function RoleCard(props: {
   const status =
     role.issues.length > 0
       ? { tone: "error" as StatusTone, label: t("roleInvalid") }
-      : role.configured
-        ? { tone: "success" as StatusTone, label: t("roleConfigured") }
-        : { tone: "neutral" as StatusTone, label: t("roleMissing") };
+      : routeProblem
+        ? { tone: "error" as StatusTone, label: t("roleRouteInvalid") }
+        : role.configured
+          ? { tone: "success" as StatusTone, label: t("roleConfigured") }
+          : { tone: "neutral" as StatusTone, label: t("roleMissing") };
   return (
     <section className="pstack-role-card" data-dirty={dirty ? "true" : undefined}>
       <header className="pstack-role-head">
@@ -90,6 +96,12 @@ export function RoleCard(props: {
           </ul>
         </div>
       )}
+      {routeProblem ? (
+        <div className="pstack-notice" data-tone="error" style={{ margin: 0 }}>
+          <IconAlert size={14} />
+          <span>{incomplete ? t("routeIncompleteHint") : t("routeInvalidHint")}</span>
+        </div>
+      ) : null}
       <div className="pstack-route-list">
         {draft.routes.map((route, index) => (
           <RouteRow
@@ -222,7 +234,7 @@ function RouteRow(props: {
               });
               return;
             }
-            const model = modelChoices(catalogue, value)[0];
+            const model = modelChoices(catalogue, value).find((entry) => entry.error === undefined);
             onChange({
               kind: "route",
               provider: value,

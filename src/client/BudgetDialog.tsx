@@ -1,6 +1,6 @@
 /** Nested budget modal for the role settings page: preview a plan and apply it to the role file. */
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactElement } from "react";
+import { useCallback, useId, useMemo, useRef, useState, type ReactElement } from "react";
 import { createPortal } from "react-dom";
 
 import type { CatalogueResult } from "../models.ts";
@@ -18,32 +18,38 @@ import {
 import type { BudgetApplyResult, RoleFileSnapshot } from "../role-wire.ts";
 import { renderRouteValue, type Route } from "../route.ts";
 import { IconClose } from "./icons.tsx";
+import { useFocusTrap } from "./focus-trap.ts";
 import { messageOf } from "./message.ts";
 import { providerLabel } from "./role-selectors.ts";
 import { findRole } from "../role-manifest.ts";
 import { Button, IconButton, Spinner, Status, type StatusTone } from "./ui.tsx";
 import type { PstackTranslations } from "./locales/index.ts";
 
-const FOCUSABLE_SELECTOR = [
-  "button:not([disabled])",
-  "[href]",
-  "input:not([disabled])",
-  "select:not([disabled])",
-  "textarea:not([disabled])",
-  '[tabindex]:not([tabindex="-1"])',
-].join(",");
-
 export interface BudgetDialogProps {
   readonly snapshot: RoleFileSnapshot;
   readonly catalogue: CatalogueResult;
   readonly translations: PstackTranslations;
-  readonly onApply: (request: BudgetApplyRequest) => Promise<BudgetApplyResult>;
+  readonly onApply: (
+    request: BudgetApplyRequest,
+    signal?: AbortSignal,
+  ) => Promise<BudgetApplyResult>;
   readonly onApplied: (snapshot: RoleFileSnapshot) => void;
   readonly onClose: () => void;
+  readonly signal?: AbortSignal;
 }
 
+const TIER_LABEL: Record<
+  BudgetTier,
+  "budgetTierUnlimited" | "budgetTierLarge" | "budgetTierMedium" | "budgetTierSmall"
+> = {
+  unlimited: "budgetTierUnlimited",
+  large: "budgetTierLarge",
+  medium: "budgetTierMedium",
+  small: "budgetTierSmall",
+};
+
 export function BudgetDialog(props: BudgetDialogProps): ReactElement | null {
-  const { snapshot, catalogue, translations, onApply, onApplied, onClose } = props;
+  const { snapshot, catalogue, translations, onApply, onApplied, onClose, signal } = props;
   const t = translations.roles;
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -67,42 +73,7 @@ export function BudgetDialog(props: BudgetDialogProps): ReactElement | null {
   const requestClose = useCallback((): void => {
     if (!busy) onClose();
   }, [busy, onClose]);
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        event.stopPropagation();
-        requestClose();
-        return;
-      }
-      if (event.key !== "Tab") return;
-      const panel = panelRef.current;
-      if (panel === null) return;
-      const focusables = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
-      if (focusables.length === 0) {
-        event.preventDefault();
-        panel.focus();
-        return;
-      }
-      const first = focusables[0]!;
-      const last = focusables[focusables.length - 1]!;
-      const active = document.activeElement;
-      const outside = active === null || !panel.contains(active);
-      if (event.shiftKey) {
-        if (active === first || outside) {
-          event.preventDefault();
-          last.focus();
-        }
-        return;
-      }
-      if (active === last || outside) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener("keydown", onKeyDown, true);
-    return () => document.removeEventListener("keydown", onKeyDown, true);
-  }, [requestClose]);
+  useFocusTrap(panelRef, requestClose, true, { stopEscapePropagation: true, capture: true });
 
   const request: BudgetApplyRequest = {
     tier,
@@ -122,6 +93,7 @@ export function BudgetDialog(props: BudgetDialogProps): ReactElement | null {
             autoPanel: findRole(role.key)?.autoPanel ?? false,
             configured: role.configured,
             routes: role.routes,
+            hasIssues: role.issues.length > 0,
           })),
           catalogue,
           request,
@@ -155,7 +127,7 @@ export function BudgetDialog(props: BudgetDialogProps): ReactElement | null {
     setBusy(true);
     setError(undefined);
     try {
-      const result = await onApply(request);
+      const result = await onApply(request, signal);
       if (result.ok) onApplied(result.snapshot);
       else setError(t("budgetFailed", { reason: result.reason }));
     } catch (reason) {
@@ -219,7 +191,7 @@ export function BudgetDialog(props: BudgetDialogProps): ReactElement | null {
               >
                 {BUDGET_TIERS.map((value) => (
                   <option key={value} value={value}>
-                    {t(`budgetTier${value[0]!.toUpperCase()}${value.slice(1)}` as never)}
+                    {t(TIER_LABEL[value])}
                   </option>
                 ))}
               </select>

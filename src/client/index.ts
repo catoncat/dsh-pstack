@@ -66,9 +66,9 @@ export async function apply(ctx: Context): Promise<() => Promise<void>> {
 
     const roleApi: RoleSettingsApi = {
       status: async () => unwrap(await pstack.status()),
-      catalogue: async () => unwrap(await pstack.catalogue()),
-      save: async (request) => unwrap(await pstack.save(request)),
-      budget: async (request) => unwrap(await pstack.budget(request)),
+      catalogue: async (signal) => unwrap(await pstack.catalogue(signal)),
+      save: async (request, signal) => unwrap(await pstack.save(request, signal)),
+      budget: async (request, signal) => unwrap(await pstack.budget(request, signal)),
     };
     const translations = {
       common: ctx.locale.bind(NS.common),

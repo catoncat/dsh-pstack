@@ -27,6 +27,10 @@ export function effortChoices(
   return modelChoices(catalogue, provider).find((entry) => entry.id === model)?.efforts ?? [];
 }
 
+export function routeIsIncomplete(route: RouteView): boolean {
+  return route.kind === "route" && (route.provider.trim() === "" || route.model.trim() === "");
+}
+
 export function routeIsInvalid(route: RouteView, catalogue: CatalogueResult | undefined): boolean {
   if (route.kind !== "route") return false;
   const provider = catalogue?.providers.find((entry) => entry.provider === route.provider);
