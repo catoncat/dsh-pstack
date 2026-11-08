@@ -115,10 +115,15 @@ describe("role editor", () => {
     expect(removeRoleText("bug-fix: cpa/b", "bug-fix")).toBe("");
   });
 
-  it("updates the effective last duplicate role line", () => {
+  it("removes duplicate role lines and writes one effective line", () => {
     const text = "bug-fix: cpa/a [low]\nbug-fix: cpa/b [low]\n";
-    expect(updateRoleText(text, "bug-fix", "cpa/b [high]")).toBe(
-      "bug-fix: cpa/a [low]\nbug-fix: cpa/b [high]\n",
+    expect(updateRoleText(text, "bug-fix", "cpa/b [high]")).toBe("bug-fix: cpa/b [high]\n");
+  });
+
+  it("keeps a list role on one line when routes change", () => {
+    const text = "arena runners: cpa/a [high], cpa/b [low]\n";
+    expect(updateRoleText(text, "arena runners", "cpa/c [high], cpa/d [low]")).toBe(
+      "arena runners: cpa/c [high], cpa/d [low]\n",
     );
   });
 
@@ -323,7 +328,7 @@ describe("role editor", () => {
     );
     if (!result.ok) throw new Error(result.reason);
     expect(readFileSync(path, "utf8")).toBe(
-      "# budget: large (xhigh)\nbug-fix: cpa/model-a [low]\nbug-fix: cpa/model-a [high]\n",
+      "# budget: large (xhigh)\nbug-fix: cpa/model-a [high]\n",
     );
   });
 

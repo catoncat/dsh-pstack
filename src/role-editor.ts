@@ -197,13 +197,17 @@ export function renderRoleValue(routes: readonly Route[]): string {
 /** Replace or append one role line, preserving the other logical lines. */
 export function updateRoleText(text: string, key: string, value: string): string {
   const document = parseRoleFileDocument(text.replace(/\n$/, ""), "");
-  let target = -1;
+  const matches: number[] = [];
   document.lines.forEach((line, index) => {
-    if (isRoleLineFor(line, key)) target = index;
+    if (isRoleLineFor(line, key)) matches.push(index);
   });
-  const lines = document.lines.map((line, index) =>
-    index === target ? `${key}: ${value}` : line.raw,
-  );
+  const target = matches.at(-1) ?? -1;
+  const matching = new Set(matches);
+  const lines = document.lines.flatMap((line, index) => {
+    if (index === target) return [`${key}: ${value}`];
+    if (matching.has(index)) return [];
+    return [line.raw];
+  });
   if (target === -1) {
     if (lines.length > 0 && lines[lines.length - 1] === "") lines.pop();
     lines.push(`${key}: ${value}`);
