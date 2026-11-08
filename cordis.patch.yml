@@ -7,6 +7,10 @@
 # role shapes; `pstack-subagent` delegates one child per selected route. The
 # preset rows below own the child personas and tool compositions. There is no
 # rendering row; charts stay Mermaid text and video rendering is not provided.
+#
+# Each `dsh-pstack/preset` row's `name`/`description` below is a display default.
+# `dsh-pstack/preset` overwrites both at runtime from `src/preset-copy.ts` for the
+# active locale, so change the user-visible copy there, not here.
 - insert:
     - id: pstack
       name: dsh-pstack
