@@ -230,7 +230,7 @@ const zh = {
   budgetWarningAutoPanel: "角色「{role}」是自动面板；默认模型只填入一个条目，它不是跨模型面板。",
   budgetErrorProvider: "提供方 {provider} 不可用",
   budgetErrorModel: "模型 {model} 不可用",
-} as const;
+} as const satisfies Record<keyof typeof en, string>;
 
 export type RolesKey = keyof typeof en;
 

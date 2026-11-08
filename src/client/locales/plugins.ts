@@ -108,7 +108,7 @@ const zh = {
   recommendedAgentTeamTitle: "智能体团队",
   recommendedAgentTeamDescription:
     "与 pstack 根预设和 pstack_subagent 冲突。启用后 pstack 根预设会启动失败。",
-} as const;
+} as const satisfies Record<keyof typeof en, string>;
 
 export type PluginsKey = keyof typeof en;
 

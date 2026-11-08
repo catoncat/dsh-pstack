@@ -16,7 +16,7 @@ const zh = {
   save: "保存",
   saving: "保存中…",
   saved: "已保存",
-} as const;
+} as const satisfies Record<keyof typeof en, string>;
 
 export type CommonKey = keyof typeof en;
 
