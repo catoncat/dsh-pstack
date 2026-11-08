@@ -81,4 +81,16 @@ describe("poteto-mode preset parity", () => {
       expectedRootRows(baselineRows("cordis.patch.yml", "preset-cordis")),
     );
   });
+
+  it("keeps the pstack row config in both root presets", () => {
+    const poteto = presetLines(PATCH, "preset-poteto-mode").join("\n");
+    const creator = presetLines(PATCH, "preset-poteto-mode-creator").join("\n");
+    for (const source of [poteto, creator]) {
+      expect(source).toContain('name: "@deepseek-ai/dsh-skill-filesystem"');
+      expect(source).toContain("id: pstack-subagent");
+      expect(source).toContain("maxDepth: 2");
+    }
+    expect(PATCH).toContain("dist/pstack/skills");
+    expect(creator).toContain("customSkillDirs");
+  });
 });
