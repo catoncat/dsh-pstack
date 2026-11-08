@@ -101,14 +101,6 @@ export function validateSaveRequest(
   request: SaveRoleRequest,
   catalogue: Awaited<ReturnType<typeof collectCatalogue>>,
 ): { ok: true; key: string; routes: readonly Route[] } | { ok: false; reason: string } {
-  if (
-    typeof request !== "object" ||
-    request === null ||
-    typeof request.key !== "string" ||
-    !Array.isArray(request.routes)
-  ) {
-    return { ok: false, reason: "the save request must carry a role key and a route list" };
-  }
   const spec = findRole(request.key);
   if (spec === undefined)
     return { ok: false, reason: `unknown pstack role ${JSON.stringify(request.key)}` };
@@ -118,29 +110,14 @@ export function validateSaveRequest(
   if (request.routes.length === 0) return { ok: true, key: spec.key, routes: [] };
   const routes: Route[] = [];
   for (const [index, route] of request.routes.entries()) {
-    if (typeof route !== "object" || route === null) {
-      return { ok: false, reason: `route ${index + 1} must be an object` };
-    }
     if (route.kind === "inherit") {
-      if (route.alias !== "inherit-parent" && route.alias !== "auto") {
-        return { ok: false, reason: `route ${index + 1} has an unknown inheritance alias` };
-      }
       routes.push({ kind: "inherit", alias: route.alias });
       continue;
-    }
-    if (route.kind !== "route") {
-      return { ok: false, reason: `route ${index + 1} has an unknown kind` };
-    }
-    if (typeof route.provider !== "string" || typeof route.model !== "string") {
-      return { ok: false, reason: `route ${index + 1} needs provider and model strings` };
     }
     const provider = route.provider.trim();
     const model = route.model.trim();
     if (provider === "" || model === "") {
       return { ok: false, reason: `route ${index + 1} needs both a provider and a model` };
-    }
-    if (route.effort !== undefined && typeof route.effort !== "string") {
-      return { ok: false, reason: `route ${index + 1} has a non-string effort` };
     }
     const effort = route.effort?.trim();
     const routeIssue = validateRouteParts(provider, model, effort);
@@ -189,14 +166,10 @@ export function validateSaveRequest(
   return { ok: true, key: spec.key, routes };
 }
 
-/** Render one role value in the file grammar. */
-export function renderRoleValue(routes: readonly Route[]): string {
-  return renderRouteValue(routes);
-}
-
 /** Replace or append one role line, preserving the other logical lines. */
 export function updateRoleText(text: string, key: string, value: string): string {
-  const document = parseRoleFileDocument(text.replace(/\n$/, ""), "");
+  const { bom, eol, body } = splitDocumentText(text);
+  const document = parseRoleFileDocument(stripTrailingEol(body), "");
   const matches: number[] = [];
   document.lines.forEach((line, index) => {
     if (isRoleLineFor(line, key)) matches.push(index);
@@ -212,17 +185,30 @@ export function updateRoleText(text: string, key: string, value: string): string
     if (lines.length > 0 && lines[lines.length - 1] === "") lines.pop();
     lines.push(`${key}: ${value}`);
   }
-  return `${lines.join("\n")}\n`;
+  return `${bom}${lines.join(eol)}${eol}`;
 }
 
 /** Remove every matching role line. Clearing an absent role is a no-op. */
 export function removeRoleText(text: string, key: string): string {
-  const document = parseRoleFileDocument(text.replace(/\n$/, ""), "");
+  const { bom, eol, body } = splitDocumentText(text);
+  const document = parseRoleFileDocument(stripTrailingEol(body), "");
   const remaining = document.lines
     .filter((line) => !isRoleLineFor(line, key))
     .map((line) => line.raw);
   if (remaining.length === document.lines.length) return text;
-  return remaining.length === 0 ? "" : `${remaining.join("\n")}\n`;
+  return remaining.length === 0 ? "" : `${bom}${remaining.join(eol)}${eol}`;
+}
+
+/** Split a document into BOM, dominant EOL, and body. */
+function splitDocumentText(text: string): { bom: string; eol: string; body: string } {
+  const bom = text.startsWith("\uFEFF") ? "\uFEFF" : "";
+  const body = bom === "" ? text : text.slice(1);
+  const eol = body.includes("\r\n") ? "\r\n" : "\n";
+  return { bom, eol, body };
+}
+
+function stripTrailingEol(body: string): string {
+  return body.replace(/\r?\n$/, "");
 }
 
 /** Save one role and return the reloaded snapshot. */
@@ -261,7 +247,7 @@ export async function saveRoleConfiguration(
   } else if (parsed.routes.every((route) => route.kind === "inherit")) {
     const validation = validateSaveRequest(parsed, { providers: [], truncated: false });
     if (!validation.ok) return validation;
-    next = updateRoleText(text, validation.key, renderRoleValue(validation.routes));
+    next = updateRoleText(text, validation.key, renderRouteValue(validation.routes));
   } else {
     let catalogue: Awaited<ReturnType<typeof collectCatalogue>>;
     try {
@@ -283,7 +269,7 @@ export async function saveRoleConfiguration(
         return { ok: false, reason: `the role file could not be read: ${describeError(error)}` };
       }
     }
-    next = updateRoleText(text, validation.key, renderRoleValue(validation.routes));
+    next = updateRoleText(text, validation.key, renderRouteValue(validation.routes));
   }
 
   if (next === text) {
@@ -351,6 +337,7 @@ export async function saveBudgetConfiguration(
       autoPanel: spec.autoPanel,
       configured: document.roles.has(spec.key),
       routes: document.roles.get(spec.key)?.routes ?? [{ kind: "inherit" as const }],
+      hasIssues: (document.roles.get(spec.key)?.issues.length ?? 0) > 0,
     }));
     const plan = planBudget(inputs, catalogue, parsed);
     const blocked = plan.rows.filter(isBudgetRowBlocked);

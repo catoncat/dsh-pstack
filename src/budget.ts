@@ -31,9 +31,18 @@ export class BudgetPlanError extends Error {
     readonly code: BudgetPlanErrorCode,
     readonly detail?: string,
   ) {
-    super(code);
+    super(detail === undefined ? code : `${code}: ${detail}`);
     this.name = "BudgetPlanError";
   }
+}
+
+/** The single matcher for a `# budget:` line. Captures the value after the colon. */
+export const BUDGET_LINE = /^[ \t]*#[ \t]*budget[ \t]*:[ \t]*(.*)$/i;
+
+/** Return the value after `# budget:`, or `undefined` when the line is not a budget line. */
+export function budgetLineValue(line: string): string | undefined {
+  const match = BUDGET_LINE.exec(line);
+  return match === null ? undefined : (match[1] ?? "").trim();
 }
 
 export interface BudgetModelChoice {
@@ -53,6 +62,8 @@ export interface BudgetRoleInput {
   readonly autoPanel: boolean;
   readonly configured: boolean;
   readonly routes: readonly Route[];
+  /** The role line carries parse issues; the plan must not rewrite it. */
+  readonly hasIssues?: boolean;
 }
 
 export type BudgetRowStatus =
@@ -176,9 +187,7 @@ export function updateBudgetText(text: string, line: string): string {
   const body = bom === "" ? text : text.slice(1);
   const eol = body.includes("\r\n") ? "\r\n" : "\n";
   const lines = body.split(/\r?\n/);
-  const indexes = lines.flatMap((value, index) =>
-    /^[ \t]*#[ \t]*budget[ \t]*:/i.test(value) ? [index] : [],
-  );
+  const indexes = lines.flatMap((value, index) => (BUDGET_LINE.test(value) ? [index] : []));
   if (indexes.length === 0) {
     return bom + (body === "" ? `${line}${eol}` : `${line}${eol}${body}`);
   }
@@ -215,6 +224,9 @@ function planRole(
   warnings: BudgetWarning[],
 ): BudgetRolePlan {
   const previous = role.routes;
+  if (role.hasIssues === true) {
+    return { key: role.key, status: "skipped", previous, routes: previous };
+  }
   if (!role.configured) {
     if (request.scope !== "unconfigured" || defaultModel === undefined) {
       return { key: role.key, status: "skipped", previous, routes: previous };
@@ -230,6 +242,9 @@ function planRole(
       routes: [routeFor(defaultModel, effort.effort)],
       ...(effort.detail === undefined ? {} : { detail: effort.detail }),
     };
+  }
+  if (request.scope !== "concrete") {
+    return { key: role.key, status: "skipped", previous, routes: previous };
   }
   if (previous.every((route) => route.kind === "inherit")) {
     return { key: role.key, status: "skipped", previous, routes: previous };

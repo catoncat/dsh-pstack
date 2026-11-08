@@ -195,4 +195,22 @@ describe("budget planning", () => {
       updateBudgetText("\uFEFF# budget: small (medium)\nbug-fix: p/a\n", budgetLineFor("large")),
     ).toBe("\uFEFF# budget: large (xhigh)\nbug-fix: p/a\n");
   });
+
+  it("does not re-tier configured concrete routes in the unconfigured scope", () => {
+    const plan = planBudget(
+      [role({ key: "bug-fix", routes: [{ kind: "route", provider: "p", model: "full" }] })],
+      catalogue,
+      { tier: "large", scope: "unconfigured", defaultModel: { provider: "p", model: "full" } },
+    );
+    expect(plan.rows[0]?.status).toBe("skipped");
+    expect(plan.rows[0]?.routes).toEqual([{ kind: "route", provider: "p", model: "full" }]);
+  });
+
+  it("skips a role line that carries parse issues", () => {
+    const plan = planBudget([role({ key: "bug-fix", hasIssues: true })], catalogue, {
+      tier: "large",
+      scope: "concrete",
+    });
+    expect(plan.rows[0]?.status).toBe("skipped");
+  });
 });

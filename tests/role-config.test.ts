@@ -3,12 +3,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 
-import {
-  parseRoleConfiguration,
-  parseRoute,
-  readRoleConfiguration,
-  selectRoutes,
-} from "../src/role-config.ts";
+import { parseRoleConfiguration, readRoleConfiguration, selectRoutes } from "../src/role-config.ts";
+import { parseRoute } from "../src/route.ts";
 import { findRole } from "../src/role-manifest.ts";
 
 const directories: string[] = [];

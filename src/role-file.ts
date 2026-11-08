@@ -1,5 +1,6 @@
 /** The parsed line model behind the role file and its editor. */
 
+import { budgetLineValue } from "./budget.ts";
 import { findRole, normalizeRoleName, type RoleSpec } from "./role-manifest.ts";
 import { parseRouteValue, type Route } from "./route.ts";
 
@@ -63,8 +64,8 @@ export function parseRoleFileDocument(text: string, path: string): RoleFileDocum
         return;
       }
       if (trimmed.startsWith("#")) {
-        const match = /^#\s*budget\s*:\s*(.+)$/i.exec(trimmed);
-        if (match !== null) budget = match[1]!.trim();
+        const value = budgetLineValue(rawLine);
+        if (value !== undefined && value !== "") budget = value;
         lines.push({ kind: "comment", line, raw: rawLine });
         return;
       }
@@ -133,11 +134,6 @@ export function parseRoleFileDocument(text: string, path: string): RoleFileDocum
     roles,
     issues,
   };
-}
-
-/** Render a document back to text, preserving every original line. */
-export function renderRoleFileDocument(document: RoleFileDocument): string {
-  return document.lines.map((line) => line.raw).join("\n");
 }
 
 /** Whether a line is the role entry the editor is looking for. */

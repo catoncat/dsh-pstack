@@ -31,6 +31,7 @@ import {
   type Route,
   type RouteSelection,
 } from "./role-config.ts";
+import { isRoute } from "./route.ts";
 
 export const name = "pstack-subagent";
 
@@ -612,7 +613,7 @@ function resolveChildDepth(
   if (hostLimit !== undefined && depth > hostLimit) {
     throw new Error(`maxDepth ${depth} exceeds the Host delegation limit of ${hostLimit}`);
   }
-  return hostLimit === undefined ? depth : Math.min(depth, hostLimit);
+  return depth;
 }
 
 function assertCapabilities(capabilities: SubagentCapabilities, plan: DelegationPlan): void {
@@ -695,10 +696,6 @@ function injectPotetoModePath(task: string, path: string): string {
     "",
     task,
   ].join("\n");
-}
-
-function isRoute(route: Route): route is Extract<Route, { kind: "route" }> {
-  return route.kind === "route";
 }
 
 function isNonNegativeInteger(value: unknown): value is number {

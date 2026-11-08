@@ -14,6 +14,7 @@ import {
 } from "../src/role-editor.ts";
 import type { LlmRuntime } from "@deepseek-ai/dsh-llm";
 
+import { parseSaveRoleRequest } from "../src/role-wire.ts";
 import type { CatalogueResult } from "../src/models.ts";
 
 const directories: string[] = [];
@@ -95,18 +96,15 @@ describe("role editor", () => {
     ).toMatchObject({ ok: false });
   });
 
-  it("accepts deletion and rejects malformed routes without throwing", () => {
+  it("accepts deletion and rejects malformed routes at the wire boundary", () => {
     expect(validateSaveRequest({ key: "bug-fix", routes: [] }, catalogue)).toEqual({
       ok: true,
       key: "bug-fix",
       routes: [],
     });
-    expect(
-      validateSaveRequest(
-        { key: "bug-fix", routes: [{ kind: "route", provider: "cpa" }] } as never,
-        catalogue,
-      ).ok,
-    ).toBe(false);
+    expect(() =>
+      parseSaveRoleRequest({ key: "bug-fix", routes: [{ kind: "route", provider: "cpa" }] }),
+    ).toThrow();
   });
 
   it("removes every matching role line by its normalized key", () => {
@@ -383,5 +381,44 @@ describe("role editor", () => {
     const text = readFileSync(path, "utf8");
     expect(text).toContain("# budget: large (xhigh)");
     expect(text).toContain("feature, refactoring: cpa/model-a [high]");
+  });
+
+  it("does not rewrite configured concrete routes in the unconfigured scope", async () => {
+    const original = "# header\nbug-fix: cpa/model-a [low]\n";
+    const home = tempHome(original);
+    const path = join(home, "pstack-models.mdc");
+    const result = await saveBudgetConfiguration(
+      path,
+      {
+        tier: "large",
+        scope: "unconfigured",
+        defaultModel: { provider: "cpa", model: "model-a" },
+      },
+      llm as unknown as LlmRuntime,
+      new AbortController().signal,
+    );
+    if (!result.ok) throw new Error(result.reason);
+    expect(readFileSync(path, "utf8")).toContain("bug-fix: cpa/model-a [low]");
+  });
+
+  it("leaves a role line with parse issues untouched during a budget apply", async () => {
+    const original = "bug-fix: cpa/model-a [low], bad token\n";
+    const home = tempHome(original);
+    const path = join(home, "pstack-models.mdc");
+    const result = await saveBudgetConfiguration(
+      path,
+      { tier: "large", scope: "concrete" },
+      llm as unknown as LlmRuntime,
+      new AbortController().signal,
+    );
+    expect(result.ok).toBe(true);
+    expect(readFileSync(path, "utf8")).toContain("bad token");
+  });
+
+  it("preserves CRLF line endings when editing a role line", () => {
+    const text = "# header\r\nbug-fix: cpa/model-a [low]\r\n";
+    expect(updateRoleText(text, "bug-fix", "cpa/model-a [high]")).toBe(
+      "# header\r\nbug-fix: cpa/model-a [high]\r\n",
+    );
   });
 });

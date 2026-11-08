@@ -17,7 +17,6 @@ import type { Route } from "./route.ts";
 
 export type { RoleEntry, RoleFileIssue } from "./role-file.ts";
 export type { Route } from "./route.ts";
-export { parseRoute, parseRouteValue } from "./route.ts";
 
 /** Parsed role-file state. */
 export type RoleConfiguration =
