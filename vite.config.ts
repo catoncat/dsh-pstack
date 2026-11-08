@@ -34,7 +34,7 @@ export default defineConfig({
       entry: ["./src/client/index.ts"],
       outDir: "dist",
       format: "cjs",
-      platform: "browser",
+      inputOptions: { platform: "browser" },
       dts: false,
       clean: false,
       sourcemap: false,
