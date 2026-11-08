@@ -17,11 +17,11 @@ pstack 工作流中的委派职责，由 `src/role-manifest.ts` 的精确 key �
 
 ## Role shape 与 autoPanel
 
-Role 的路由基数和展开方式：
+Role 的路由基数和展开方式由两个独立属性描述：
 
-- `single`：最多配置一条路由，不接受 `roleIndex`。
-- `list`：配置多条路由。普通 list 通过 `roleIndex` 选择一条，缺省选择第一条。
-- `autoPanel`：list 的特殊展开方式，一次调用为每条配置启动一个子代理，不接受 `roleIndex`。
+- `shape = single`：最多配置一条路由，不接受 `roleIndex`。
+- `shape = list`：配置多条路由。普通 list 通过 `roleIndex` 选择一条，缺省选择第一条。
+- `autoPanel = true`：list 角色的一种展开方式，一次调用为每条配置启动一个子代理，不接受 `roleIndex`。
 
 `shape` 描述存储结构，`autoPanel` 描述是否自动展开，两者不可互相替代。
 

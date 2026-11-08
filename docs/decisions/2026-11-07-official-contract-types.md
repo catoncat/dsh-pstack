@@ -1,10 +1,10 @@
 # 决策：直接使用官方 the agent harness 契约类型
 
-Status: proposed
+Status: accepted
 Date: 2026-11-07
 Scope: src/**, tests/**, package.json, pnpm-workspace.yaml, docs/architecture.md
-Implemented-by: -
-Review: 2026-11-07
+Implemented-by: commit:ff64abe0a068157cc1f0041ba68fe5db32a8eba4
+Review: 2026-11-08
 
 ## 背景
 
@@ -37,4 +37,4 @@ Review: 2026-11-07
 - 运行时代码减少一层投影与校验；`unwrap` 只区分成功与失败分支，`ChangeResult.application` 的五种取值由官方联合类型保证。
 - 官方类型聚合包需要显式出现在开发依赖：`@deepseek-ai/dsh-api-remotes` 的声明引用 `@deepseek-ai/dsh-plugin-manager/types`，pnpm 不会安装其 `devDependencies`，缺少该直接依赖时类型会退化为不可解析；`@deepseek-ai/dsh-settings` 则因 `SettingsForms` 的直接 `import type` 需要保留。
 - 官方类型图未提供 prompt 注册服务声明，`SystemPromptHost` 仍是本地切片；后续若官方提供对应类型，应替换而不是继续维护手写形状。
-- 本记录当前为 `proposed`：实现位于工作树、尚无已合并的落地锚点。合入实现提交后需要通过 `decision-write` 的 Land 更新为 `accepted` 并写入 `Implemented-by`。
+- 本记录已由 `commit:ff64abe` 落地，实现锚点位于默认分支历史中。

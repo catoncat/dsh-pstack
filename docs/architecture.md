@@ -18,15 +18,15 @@
 | Bundle 装配 | `cordis.patch.yml` | 注册技能目录、Host 工具和角色服务；组合两个根 preset 与三个子代理 preset。 |
 | Host 主入口 | `src/index.ts` | 注册可信的隐藏技能加载器，并导出其他 Host 能力供 bundle 按行加载。 |
 | 技能加载 | `src/skill.ts`、`src/paths.ts` | 实现 `pstack_skill`，按名称加载技能及目录内资源；集中定义发布包内资源路径。 |
-| 模型目录 | `src/models.ts` | 实现 `pstack_models`，读取实时 LLM adapter 目录，保留单 provider 或 model 的发现错误。 |
+| 模型目录 | `src/models.ts`、`src/catalogue.ts` | 实现 `pstack_models`，读取实时 LLM adapter 目录，保留单 provider 或 model 的发现错误；共享 catalogue 类型、schema 与 wire 解析。 |
 | 角色清单 | `src/role-manifest.ts`、`src/role-catalog.ts` | 定义角色 key、shape 和自动面板属性；实现只读的 `pstack_roles`。 |
 | 子代理委派 | `src/subagent.ts` | 实现 `pstack_subagent`；解析角色路由，完成参数、能力和模型预检，再调用 `ctx.subagents.startActivation`。 |
-| 角色文件 | `src/role-config.ts`、`src/role-editor.ts` | 解析 `$DSH_HOME/pstack-models.mdc`，选择路由，校验并原子保存单个角色。 |
+| 角色文件 | `src/role-config.ts`、`src/role-file.ts`、`src/route.ts`、`src/role-editor.ts` | 解析 `$DSH_HOME/pstack-models.mdc`，以共享 Route 语法和 RoleFileDocument 选择、校验并原子保存单个角色。 |
 | 角色 Remote 边界 | `src/role-wire.ts`、`src/role-remote.ts`、`src/role-service.ts` | 定义并严格校验传输结构；共享 Typert 描述符；在 Host 暴露状态、目录和保存方法。 |
 | 根与子代理 preset | `src/preset.ts`、`src/preset-copy.ts`、`src/poteto-mode.ts`、`src/readonly.ts` | 注册本地化 preset，向根会话注入常驻 `poteto-mode` 内容，并为只读子代理设置沙箱策略。 |
 | Client 入口与对话框 | `src/client/index.ts`、`src/client/PstackConfigDialog.tsx` | 挂载 Remote 描述符、注册 locale 和插件详情动作；管理配置对话框、页签和未保存草稿。 |
-| 角色与插件页面 | `src/client/RoleSettingsPage.tsx`、`src/client/RecommendedPluginsPage.tsx` | 编辑角色草稿并展示保存结果；展示关联插件及其变更结果。 |
-| Client 支撑 | `src/client/ui.tsx`、`src/client/icons.tsx`、`src/client/styles.ts`、`src/client/locales/`、`src/client/role-copy.ts` | 提供本插件的 UI 组件、样式、翻译和角色展示文案。 |
+| 角色与插件页面 | `src/client/RoleSettingsPage.tsx`、`src/client/RoleCard.tsx`、`src/client/RecommendedPluginsPage.tsx` | 编辑角色草稿并展示保存结果；展示关联插件及其变更结果。 |
+| Client 支撑 | `src/client/ui.tsx`、`src/client/icons.tsx`、`src/client/styles.ts`、`src/client/toast.tsx`、`src/client/message.ts`、`src/client/locales/`、`src/client/role-copy.ts`、`src/client/role-draft.ts`、`src/client/role-selectors.ts` | 提供本插件的 UI 组件、样式、共享提示、翻译、角色草稿和选择器文案。 |
 | 移植与生成 | `port/generate.mjs`、`port/scan.mjs`、`port/dsh.md`、`port/audit.md`、`port/audit.lock.json` | 从固定上游生成 `pstack/`；扫描能力、校验审核引用和当前基线处置。 |
 | 发布元数据 | `port/release-compatibility.ts`、`bump.config.ts` | 按显式兼容键同步双语 README 的版本表；每个 `x.y` 保留最新 `z`，新兼容键新增行，并把双语 README 加入发布提交。 |
 | 构建与打包 | `vite.config.ts`、`package.json` | 分别构建 Host 与浏览器 Client；导出 Host 模块，复制生成树和技能资源。 |
@@ -42,7 +42,7 @@
 
 官方 Remote、wire 和服务契约直接从对应 `@deepseek-ai/*` 包 `import type`，优先使用官方完整类型，不再为非必要收窄定义 `Pick` 或类型别名。跨包 Remote 类型统一从 `@deepseek-ai/dsh-api-remotes/client` 获取；不从某个功能包的 `typert.remote-client` 借用其他包的 namespace。角色文件、委派结果、页面草稿等本仓自有结构保留在本地；仅在官方声明缺失时保留局部服务切片。静态类型已保证的字段无需重复运行时校验。
 
-官方类型包只进入 `devDependencies` 和 workspace 的类型 catalog，不进入 `dependencies` 或 `peerDependencies`。`dsh.client.inject` 只列出需要运行时模块装载的 assembly，不因类型导入而添加条目。构建的 Host 与 Client 都将 `@deepseek-ai/*` 保持为外部依赖，不把官方运行时实现打进 `dist`。
+官方类型包只进入 `devDependencies` 和 workspace 的类型 catalog，不进入 `dependencies`；`peerDependencies` 只保留 `@deepseek-ai/cordis` 运行时 peer。`dsh.client.inject` 只列出需要运行时模块装载的 assembly，不因类型导入而添加条目。构建的 Host 与 Client 都将 `@deepseek-ai/*` 保持为外部依赖，不把官方运行时实现打进 `dist`。
 
 ### 角色配置
 

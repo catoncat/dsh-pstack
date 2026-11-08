@@ -1,9 +1,9 @@
 # 决策：以显式兼容键和 x.y 槽位维护发布兼容表
 
-Status: proposed
+Status: accepted
 Date: 2026-11-08
 Scope: bump.config.ts, package.json, tsconfig.json, vite.config.ts, README.md, README.zh.md, docs/architecture.md, port/AGENTS.md, port/audit.lock.json, port/release-compatibility.ts, tests/release-compatibility.test.ts, .github/workflows/release.yml
-Implemented-by: -
+Implemented-by: commit:0ae9631217ef3d30c3fdb3b118b27f3d1fa2c999
 Review: 2026-11-08
 
 ## 背景
@@ -32,4 +32,4 @@ Review: 2026-11-08
 
 - 普通发布自动更新当前行；破坏性适配仍需开发者在实现时明确更新兼容键，自动化不能替代这项判断。
 - 修改兼容键元数据或表格格式需要同步更新解析器和测试。
-- 本记录尚无合并到默认分支的实现锚点，合入后通过 `decision-write` 的 Land 更新为 `accepted`。
+- 本记录已由 `commit:0ae9631` 落地，实现锚点位于默认分支历史中。

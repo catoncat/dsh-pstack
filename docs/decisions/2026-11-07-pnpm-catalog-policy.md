@@ -1,10 +1,10 @@
 # 决策：依赖按命名 pnpm catalog 分类后安装
 
-Status: proposed
+Status: accepted
 Date: 2026-11-07
 Scope: AGENTS.md, pnpm-workspace.yaml, pnpm-lock.yaml, package.json, tests/**, docs/decisions/**
-Implemented-by: -
-Review: 2026-11-07
+Implemented-by: commit:ea63839ce3a1cfddeb4564b3cdb0a204df58a553
+Review: 2026-11-08
 
 ## 背景
 
@@ -39,4 +39,4 @@ Review: 2026-11-07
 - 新增依赖必须先选分类；安装命令带 `--save-catalog-name` 时，pnpm 会把版本写入对应命名 catalog 并在 `package.json` 写入 `catalog:<分类>`。
 - 请求版本超出 catalog 范围时 `strict` 直接报错，升级版本应修改 `pnpm-workspace.yaml` 的 catalog 条目，而不是在 `package.json` 写直接版本号。
 - 不维护专门的 catalog 策略测试；新增依赖时由 `--save-catalog-name` 和 `catalogMode: strict` 在写入阶段保证分类，评审时核对 `package.json` 与 `pnpm-workspace.yaml` 即可。
-- 本记录当前为 `proposed`：修复位于工作树，尚无已合并到默认分支的落地锚点。合入后需要通过 `decision-write` 的 Land 更新为 `accepted` 并写入 `Implemented-by`。
+- 本记录已由 `commit:ea63839` 落地，实现锚点位于默认分支历史中。
