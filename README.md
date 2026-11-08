@@ -41,12 +41,12 @@
 
 `dsh-pstack` ports [pstack](https://github.com/cursor/plugins/tree/main/pstack) to [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH). It includes the upstream skills, playbooks, and references, and adds skill routing, role-based model configuration, and role-routed subagents.
 
-See the [capability audit (in Chinese)](./port/audit.md) and [runtime mapping](./port/dsh.md) for the complete porting review.
+See the [capability audit (in Chinese)](./port/audit.md) and [runtime mapping](./port/dsh.md) for the full porting review.
 
 The current review covers 68 Cursor-facing capabilities: 39 direct mappings, 2 official plugins, 16 plugin implementations, and 11 deliberate omissions.
 
 > [!IMPORTANT]
-> Requires DSH `>=0.2.2-rc.1` and Node.js `>=24.21.1`.
+> Requires DSH `>=0.2.2-rc.1` and Node.js `>=24.21.1`. See the [script registry (in Chinese)](./port/AGENTS.md#脚本登记) for the extra runtime requirements of bundled workflows.
 
 <a id="quick-start"></a>
 
@@ -58,24 +58,24 @@ The current review covers 68 Cursor-facing capabilities: 39 direct mappings, 2 o
    dsh plugin --profile web add dsh-pstack
    ```
 
-   You can also install it through **Plugins** in Web or Desktop.
+   You can also install it from the **Plugins** page in Web or Desktop.
 
 2. **Restart the profile or open a new Session.**
 
 ## 🧭 Usage
 
-Choose one of the two paths and expand it for the full steps.
+Choose one of the two paths and expand it for the complete steps.
 
 <details>
 <summary><strong>🖥️ Visual setup</strong></summary>
 
 Use the plugin UI when you want to configure related plugins and role routes.
 
-1. Open **Plugins → Installed plugins**, select **pstack workflow**, then click **Configure**.
+1. Open **Plugins → Installed plugins**, select **pstack**, then click **Configure**.
 
    ![Configure entry](./assets/plugin-configure.png)
 
-2. In **Recommended plugins**, review the **Recommended**, **Optional**, and **Conflicts** groups. **Enable all** enables only the recommended group.
+2. In **Recommended plugins**, review the **Recommended**, **Optional**, and **Conflicts** groups. **Enable all** only enables plugins in the **Recommended** group.
 
    ![Recommended plugins](./assets/plugin-recommended.png)
 
@@ -98,7 +98,7 @@ Use the plugin UI when you want to configure related plugins and role routes.
 
 Use pstack skills when you want to start workflows directly from a Session.
 
-1. **Initialize role routes.** Run `/setup-pstack` once. It writes available routes to `$DSH_HOME/pstack-models.mdc`. Without this file, roles inherit the parent model.
+1. **Initialize role routes.** Run `/setup-pstack` once. It writes the detected routes to `$DSH_HOME/pstack-models.mdc`. Without this file, roles inherit the parent model.
 2. **Start through skills.** Type `/poteto-mode` directly. A preset switch is not required first.
 3. **Use targeted commands.** Pick a command from [Common commands](#️-common-commands).
 
@@ -120,9 +120,9 @@ Use pstack skills when you want to start workflows directly from a Session.
 
 | Tool | Function |
 |---|---|
-| `pstack_skill` | Loads hidden pstack skills and their relative resources by name. |
+| `pstack_skill` | Loads hidden pstack skills by name, including resources at paths relative to the skill directory. |
 | `pstack_models` | Lists available providers, models, and reasoning efforts. |
-| `pstack_roles` | Shows role shapes and automatic-panel status so delegation uses the correct parameters. |
+| `pstack_roles` | Shows each role's type and whether it is an automatic panel, so delegation uses the correct parameters. |
 | `pstack_subagent` | Applies role routing and agent presets. Supports parallel subagents. |
 
 ### 🎭 Agent presets
@@ -137,97 +137,92 @@ The package ships two root presets and three child presets.
 | `comment-sicko` | Child | Handles read-only comment review and reports deletion targets and `MUST KILL` symbols. |
 | `readonly` | Child | Provides sandbox-enforced read-only research for inspection and evidence gathering. |
 
-Open **Settings → Agent presets** and click **Set as default** on the preset new Sessions should use.
+Open **Settings → Agent presets** and click **Set as default** on the preset that new Sessions should use.
 
 ### 📚 Additional skills
 
-These skills fill gaps that pstack leaves in real projects. They are not part of the upstream pstack skill tree. They cover skill authoring, project documentation, evidence capture, decision records, and cleanup workflows.
+These skills extend pstack with authoring, project-maintenance, and evidence-gathering workflows.
 
-| Skill | Source | Gap it fills |
+| Skill | Source | Use it to |
 |---|---|---|
-| `writing-for-agents` | `vendored` | Turns a working practice into a reusable skill or clear agent-facing document, replacing upstream `create-skill`. |
-| `retro` | `vendored` | Runs a read-only retrospective on the agent environment when pstack has no project-level review pass. |
-| `deslop` | `vendored` | Cleans AI-generated noise from a diff before commit or review. |
-| `control-ui` | `vendored` | Drives a real local Web, IDE, or Electron UI when pstack needs browser-level evidence. |
-| `control-cli` | `vendored` | Drives interactive CLI or TUI sessions when pstack needs terminal-level evidence. |
-| `decision-write` | `authored` | Records decisions that would otherwise stay buried in chat. |
-| `decision-audit` | `authored` | Checks decision-record status and links when a project accumulates design history. |
-| `setup-project-docs` | `authored` | Bootstraps durable project documentation when the repository has none. |
-| `docs-drift` | `authored` | Finds and repairs documentation drift as code changes. |
+| `writing-for-agents` | `vendored` | Write or review a skill, `AGENTS.md`, `CLAUDE.md`, or another agent-facing document, including the `create-skill` use case. |
+| `retro` | `vendored` | Review a coding session's environment for improvements to navigation, checks, conventions, tools, and information access. |
+| `deslop` | `vendored` | Clean unnecessary comments, defensive code, casts, and nesting from a diff without changing behavior. |
+| `control-ui` | `vendored` | Drive a local Web, IDE, or Electron interface and capture visual or accessibility evidence. |
+| `control-cli` | `vendored` | Drive an interactive CLI or TUI and capture terminal transcripts or performance evidence. |
+| `decision-write` | `authored` | Record a design choice, its rationale, and its implementation evidence through a traceable lifecycle. |
+| `decision-audit` | `authored` | Check decision-record status, scope, implementation anchors, and supersession as design history grows. |
+| `setup-project-docs` | `authored` | Establish architecture, glossary, decision conventions, and pointers for a project's documentation. |
+| `docs-drift` | `authored` | Audit maintained documentation and repair approved drift, redundancy, and unsupported claims. |
 
 [`skills/skills-lock.json`](./skills/skills-lock.json) records the sources and hashes of vendored skills.
 
 ## 🔌 Optional DSH plugins
 
-Optional plugins extend specific workflows. You do not need them to install dsh-pstack.
+Install dsh-pstack without these plugins, then enable only the capabilities you need.
 
-To enable a plugin, open **Plugins → Add plugin**, select the package, and restart the profile.
-
-| Use case | Plugin | Limits and conflicts |
+| Use case | Plugin | What it provides and its boundaries |
 |---|---|---|
-| Worktrees and GitHub PRs | `@deepseek-ai/dsh-experimental-forge-bundle` | Provides the **Change requests & worktrees** switch and `create_worktree`. GitHub status needs a logged-in `gh`. |
-| Session history | `@deepseek-ai/dsh-experimental-session-search` | Read-only. Requires exact `cwd` equality. Subagent transcript coverage is unconfirmed. |
-| Browser verification | `@deepseek-ai/dsh-browser-use` and one provider | One provider per Session. Screenshots need an image-capable model. No video recording. |
-| Desktop verification | `@deepseek-ai/dsh-cua-bundle` | macOS PTC Sessions only. Windows support is incomplete. No video recording. |
-| Persistent terminals | `@deepseek-ai/dsh-experimental-terminal-bundle` | Six persistent shell and REPL tools. No GUI control or video recording. |
-| MCP integrations | `@deepseek-ai/dsh-mcp-client` | No server configured by default. No automatic evidence-category discovery. |
-| Autonomous loops | `@deepseek-ai/dsh-experimental-ralph-bundle` | Starts a fresh child each round. No persistent loop or event watcher. |
+| Worktrees and GitHub PRs | `@deepseek-ai/dsh-experimental-forge-bundle` | Local worktrees and GitHub PR workflows. GitHub status requires a logged-in `gh`; otherwise use `gh` and `git worktree add` through `bash`. |
+| Session history | `@deepseek-ai/dsh-experimental-session-search` | Read-only history and event inspection. Matches Sessions by exact `cwd`; whether subagent transcripts are included is unconfirmed. |
+| Browser verification | `@deepseek-ai/dsh-browser-use` plus one provider below | Browser navigation, input, and screenshots. One provider per Session; screenshots require an image-capable model. |
+| Desktop verification | `@deepseek-ai/dsh-cua-bundle` | macOS desktop control in PTC desktop-control sessions. Windows support is incomplete. |
+| Persistent terminals | `@deepseek-ai/dsh-experimental-terminal-bundle` | Persistent shell and REPL sessions for CLI and TUI verification. |
+| MCP integrations | `@deepseek-ai/dsh-mcp-client` | Tools from explicitly configured MCP servers; no server is configured by default. |
+| Autonomous loops | `@deepseek-ai/dsh-experimental-ralph-bundle` | A foreground loop that starts a fresh child each round, rather than a persistent Session loop or event watcher. |
 
-Most packages ship with DSH. `@deepseek-ai/dsh-cua-bundle` installs on demand. Except for the MCP client, these plugins are experimental.
+For browser verification, choose one provider:
 
-### ⚠️ Agent Teams conflict
-
-> [!WARNING]
-> **Do not enable Agent Teams with either pstack root preset.** Use either Agent Teams or `pstack_subagent`, not both. Enabling Agent Teams makes the pstack root preset fail at startup and disables DSH native subagent tools.
-
-### 🌐 Browser providers
-
-Choose one provider for `@deepseek-ai/dsh-browser-use`:
-
-- `@deepseek-ai/dsh-experimental-browser-use-stagehand-native`: also needs Chromium and a supported non-DeepSeek model.
+- `@deepseek-ai/dsh-experimental-browser-use-stagehand-native`: also requires Chromium and a supported non-DeepSeek model.
 - `@deepseek-ai/dsh-experimental-browser-use-playwright-mcp`
 - `@deepseek-ai/dsh-experimental-browser-use-chrome-devtools-mcp`
 
-Providers have different tool names and selectors. Browser and computer use share separate single-provider slots.
+Enable packages through **Plugins → Add plugin**, then restart the profile when required. Most packages ship with DSH; `@deepseek-ai/dsh-cua-bundle` installs on demand. All except the MCP client are experimental.
 
-The configuration page recommends Change requests & worktrees and session search. It never enables plugins automatically.
+> [!WARNING]
+> **Agent Teams conflicts with the pstack root presets.** Use either Agent Teams or `pstack_subagent`, not both. Enabling Agent Teams makes the pstack root preset fail at startup and disables DSH native subagent tools.
 
-When a plugin is disabled, dependent steps report skipped or blocked. They never report passed. Without the forge bundle, use `gh` and `git worktree add` through `bash`. See the [DSH adaptation guide](./pstack/docs/harness/dsh.md#optional-plugins) for setup details and fallbacks.
+Steps that depend on a disabled plugin report skipped or blocked, never passed. See the [DSH adaptation guide](./pstack/docs/harness/dsh.md#optional-plugins) for setup and fallbacks.
 
 ## ⚠️ Remaining gaps
 
-These limitations remain even when every recommended plugin is enabled.
+These limitations remain even after all optional plugins that can coexist with pstack are enabled.
 
 | Area | Limitation |
 |---|---|
 | Cursor platform services | No Automations, Cursor webhooks, `SendToUser`, cloud agents, or persistent cloud Projects. |
 | Bugbot | Cannot start, configure, or wait for Bugbot. Existing Bugbot comments can still be handled as PR reviews. |
-| PR orchestration | No model-side change-request tool or Agent Teams PR frontier and ledger. `watch-pr` still provides stack verdicts. |
+| PR orchestration | No model-side change-request tool or Agent Teams-style PR tracking board and shared ledger. `watch-pr` still provides stack verdicts. |
 | Mode switching | No Option+Enter toggle or mid-session mode switch. Select `poteto-mode` or `poteto-mode-creator` at session creation; other presets invoke `/poteto-mode` for each task. |
 | Event-driven loops | No forge event subscription. Local goals, schedules, and watchers are not equivalent. |
 | Diagram rendering | No built-in renderer. Charts return Mermaid text; render an image with your own tools when needed. |
 | Media evidence | No built-in video rendering, recording, or frame-level verification. Use external recording or FFmpeg tools. |
-| Desktop coverage | Computer use is limited to macOS PTC Sessions. Windows support is incomplete. |
+| Desktop coverage | Computer use is limited to macOS PTC desktop-control sessions. Windows support is incomplete. |
 | MCP discovery | No automatic evidence-category discovery. Configure and identify MCP tools explicitly. |
-
-Node.js is the plugin baseline. `watch-pr` also needs Bun, network access, and a logged-in `gh`. `statechart` also needs Node, Bun, or Deno, plus mise, Java, TLC, and network on first run. See the [script registry](./port/README.md#脚本登记) for details.
 
 ## 📦 Compatibility
 
-Each row lists the latest compatible dsh-pstack release and its included pstack version.
+Choose a release by its declared DSH range. Within each compatibility range, every `x.y` keeps only its latest release. The pstack column records the current port baseline, not a per-release history.
 
-| DSH version | Latest compatible dsh-pstack release | Included pstack version |
+<!-- compatibility-keys: ["dsh-0.2.2-rc.1+port-v1","dsh-0.2.1-rc.5+legacy-v1","dsh-0.2.0-0.3.0+legacy-v1"] -->
+| DSH version | dsh-pstack release | Included pstack version |
 |---|---|---|
-| `0.2.2-rc.1` and later | `0.3.0-beta.1` | `0.15.36` |
+| `>=0.2.2-rc.1` | `0.3.0-beta.1` | `0.15.36` |
+| `>=0.2.1-rc.5` | `0.2.2` | `0.15.36` |
+| `>=0.2.0 < 0.3.0` | `0.1.0` | `0.15.29` |
 
-When a DSH breaking change creates a new compatibility boundary, add a row.
+A new compatibility range adds a row. Other releases update their row automatically; see [Porting](./port/AGENTS.md#破坏性变更).
+
+## 🔗 Friendly Links
+
+- [LinuxDo - 新的理想型社区](https://linux.do/)
 
 ## 💛 Credits
 
-- [pstack](https://github.com/cursor/plugins/tree/main/pstack) was designed and open-sourced by Lauren Tan and the Cursor team. `poteto-mode`, the 23 playbooks, and the 24 principles come from upstream.
-- [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) is provided by the DeepSeek team. Its plugin, bundle, agent preset, subagent, and tool interfaces support this port.
-- [cursor/plugins `cursor-team-kit`](https://github.com/cursor/plugins/tree/main/cursor-team-kit) provides the vendored `deslop`, `control-ui`, and `control-cli` skills.
-- [mattpocock/skills](https://github.com/mattpocock/skills) provides the vendored `writing-for-agents` and `retro` skills.
+- [pstack](https://github.com/cursor/plugins/tree/main/pstack), designed and open-sourced by Lauren Tan and the Cursor team; the foundation of this port.
+- [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness), developed by the DeepSeek team; the host platform for this plugin.
+- [cursor-team-kit](https://github.com/cursor/plugins/tree/main/cursor-team-kit), the source of the vendored `deslop`, `control-ui`, and `control-cli` skills.
+- [mattpocock/skills](https://github.com/mattpocock/skills), the source of the vendored `writing-for-agents` and `retro` skills.
 
 This project is a community port, not an official Cursor or DeepSeek release.
 

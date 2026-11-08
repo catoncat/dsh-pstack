@@ -43,10 +43,10 @@
 
 完整的移植审查见[能力审核](./port/audit.md)与[运行时映射](./port/dsh.zh.md)。
 
-当前审核覆盖 68 项 Cursor 能力：39 项直接映射、2 项官方插件、16 项插件实现、11 项有意舍弃。
+当前审核覆盖 68 项面向 Cursor 的能力：39 项直接映射、2 项官方插件、16 项插件实现、11 项有意舍弃。
 
 > [!IMPORTANT]
-> 要求 DSH `>=0.2.2-rc.1`、Node.js `>=24.21.1`。
+> 要求 DSH `>=0.2.2-rc.1`、Node.js `>=24.21.1`。部分随包工作流需要额外运行时，见[脚本登记](./port/AGENTS.md#脚本登记)。
 
 <a id="quick-start"></a>
 
@@ -75,11 +75,11 @@
 
    ![配置入口](./assets/plugin-configure.png)
 
-2. 在 **推荐插件** 中查看 **推荐**、**可选**、**冲突** 三组。**全部启用** 只会启用推荐组。
+2. 在 **推荐插件** 中查看 **推荐**、**可选**、**冲突** 三组。**全部启用** 只会启用 **推荐** 组中的插件。
 
    ![推荐插件](./assets/plugin-recommended.png)
 
-3. 打开 **角色模型**，为每个角色设置提供方、模型和推理强度，然后保存单行或点击 **全部保存**。
+3. 打开 **角色模型**，为每个角色设置提供方、模型和推理强度，然后保存该行或点击 **全部保存**。
 
    ![角色模型](./assets/plugin-roles.png)
 
@@ -98,9 +98,9 @@
 
 需要从会话直接启动 pstack 工作流时，使用技能命令。
 
-1. **初始化角色路由。** 输入一次 `/setup-pstack`。命令会把可用路由写入 `$DSH_HOME/pstack-models.mdc`。缺少此文件时，角色继承父级模型。
+1. **初始化角色路由。** 运行一次 `/setup-pstack`。命令会把检测到的路由写入 `$DSH_HOME/pstack-models.mdc`。缺少此文件时，角色继承父级模型。
 2. **通过技能启动。** 直接输入 `/poteto-mode`。不需要先切换预设。
-3. **使用针对性命令。** 从[常用命令](#️-常用命令)中选择命令。
+3. **使用针对性命令。** 从[常用命令](#️-常用命令)中选择。
 
 </details>
 
@@ -120,9 +120,9 @@
 
 | 工具 | 作用 |
 |---|---|
-| `pstack_skill` | 按名称加载隐藏的 pstack 技能及其相对资源。 |
+| `pstack_skill` | 按名称加载隐藏的 pstack 技能，以及技能目录内相对路径的资源。 |
 | `pstack_models` | 列出可用的 provider、model 和 reasoning effort。 |
-| `pstack_roles` | 展示角色 shape 与自动面板状态，确保委派时使用正确的参数。 |
+| `pstack_roles` | 展示每个角色的类型及是否为自动面板，确保委派时使用正确的参数。 |
 | `pstack_subagent` | 应用角色路由与 agent preset，支持并行子代理。 |
 
 ### 🎭 Agent preset
@@ -141,93 +141,88 @@
 
 ### 📚 额外技能
 
-这些技能补足 pstack 在真实项目中的缺口。它们不属于上游 pstack 技能树，主要覆盖技能编写、项目文档、证据采集、决策记录和清理流程。
+这些技能为 pstack 补充文档编写、项目维护和证据采集工作流。
 
-| 技能 | 来源 | 补足场景 |
+| 技能 | 来源 | 使用场景 |
 |---|---|---|
-| `writing-for-agents` | `vendored` | 把实践沉淀成可复用技能或清晰的 agent 文档，替代上游 `create-skill`。 |
-| `retro` | `vendored` | 对 agent 环境做只读复盘，补上 pstack 缺少的项目级回顾环节。 |
-| `deslop` | `vendored` | 在提交或评审前清理 diff 中的 AI 代码噪声。 |
-| `control-ui` | `vendored` | 驱动真实本地 Web、IDE 或 Electron UI，补上 pstack 需要的浏览器级证据。 |
-| `control-cli` | `vendored` | 驱动交互式 CLI 或 TUI，补上 pstack 需要的终端级证据。 |
-| `decision-write` | `authored` | 把容易埋在对话里的决策记录成可追踪文档。 |
-| `decision-audit` | `authored` | 在项目积累设计历史后，检查决策记录的状态与关联。 |
-| `setup-project-docs` | `authored` | 仓库没有文档体系时，先搭建可持续维护的项目文档。 |
-| `docs-drift` | `authored` | 代码变化后检查和修复文档漂移。 |
+| `writing-for-agents` | `vendored` | 编写或评审技能、`AGENTS.md`、`CLAUDE.md` 等 agent 文档，覆盖 `create-skill` 的使用场景。 |
+| `retro` | `vendored` | 复盘编码会话的 agent 环境，改进导航、自动化检查、编码约定、工具效率和信息获取。 |
+| `deslop` | `vendored` | 在不改变行为的前提下，清理 diff 中多余的注释、防御性代码、类型断言和嵌套。 |
+| `control-ui` | `vendored` | 操作本地 Web、IDE 或 Electron 界面，采集视觉或可访问性证据。 |
+| `control-cli` | `vendored` | 操作交互式 CLI 或 TUI，采集终端操作记录或性能证据。 |
+| `decision-write` | `authored` | 以可追踪的生命周期记录设计取舍、理由和实现证据。 |
+| `decision-audit` | `authored` | 在设计历史累积后，检查记录状态、范围、实现锚点和取代关系。 |
+| `setup-project-docs` | `authored` | 为项目建立架构、术语、决策约定和文档指针。 |
+| `docs-drift` | `authored` | 巡检持续维护的文档，修复获批的漂移、冗余和无依据表述。 |
 
 vendored 技能的来源与哈希记录在 [`skills/skills-lock.json`](./skills/skills-lock.json)。
 
 ## 🔌 可选 DSH 插件
 
-可选插件用于扩展特定工作流，安装 dsh-pstack 时无需一并安装。
+安装 dsh-pstack 时无需一并安装这些插件，按需启用即可。
 
-要启用插件，请在 **插件 → 添加插件** 中选择对应的包，然后重启 profile。
-
-| 使用场景 | 插件 | 限制与冲突 |
+| 使用场景 | 插件 | 提供的能力与边界 |
 |---|---|---|
-| worktree 与 GitHub PR | `@deepseek-ai/dsh-experimental-forge-bundle` | 提供 **Change requests & worktrees** 开关和 `create_worktree`，GitHub 状态需要已登录的 `gh`。 |
-| 历史会话 | `@deepseek-ai/dsh-experimental-session-search` | 只读，要求 `cwd` 完全相同；子代理 transcript 覆盖范围未证实。 |
-| 浏览器验证 | `@deepseek-ai/dsh-browser-use` 与一个 provider | 每个 Session 使用一个 provider，截图需要支持图像的模型，不支持录屏。 |
-| 桌面验证 | `@deepseek-ai/dsh-cua-bundle` | 仅支持 macOS PTC Session，Windows 支持尚不完整，不支持录屏。 |
-| 持久终端 | `@deepseek-ai/dsh-experimental-terminal-bundle` | 六个持久 shell 与 REPL 工具，不支持 GUI 控制或录屏。 |
-| MCP 集成 | `@deepseek-ai/dsh-mcp-client` | 默认无 server，需要显式配置；不会自动发现证据类别。 |
-| 自主循环 | `@deepseek-ai/dsh-experimental-ralph-bundle` | 每轮使用新子代理，不提供同一 Session 的常驻循环或事件 watcher。 |
+| worktree 与 GitHub PR | `@deepseek-ai/dsh-experimental-forge-bundle` | 提供本地工作树和 GitHub PR 工作流。GitHub 状态需要已登录的 `gh`；没有此插件时通过 `bash` 使用 `gh` 与 `git worktree add`。 |
+| 历史会话 | `@deepseek-ai/dsh-experimental-session-search` | 只读检索历史会话与事件，按 `cwd` 完全匹配；是否包含子代理会话记录尚未确认。 |
+| 浏览器验证 | `@deepseek-ai/dsh-browser-use` 与下方任一 provider 搭配 | 浏览器导航、输入和截图。每个 Session 使用一个 provider，截图需要支持图像的模型。 |
+| 桌面验证 | `@deepseek-ai/dsh-cua-bundle` | 在 macOS PTC 桌面控制会话中控制桌面；Windows 支持尚不完整。 |
+| 持久终端 | `@deepseek-ai/dsh-experimental-terminal-bundle` | 为 CLI 和 TUI 验证提供持久 shell 与 REPL 会话。 |
+| MCP 集成 | `@deepseek-ai/dsh-mcp-client` | 使用显式配置的 MCP server 工具；默认不配置 server。 |
+| 自主循环 | `@deepseek-ai/dsh-experimental-ralph-bundle` | 每轮启动新子代理的前台循环，不是同一 Session 的常驻循环或事件 watcher。 |
 
-多数包随 DSH 提供，`@deepseek-ai/dsh-cua-bundle` 按需安装。除 MCP client 外，以上插件均为实验性插件。
-
-### ⚠️ Agent Teams 冲突
-
-> [!WARNING]
-> **不要在任一 pstack 根预设下启用 Agent Teams。** Agent Teams 与 `pstack_subagent` 只能二选一。启用 Agent Teams 会导致 pstack 根预设启动失败，并禁用 DSH 原生子代理工具。
-
-### 🌐 浏览器 provider
-
-为 `@deepseek-ai/dsh-browser-use` 选择一个 provider：
+浏览器验证从以下 provider 中选择一个：
 
 - `@deepseek-ai/dsh-experimental-browser-use-stagehand-native`：还需要 Chromium 和受支持的非 DeepSeek 模型。
 - `@deepseek-ai/dsh-experimental-browser-use-playwright-mcp`
 - `@deepseek-ai/dsh-experimental-browser-use-chrome-devtools-mcp`
 
-不同 provider 的工具名与 selector 不同。浏览器和桌面控制各自使用一个 provider 槽。
+通过 **插件 → 添加插件** 启用对应包，必要时重启 profile。多数包随 DSH 提供，`@deepseek-ai/dsh-cua-bundle` 按需安装。除 MCP client 外，以上插件均为实验性插件。
 
-配置页默认推荐 Change requests & worktrees 和会话搜索，不会自动启用任何插件。
+> [!WARNING]
+> **Agent Teams 与 pstack 根预设冲突。** Agent Teams 与 `pstack_subagent` 只能二选一。启用 Agent Teams 会导致 pstack 根预设启动失败，并禁用 DSH 原生子代理工具。
 
-未启用可选插件时，依赖它的步骤会标记为 skipped 或 blocked，不会标记为通过。没有 forge bundle 时通过 `bash` 使用 `gh` 与 `git worktree add`。安装与降级方案见 [DSH 适配文档](./port/dsh.zh.md#可选插件)。
+依赖未启用插件的步骤会标记为 skipped 或 blocked，不会标记为通过。安装与回退说明见 [DSH 适配文档](./port/dsh.zh.md#可选插件)。
 
 ## ⚠️ 仍存在的缺口
 
-即使启用所有推荐插件，以下限制仍然存在。
+即使启用所有可与 pstack 共存的可选插件，以下限制仍然存在。
 
 | 领域 | 限制 |
 |---|---|
 | Cursor 平台服务 | 不支持 Automations、Cursor webhook、`SendToUser`、云代理和持久云端 Projects。 |
 | Bugbot | 无法启动、配置或等待 Bugbot；已有 Bugbot 评论仍可作为 PR review 处理。 |
-| PR 编排 | 没有模型侧变更请求工具，也没有 Agent Teams 的 PR frontier 与 ledger；`watch-pr` 仍提供 stack verdict。 |
+| PR 编排 | 没有模型侧变更请求工具，也没有 Agent Teams 式的 PR 跟踪面板与共享记录；`watch-pr` 仍提供 stack verdict。 |
 | 模式切换 | 没有 Option+Enter 开关或会话中切换模式的入口。新建会话时选择 `poteto-mode` 或 `poteto-mode-creator`；其它 preset 每个任务调用 `/poteto-mode`。 |
 | 事件驱动循环 | 不订阅 forge 事件；本地 goal、定时任务和 watcher 并非等价替代。 |
 | 图表渲染 | 不提供内置渲染器。图表以 Mermaid 文本返回，需要图片时自行用外部工具渲染。 |
 | 视频证据 | 没有内置视频渲染、录屏与逐帧验证，需要外部录屏或 FFmpeg 工具。 |
-| 桌面覆盖 | computer use 仅支持 macOS PTC Session，Windows 支持尚不完整。 |
+| 桌面覆盖 | computer use 仅支持 macOS PTC 桌面控制会话，Windows 支持尚不完整。 |
 | MCP 发现 | 不会自动发现证据类别，需要显式配置并识别 MCP 工具。 |
-
-插件以 Node.js 为基线。`watch-pr` 还需要 Bun、网络和已登录的 `gh`。`statechart` 还需要 Node、Bun 或 Deno 之一，以及 mise、Java、TLC 和首次运行的网络。详见[脚本登记](./port/README.md#脚本登记)。
 
 ## 📦 兼容性
 
-每行列出最新兼容的 dsh-pstack 发布版本及其包含的 pstack 版本。
+按发布版本声明的 DSH 范围选择。同一兼容范围内，每个 x.y 只保留最新版本。pstack 列记录当前移植基线，不逐一追溯旧插件版本。
 
-| DSH 版本 | 最新兼容的 dsh-pstack 发布版本 | 包含的 pstack 版本 |
+<!-- compatibility-keys: ["dsh-0.2.2-rc.1+port-v1","dsh-0.2.1-rc.5+legacy-v1","dsh-0.2.0-0.3.0+legacy-v1"] -->
+| DSH 版本 | dsh-pstack 发布版本 | 包含的 pstack 版本 |
 |---|---|---|
-| `0.2.2-rc.1` 及更新版本 | `0.3.0-beta.1` | `0.15.36` |
+| `>=0.2.2-rc.1` | `0.3.0-beta.1` | `0.15.36` |
+| `>=0.2.1-rc.5` | `0.2.2` | `0.15.36` |
+| `>=0.2.0 < 0.3.0` | `0.1.0` | `0.15.29` |
 
-DSH 出现破坏性更新并产生新的兼容分界时，追加一行。
+新增兼容范围时增加一行，其他发布自动更新所属行；规则见[移植与维护](./port/AGENTS.md#破坏性变更)。
+
+## 🔗 友情链接
+
+- [LinuxDo - 新的理想型社区](https://linux.do/)
 
 ## 💛 鸣谢
 
-- [pstack](https://github.com/cursor/plugins/tree/main/pstack) 由 Lauren Tan 与 Cursor 团队设计并开源。`poteto-mode`、23 个 playbook 和 24 条 principle 都来自上游。
-- [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 由 DeepSeek 团队提供。DSH 的插件、bundle、agent preset、subagent 和工具宿主接口让这次移植能以原生工具落地。
-- [cursor/plugins `cursor-team-kit`](https://github.com/cursor/plugins/tree/main/cursor-team-kit) 提供 vendored 的 `deslop`、`control-ui` 与 `control-cli` 技能。
-- [mattpocock/skills](https://github.com/mattpocock/skills) 提供 vendored 的 `writing-for-agents` 与 `retro` 技能。
+- [pstack](https://github.com/cursor/plugins/tree/main/pstack)：由 Lauren Tan 与 Cursor 团队设计并开源，是本项目的工作流基础。
+- [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)：由 DeepSeek 团队开发，是本插件的运行平台。
+- [cursor-team-kit](https://github.com/cursor/plugins/tree/main/cursor-team-kit)：vendored `deslop`、`control-ui` 与 `control-cli` 技能的来源。
+- [mattpocock/skills](https://github.com/mattpocock/skills)：vendored `writing-for-agents` 与 `retro` 技能的来源。
 
 本项目是社区移植，不是 Cursor 或 DeepSeek 官方发行。
 
