@@ -364,7 +364,8 @@ function budgetPlanErrorText(reason: unknown, t: PstackTranslations["roles"]): s
 }
 
 function routeTokens(routes: readonly Route[], t: PstackTranslations["roles"]): ReactElement[] {
-  const list = routes.length === 0 ? [{ kind: "inherit" as const }] : routes;
+  const list =
+    routes.length === 0 ? [{ kind: "inherit" as const, alias: "inherit-parent" as const }] : routes;
   return list.map((route, index) => (
     <code className="pstack-budget-route-chip" key={`${index}-${renderRouteValue([route])}`}>
       {route.kind === "inherit"

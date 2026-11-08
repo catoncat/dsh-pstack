@@ -106,7 +106,7 @@ export function selectRoutes(
       role: spec,
       mode: spec.autoPanel ? "panel" : "single",
       configured: false,
-      routes: [{ kind: "inherit" }],
+      routes: [{ kind: "inherit", alias: "inherit-parent" }],
       total: 1,
     };
   }

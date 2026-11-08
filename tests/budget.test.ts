@@ -92,8 +92,16 @@ describe("budget planning", () => {
 
   it("fills unconfigured roles with the default model only in the unconfigured scope", () => {
     const roles = [
-      role({ key: "bug-fix", configured: false, routes: [{ kind: "inherit" }] }),
-      role({ key: "feature, refactoring", configured: false, routes: [{ kind: "inherit" }] }),
+      role({
+        key: "bug-fix",
+        configured: false,
+        routes: [{ kind: "inherit", alias: "inherit-parent" }],
+      }),
+      role({
+        key: "feature, refactoring",
+        configured: false,
+        routes: [{ kind: "inherit", alias: "inherit-parent" }],
+      }),
     ];
     const concrete = planBudget(roles, catalogue, { tier: "large", scope: "concrete" });
     expect(concrete.rows.every((row) => row.status === "skipped")).toBe(true);
@@ -115,7 +123,7 @@ describe("budget planning", () => {
           shape: "list",
           autoPanel: true,
           configured: false,
-          routes: [{ kind: "inherit" }],
+          routes: [{ kind: "inherit", alias: "inherit-parent" }],
         }),
       ],
       catalogue,

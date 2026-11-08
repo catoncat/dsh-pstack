@@ -87,7 +87,7 @@ function roleView(key: string, shape: "single" | "list", entry: RoleEntry | unde
 }
 
 function routeView(route: Route): RouteView {
-  if (route.kind === "inherit") return { kind: "inherit", alias: route.alias ?? "inherit-parent" };
+  if (route.kind === "inherit") return { kind: "inherit", alias: route.alias };
   return {
     kind: "route",
     provider: route.provider,
@@ -337,7 +337,9 @@ export async function saveBudgetConfiguration(
       shape: spec.shape,
       autoPanel: spec.autoPanel,
       configured: document.roles.has(spec.key),
-      routes: document.roles.get(spec.key)?.routes ?? [{ kind: "inherit" as const }],
+      routes: document.roles.get(spec.key)?.routes ?? [
+        { kind: "inherit" as const, alias: "inherit-parent" as const },
+      ],
       hasIssues: (document.roles.get(spec.key)?.issues.length ?? 0) > 0,
     }));
     const plan = planBudget(inputs, catalogue, parsed);

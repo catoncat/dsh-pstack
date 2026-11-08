@@ -284,7 +284,9 @@ export function planDelegation(
     }
   }
 
-  const routes = selection?.routes ?? [{ kind: "inherit" as const }];
+  const routes = selection?.routes ?? [
+    { kind: "inherit" as const, alias: "inherit-parent" as const },
+  ];
   const roleName = selection?.role.key ?? "(none)";
   const agentPreset = args.agent === "general" ? undefined : AGENT_PRESETS[args.agent];
   const prompt =

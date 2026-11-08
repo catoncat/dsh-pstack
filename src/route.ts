@@ -4,7 +4,7 @@ import { INHERIT_ALIASES, type InheritAlias, type RoleSpec } from "./role-manife
 
 /** One resolved child route. */
 export type Route =
-  | { readonly kind: "inherit"; readonly alias?: InheritAlias }
+  | { readonly kind: "inherit"; readonly alias: InheritAlias }
   | {
       readonly kind: "route";
       readonly provider: string;
@@ -101,7 +101,7 @@ export function renderRouteValue(routes: readonly Route[]): string {
   return routes
     .map((route) =>
       route.kind === "inherit"
-        ? (route.alias ?? "inherit-parent")
+        ? route.alias
         : route.effort === undefined
           ? `${route.provider}/${route.model}`
           : `${route.provider}/${route.model} [${route.effort}]`,

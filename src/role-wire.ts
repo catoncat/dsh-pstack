@@ -7,7 +7,7 @@ import {
   type InheritAlias,
   type RoleShape,
 } from "./role-manifest.ts";
-import { validateRouteParts } from "./route.ts";
+import { validateRouteParts, type Route } from "./route.ts";
 import { WireTypeError } from "./wire-error.ts";
 
 export type { CatalogueResult } from "./catalogue.ts";
@@ -17,14 +17,7 @@ export { parseCatalogueResult } from "./catalogue.ts";
 export { WireTypeError } from "./wire-error.ts";
 export type { InheritAlias } from "./role-manifest.ts";
 
-export type RouteView =
-  | { readonly kind: "inherit"; readonly alias: InheritAlias }
-  | {
-      readonly kind: "route";
-      readonly provider: string;
-      readonly model: string;
-      readonly effort?: string;
-    };
+export type RouteView = Route;
 
 export interface RoleView {
   readonly key: string;
