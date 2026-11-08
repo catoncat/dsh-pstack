@@ -327,7 +327,7 @@
             name: dsh-pstack/subagent
             config:
               provider: spawn
-              maxDepth: 1
+              maxDepth: 2
     - id: preset-comment-sicko
       name: "dsh-pstack/preset"
       config:
@@ -382,6 +382,11 @@
               sampleOverCapGlobResults: false
           - id: pstack-skill
             name: dsh-pstack
+          - id: pstack-subagent
+            name: dsh-pstack/subagent
+            config:
+              provider: spawn
+              maxDepth: 2
     - id: preset-readonly
       name: "dsh-pstack/preset"
       config:
@@ -411,5 +416,10 @@
               sampleOverCapGlobResults: false
           - id: pstack-skill
             name: dsh-pstack
+          - id: pstack-subagent
+            name: dsh-pstack/subagent
+            config:
+              provider: spawn
+              maxDepth: 2
           - id: readonly-policy
             name: dsh-pstack/readonly

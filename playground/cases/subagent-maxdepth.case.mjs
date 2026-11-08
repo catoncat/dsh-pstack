@@ -1,6 +1,6 @@
 export default {
   id: "CASE-SUBAGENT-MAXDEPTH-01",
-  title: "普通任务派发时 pstack_subagent 的 maxDepth 参数",
+  title: "普通任务派发时 pstack_subagent 使用配置的 maxDepth 上限",
   build() {
     return {
       prompt: [
@@ -25,22 +25,22 @@ export default {
             detail: `pstack_subagent agent=${JSON.stringify(input.agent)}，期望 general`,
           };
         }
-        if (input.maxDepth !== null && input.maxDepth !== undefined && input.maxDepth !== 1) {
+        if (input.maxDepth !== null && input.maxDepth !== undefined && input.maxDepth !== 2) {
           return {
             ok: false,
-            detail: `普通子代理 maxDepth=${JSON.stringify(input.maxDepth)}，期望缺省、null 或 1`,
+            detail: `普通子代理 maxDepth=${JSON.stringify(input.maxDepth)}，期望缺省、null 或 2`,
           };
         }
         const text = String(subagentCalls[0].result?.result ?? "");
-        if (!text.includes("maxDepth=1")) {
+        if (!text.includes("maxDepth=2")) {
           return {
             ok: false,
-            detail: `子代理结果没有报告默认 maxDepth=1：${text.slice(0, 300)}`,
+            detail: `子代理结果没有报告配置的 maxDepth=2：${text.slice(0, 300)}`,
           };
         }
         return {
           ok: true,
-          detail: `普通子代理使用安全默认 maxDepth=1，参数：${JSON.stringify(input)}`,
+          detail: `普通子代理使用配置的 maxDepth=2，参数：${JSON.stringify(input)}`,
         };
       },
     };

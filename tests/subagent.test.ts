@@ -177,8 +177,24 @@ describe("pstack_subagent arguments and planning", () => {
     expect(() => args({ maxDepth: 0 })).toThrow(/positive safe integer/);
   });
 
-  it("defaults maxDepth to 1 when omitted", () => {
+  it("uses the Host cap when maxDepth is omitted", () => {
     const plan = planDelegation(args(), fakeRuntime(home()));
-    expect(plan.children[0]?.maxDepth).toBe(1);
+    expect(plan.children[0]?.maxDepth).toBe(2);
+  });
+
+  it("omits maxDepth when neither the caller nor the Host sets a cap", () => {
+    const base = fakeRuntime(home());
+    const runtime = {
+      ...base,
+      subagents: {
+        getProvider: base.subagents.getProvider.bind(base.subagents),
+        list: base.subagents.list.bind(base.subagents),
+        resolveMaxDepth: () => undefined,
+        startActivation: base.subagents.startActivation.bind(base.subagents),
+      },
+    } as unknown as DelegationRuntime;
+    const plan = planDelegation(args(), runtime);
+    expect(plan.children[0]?.maxDepth).toBeUndefined();
+    expect(plan.children[0] !== undefined && "maxDepth" in plan.children[0]).toBe(false);
   });
 });

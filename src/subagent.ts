@@ -62,9 +62,6 @@ export interface PstackSubagentConfig {
 
 const DEFAULT_CONFIG: PstackSubagentConfig = { provider: DEFAULT_PROVIDER };
 
-/** Safe default when a call omits `maxDepth`; a child is already depth 1. */
-export const DEFAULT_CHILD_DEPTH = 1;
-
 export interface DelegationArgs {
   readonly description: string;
   readonly prompt: string;
@@ -477,7 +474,7 @@ export function createPstackSubagentTool(
           type: ["integer", "null"],
           minimum: 1,
           description:
-            "Optional delegation-depth cap. Omit or null for depth 1; explicit values must be at least 1. The row cap still applies.",
+            "Optional delegation-depth cap. Omit or null to use the configured row and Host cap; explicit values must be at least 1 and cannot exceed that cap.",
         },
       },
       required: ["description", "prompt", "agent", "role", "roleIndex", "reasoningEffort", "cwd"],
@@ -500,6 +497,8 @@ const TOOL_DESCRIPTION = [
   "Delegate self-contained work to one or more fresh child agents.",
   "",
   "Every argument is required except maxDepth. Pass null for role, roleIndex, reasoningEffort, or cwd when unused. Choose agent explicitly.",
+  "",
+  "Omit `maxDepth` to use the configured row and Host delegation cap; an explicit value cannot exceed that cap.",
   "",
   "`agent` picks a DSH agent preset: `poteto-agent` mounts the pstack implementation delegate and receives the absolute path of the poteto-mode instructions; `comment-sicko` mounts the comment reviewer; `readonly` mounts a read-only research preset with the sandbox policy set to read-only; `general` joins the parent preset.",
   "",
@@ -603,8 +602,9 @@ function resolveChildDepth(
   config: PstackSubagentConfig,
   hostLimit: number | undefined,
 ): number | undefined {
-  let depth = requested === null ? DEFAULT_CHILD_DEPTH : requested;
-  if (depth < 1) {
+  const depth = requested ?? hostLimit;
+  if (depth === undefined) return undefined;
+  if (!Number.isSafeInteger(depth) || depth < 1) {
     throw new Error("maxDepth must be a positive safe integer or null");
   }
   if (config.maxDepth !== undefined && depth > config.maxDepth) {
