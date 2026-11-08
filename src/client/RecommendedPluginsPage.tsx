@@ -145,7 +145,7 @@ export function RecommendedPluginsView(props: {
   const load = async (): Promise<void> => {
     if (api === undefined) {
       setLoading(false);
-      setError(t("loadFailed", { message: "plugin manager unavailable" }));
+      setError(t("loadFailed", { message: t("managerUnavailable") }));
       return;
     }
     setLoading(true);
@@ -153,7 +153,7 @@ export function RecommendedPluginsView(props: {
     try {
       setBundles(await api.listBundles());
     } catch (reason) {
-      setError(t("loadFailed", { message: messageOf(reason) }));
+      setError(t("loadFailed", { message: pluginMessage(reason, t) }));
     } finally {
       setLoading(false);
     }
@@ -201,7 +201,7 @@ export function RecommendedPluginsView(props: {
         ...current,
         [bundle.name]: {
           tone: "error",
-          text: t("pluginChangeFailed", { name: bundle.name, reason: messageOf(reason) }),
+          text: t("pluginChangeFailed", { name: bundle.name, reason: pluginMessage(reason, t) }),
         },
       }));
     } finally {
@@ -371,6 +371,11 @@ export function RecommendedPluginsView(props: {
       </div>
     </section>
   );
+}
+
+function pluginMessage(reason: unknown, t: PstackTranslations["plugins"]): string {
+  const message = messageOf(reason);
+  return message === "plugin manager is not available yet" ? t("managerUnavailable") : message;
 }
 
 function bundleStatus(

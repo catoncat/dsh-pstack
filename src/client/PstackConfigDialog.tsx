@@ -70,6 +70,7 @@ export function PstackConfigDialog(props: PstackConfigDialogProps): ReactElement
         return;
       }
       if (event.key !== "Tab") return;
+      if (document.querySelector(".pstack-budget-overlay") !== null) return;
       const panel = panelRef.current;
       if (panel === null) return;
       // Skip the inactive panel: its subtree carries `hidden`, so its controls are not tabbable.

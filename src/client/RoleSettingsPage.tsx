@@ -3,8 +3,16 @@
 import { useEffect, useState, type ReactElement } from "react";
 
 import type { CatalogueResult } from "../models.ts";
-import type { RoleFileSnapshot, RouteView, SaveRoleRequest, SaveRoleResult } from "../role-wire.ts";
+import type { BudgetApplyRequest } from "../budget.ts";
+import type {
+  BudgetApplyResult,
+  RoleFileSnapshot,
+  RouteView,
+  SaveRoleRequest,
+  SaveRoleResult,
+} from "../role-wire.ts";
 import { IconAlert, IconEraser, IconInfo, IconRefresh, IconSave, IconUndo } from "./icons.tsx";
+import { BudgetDialog, budgetLabel } from "./BudgetDialog.tsx";
 import { messageOf } from "./message.ts";
 import { RoleCard } from "./RoleCard.tsx";
 import { draftOf, inheritedRoutes, isClearDraft, isDirty, type DraftMap } from "./role-draft.ts";
@@ -20,6 +28,7 @@ export interface RoleSettingsApi {
   status(): Promise<RoleFileSnapshot>;
   catalogue(): Promise<CatalogueResult>;
   save(request: SaveRoleRequest): Promise<SaveRoleResult>;
+  budget(request: BudgetApplyRequest): Promise<BudgetApplyResult>;
 }
 
 export function RoleSettingsView(props: {
@@ -38,6 +47,7 @@ export function RoleSettingsView(props: {
   const [refreshMessage, setRefreshMessage] = useState<ToastMessage | undefined>();
   const [bulkBusy, setBulkBusy] = useState<"save" | undefined>();
   const [bulkMessage, setBulkMessage] = useState<ToastMessage | undefined>();
+  const [budgetOpen, setBudgetOpen] = useState(false);
 
   const applySnapshot = (next: RoleFileSnapshot): void => {
     setSnapshot(next);
@@ -267,6 +277,21 @@ export function RoleSettingsView(props: {
     );
   };
 
+  const openBudget = (): void => {
+    if (dirtyFlag && !confirmDiscard(t("confirmDiscardChanges"))) return;
+    if (dirtyFlag) resetAll();
+    setBudgetOpen(true);
+  };
+
+  const onBudgetApplied = (next: RoleFileSnapshot): void => {
+    applySnapshot(next);
+    setBudgetOpen(false);
+    setBulkMessage({
+      tone: "success",
+      text: t("budgetDone", { budget: budgetLabel(next.budget, t) }),
+    });
+  };
+
   return (
     <section>
       <header className="pstack-section-head">
@@ -332,6 +357,36 @@ export function RoleSettingsView(props: {
           </IconButton>
         </div>
       </header>
+      <div className="pstack-budget-bar">
+        <div className="pstack-budget-status">
+          <span className="pstack-field-label">{t("budgetTitle")}</span>
+          <span>{t("budgetCurrent", { budget: budgetLabel(snapshot.budget, t) })}</span>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={
+            !snapshot.canSave ||
+            catalogue === undefined ||
+            bulkBusy !== undefined ||
+            anyBusy ||
+            loading
+          }
+          onClick={openBudget}
+        >
+          {t("budgetAdjust")}
+        </Button>
+      </div>
+      {budgetOpen && catalogue !== undefined ? (
+        <BudgetDialog
+          snapshot={snapshot}
+          catalogue={catalogue}
+          translations={translations}
+          onApply={(request) => api.budget(request)}
+          onApplied={onBudgetApplied}
+          onClose={() => setBudgetOpen(false)}
+        />
+      ) : null}
       <Toast message={refreshMessage} />
       {snapshot.reason === undefined ? null : (
         <div className="pstack-notice" data-tone="error">

@@ -11,6 +11,8 @@ import { validateRouteParts } from "./route.ts";
 import { WireTypeError } from "./wire-error.ts";
 
 export type { CatalogueResult } from "./catalogue.ts";
+export type { BudgetApplyRequest } from "./budget.ts";
+export { parseBudgetApplyRequest } from "./budget.ts";
 export { parseCatalogueResult } from "./catalogue.ts";
 export { WireTypeError } from "./wire-error.ts";
 export type { InheritAlias } from "./role-manifest.ts";
@@ -54,6 +56,10 @@ export interface SaveRoleRequest {
 }
 
 export type SaveRoleResult =
+  | { readonly ok: true; readonly snapshot: RoleFileSnapshot }
+  | { readonly ok: false; readonly reason: string };
+
+export type BudgetApplyResult =
   | { readonly ok: true; readonly snapshot: RoleFileSnapshot }
   | { readonly ok: false; readonly reason: string };
 
@@ -212,6 +218,17 @@ export function parseRoleFileSnapshot(value: unknown): RoleFileSnapshot {
 
 /** Parse one role-save result returned by the Host. */
 export function parseSaveRoleResult(value: unknown): SaveRoleResult {
+  const record = parseRecord(value, "result");
+  if (record["ok"] === true)
+    return { ok: true, snapshot: parseRoleFileSnapshot(record["snapshot"]) };
+  if (record["ok"] === false && typeof record["reason"] === "string") {
+    return { ok: false, reason: record["reason"] };
+  }
+  throw new WireTypeError("result", "a successful snapshot or a refusal reason");
+}
+
+/** Parse one budget-apply result returned by the Host. */
+export function parseBudgetApplyResult(value: unknown): BudgetApplyResult {
   const record = parseRecord(value, "result");
   if (record["ok"] === true)
     return { ok: true, snapshot: parseRoleFileSnapshot(record["snapshot"]) };

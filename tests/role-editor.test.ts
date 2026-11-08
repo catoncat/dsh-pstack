@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from "vite-plus/test";
 import { parseRoleConfiguration } from "../src/role-config.ts";
 import {
   removeRoleText,
+  saveBudgetConfiguration,
   saveRoleConfiguration,
   snapshotFromConfiguration,
   updateRoleText,
@@ -112,6 +113,13 @@ describe("role editor", () => {
     const text = "Feature,refactoring: cpa/a\nbug-fix: cpa/b\nfeature, refactoring: cpa/c\n";
     expect(removeRoleText(text, "feature, refactoring")).toBe("bug-fix: cpa/b\n");
     expect(removeRoleText("bug-fix: cpa/b", "bug-fix")).toBe("");
+  });
+
+  it("updates the effective last duplicate role line", () => {
+    const text = "bug-fix: cpa/a [low]\nbug-fix: cpa/b [low]\n";
+    expect(updateRoleText(text, "bug-fix", "cpa/b [high]")).toBe(
+      "bug-fix: cpa/a [low]\nbug-fix: cpa/b [high]\n",
+    );
   });
 
   it("saves one role and leaves the rest of the file intact", async () => {
@@ -273,5 +281,102 @@ describe("role editor", () => {
       new AbortController().signal,
     );
     expect(result).toMatchObject({ ok: false, reason: expect.stringContaining("request.key") });
+  });
+
+  it("applies a budget to concrete routes and rewrites the budget line", async () => {
+    const home = tempHome("# budget: large (xhigh)\nbug-fix: cpa/model-a [low]\n");
+    const path = join(home, "pstack-models.mdc");
+    const result = await saveBudgetConfiguration(
+      path,
+      { tier: "large", scope: "concrete" },
+      llm as unknown as LlmRuntime,
+      new AbortController().signal,
+    );
+    if (!result.ok) throw new Error(result.reason);
+    expect(readFileSync(path, "utf8")).toBe(
+      "# budget: large (xhigh)\nbug-fix: cpa/model-a [high]\n",
+    );
+  });
+
+  it("leaves the file byte-identical when the budget is a no-op", async () => {
+    const original = "# budget: large (xhigh)\nbug-fix: cpa/model-a [high]\n";
+    const home = tempHome(original);
+    const path = join(home, "pstack-models.mdc");
+    const result = await saveBudgetConfiguration(
+      path,
+      { tier: "large", scope: "concrete" },
+      llm as unknown as LlmRuntime,
+      new AbortController().signal,
+    );
+    expect(result.ok).toBe(true);
+    expect(readFileSync(path, "utf8")).toBe(original);
+  });
+
+  it("applies a budget to the effective duplicate role line", async () => {
+    const home = tempHome("bug-fix: cpa/model-a [low]\nbug-fix: cpa/model-a [low]\n");
+    const path = join(home, "pstack-models.mdc");
+    const result = await saveBudgetConfiguration(
+      path,
+      { tier: "large", scope: "concrete" },
+      llm as unknown as LlmRuntime,
+      new AbortController().signal,
+    );
+    if (!result.ok) throw new Error(result.reason);
+    expect(readFileSync(path, "utf8")).toBe(
+      "# budget: large (xhigh)\nbug-fix: cpa/model-a [low]\nbug-fix: cpa/model-a [high]\n",
+    );
+  });
+
+  it("refuses a budget when a configured route model is missing", async () => {
+    const home = tempHome("bug-fix: ghost/model [low]\n");
+    const path = join(home, "pstack-models.mdc");
+    const result = await saveBudgetConfiguration(
+      path,
+      { tier: "large", scope: "concrete" },
+      llm as unknown as LlmRuntime,
+      new AbortController().signal,
+    );
+    expect(result).toMatchObject({ ok: false, reason: expect.stringContaining("bug-fix") });
+    expect(readFileSync(path, "utf8")).toBe("bug-fix: ghost/model [low]\n");
+  });
+
+  it("re-reads the role file after an asynchronous catalogue lookup for a budget", async () => {
+    const home = tempHome("# header\nbug-fix: cpa/model-a [low]\n");
+    const path = join(home, "pstack-models.mdc");
+    const concurrentLlm = llmFixture({
+      listModels: async () => {
+        writeFileSync(path, `${readFileSync(path, "utf8")}perf-issue: cpa/model-a [high]\n`);
+        return [{ provider: "cpa", id: "model-a", name: "Model A" }];
+      },
+    });
+    const result = await saveBudgetConfiguration(
+      path,
+      { tier: "large", scope: "concrete" },
+      concurrentLlm,
+      new AbortController().signal,
+    );
+    if (!result.ok) throw new Error(result.reason);
+    const text = readFileSync(path, "utf8");
+    expect(text).toContain("perf-issue: cpa/model-a [high]");
+    expect(text).toContain("bug-fix: cpa/model-a [high]");
+  });
+
+  it("fills an unconfigured role with the selected default model", async () => {
+    const home = tempHome("# header\n");
+    const path = join(home, "pstack-models.mdc");
+    const result = await saveBudgetConfiguration(
+      path,
+      {
+        tier: "large",
+        scope: "unconfigured",
+        defaultModel: { provider: "cpa", model: "model-a" },
+      },
+      llm as unknown as LlmRuntime,
+      new AbortController().signal,
+    );
+    if (!result.ok) throw new Error(result.reason);
+    const text = readFileSync(path, "utf8");
+    expect(text).toContain("# budget: large (xhigh)");
+    expect(text).toContain("feature, refactoring: cpa/model-a [high]");
   });
 });

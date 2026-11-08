@@ -11,18 +11,24 @@ describe("pstack role Remote contribution", () => {
       pstackRolesHostContribution.invocations.map(
         (descriptor) => descriptor.namespace + "/" + descriptor.method,
       ),
-    ).toEqual(["pstackRoles/status", "pstackRoles/catalogue", "pstackRoles/save"]);
+    ).toEqual([
+      "pstackRoles/status",
+      "pstackRoles/catalogue",
+      "pstackRoles/save",
+      "pstackRoles/budget",
+    ]);
     for (const descriptor of pstackRolesHostContribution.invocations) {
       expect(descriptor.service).toBe("pstackRoles");
       expect(descriptor.invocation.kind).toBe("direct");
     }
   });
 
-  it("declares only status, catalogue, and save with strict result decoders", () => {
+  it("declares status, catalogue, save, and budget with strict result decoders", () => {
     expect(pstackRolesRemote.descriptors.map((descriptor) => descriptor.method)).toEqual([
       "status",
       "catalogue",
       "save",
+      "budget",
     ]);
     for (const descriptor of pstackRolesRemote.descriptors) {
       expect(descriptor.result.mode).toBe("strict");

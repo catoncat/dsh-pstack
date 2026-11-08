@@ -71,6 +71,10 @@ function snapshotFor(configured = true): RoleFileSnapshot {
   };
 }
 
+function snapshotWithBudget(): RoleFileSnapshot {
+  return { ...snapshotFor(), budget: "large (xhigh)" };
+}
+
 function snapshotAfter(request: SaveRoleRequest): RoleFileSnapshot {
   const configured = request.routes.length > 0;
   return {
@@ -113,6 +117,7 @@ function makeRoleApi(): RoleApiController {
         current = snapshotAfter(request);
         return { ok: true, snapshot: current };
       },
+      budget: async () => ({ ok: true, snapshot: current }),
     },
     statusCalls: () => statusCalls,
     saves,
@@ -314,6 +319,52 @@ describe("clear as deletion", () => {
       'select[aria-label="Bug fix Reasoning effort"]',
     );
     expect(effort?.value).toBe("high");
+  });
+});
+
+describe("budget dialog", () => {
+  it("opens from the role page and renders a preview", async () => {
+    await openRoles(makeRoleApi().api);
+    await click(buttonByText(document.body, "Adjust budget"));
+    expect(document.body.textContent).toContain("Reasoning budget");
+    expect(document.body.textContent).toContain("Apply budget");
+    expect(document.querySelector(".pstack-budget-panel")).not.toBeNull();
+  });
+
+  it("disables apply when the file already matches the budget", async () => {
+    const snapshot = snapshotWithBudget();
+    await openRoles({
+      status: async () => snapshot,
+      catalogue: async () => catalogue,
+      save: async () => ({ ok: true, snapshot }),
+      budget: async () => ({ ok: true, snapshot }),
+    });
+    await click(buttonByText(document.body, "Adjust budget"));
+    expect(buttonByText(document.body, "Apply budget").disabled).toBe(true);
+  });
+
+  it("discards dirty drafts when opening the budget after confirmation", async () => {
+    const controller = makeRoleApi();
+    await openRoles(controller.api);
+    const effort = document.querySelector<HTMLSelectElement>(
+      'select[aria-label="Bug fix Reasoning effort"]',
+    )!;
+    await act(async () => {
+      effort.value = "low";
+      effort.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await flush();
+    expect(buttonByText(document.body, "Save all (1)")).not.toBeNull();
+
+    const original = window.confirm;
+    try {
+      window.confirm = () => true;
+      await click(buttonByText(document.body, "Adjust budget"));
+      await click(buttonByText(document.querySelector(".pstack-budget-panel")!, "Close"));
+      expect(buttonByText(document.body, "Save all").disabled).toBe(true);
+    } finally {
+      window.confirm = original;
+    }
   });
 });
 
@@ -553,7 +604,7 @@ describe("remote adapter unwrap", () => {
     await click(buttonByText(container, "Configure"));
 
     expect(document.body.textContent).toContain("Could not read plugin status");
-    expect(document.body.textContent).toContain("plugin manager is not available yet");
-    expect(document.body.textContent).not.toContain("plugin manager unavailable");
+    expect(document.body.textContent).toContain("Plugin manager unavailable");
+    expect(document.body.textContent).not.toContain("plugin manager is not available yet");
   });
 });

@@ -4,6 +4,7 @@ import type { CatalogueResult } from "../src/models.ts";
 import { parseRoleConfiguration } from "../src/role-config.ts";
 import { snapshotFromConfiguration } from "../src/role-editor.ts";
 import {
+  parseBudgetApplyResult,
   parseCatalogueResult,
   parseRoleFileSnapshot,
   parseSaveRoleRequest,
@@ -86,6 +87,19 @@ describe("role wire parsers", () => {
       reason: "unknown provider",
     });
     expect(() => parseRoleFileSnapshot({ ...snapshot, roles: "bad" })).toThrow("snapshot");
+  });
+
+  it("round-trips a budget result and rejects malformed shapes", () => {
+    expect(parseBudgetApplyResult({ ok: true, snapshot: structuredClone(snapshot) })).toEqual({
+      ok: true,
+      snapshot,
+    });
+    expect(parseBudgetApplyResult({ ok: false, reason: "budget blocked" })).toEqual({
+      ok: false,
+      reason: "budget blocked",
+    });
+    expect(() => parseBudgetApplyResult({ ok: true })).toThrow("snapshot");
+    expect(() => parseBudgetApplyResult({ ok: false, reason: 1 })).toThrow("result");
   });
 
   it("rejects malformed optional snapshot fields instead of dropping them", () => {

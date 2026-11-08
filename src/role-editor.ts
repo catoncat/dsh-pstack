@@ -14,6 +14,13 @@ import { randomUUID } from "node:crypto";
 import type { LlmRuntime } from "@deepseek-ai/dsh-llm";
 
 import { collectCatalogue } from "./models.ts";
+import {
+  isBudgetRowBlocked,
+  planBudget,
+  parseBudgetApplyRequest,
+  renderBudgetText,
+  type BudgetApplyRequest,
+} from "./budget.ts";
 import { parseRoleFileDocument, isRoleLineFor } from "./role-file.ts";
 import {
   parseRoleConfiguration,
@@ -31,6 +38,7 @@ import {
   type RouteView,
   type SaveRoleRequest,
   type SaveRoleResult,
+  type BudgetApplyResult,
 } from "./role-wire.ts";
 
 /** Project one parsed file onto the manifest. */
@@ -189,15 +197,14 @@ export function renderRoleValue(routes: readonly Route[]): string {
 /** Replace or append one role line, preserving the other logical lines. */
 export function updateRoleText(text: string, key: string, value: string): string {
   const document = parseRoleFileDocument(text.replace(/\n$/, ""), "");
-  let replaced = false;
-  const lines = document.lines.map((line) => {
-    if (!replaced && isRoleLineFor(line, key)) {
-      replaced = true;
-      return `${key}: ${value}`;
-    }
-    return line.raw;
+  let target = -1;
+  document.lines.forEach((line, index) => {
+    if (isRoleLineFor(line, key)) target = index;
   });
-  if (!replaced) {
+  const lines = document.lines.map((line, index) =>
+    index === target ? `${key}: ${value}` : line.raw,
+  );
+  if (target === -1) {
     if (lines.length > 0 && lines[lines.length - 1] === "") lines.pop();
     lines.push(`${key}: ${value}`);
   }
@@ -285,6 +292,79 @@ export async function saveRoleConfiguration(
     return { ok: false, reason: `the role file could not be written: ${describeError(error)}` };
   }
   return { ok: true, snapshot: snapshotFromConfiguration(parseRoleConfiguration(next, path)) };
+}
+
+/** Apply one global budget target to the role file in a single atomic write. */
+export async function saveBudgetConfiguration(
+  path: string,
+  request: BudgetApplyRequest,
+  llm: LlmRuntime,
+  signal: AbortSignal,
+): Promise<BudgetApplyResult> {
+  signal.throwIfAborted();
+  let parsed: BudgetApplyRequest;
+  try {
+    parsed = parseBudgetApplyRequest(request);
+  } catch (error) {
+    return { ok: false, reason: describeError(error) };
+  }
+
+  const initial = readRoleConfiguration(path);
+  if (initial.status === "unreadable") {
+    return { ok: false, reason: `the role file is unreadable: ${initial.reason}` };
+  }
+
+  let catalogue: Awaited<ReturnType<typeof collectCatalogue>>;
+  try {
+    catalogue = await collectCatalogue(llm, undefined, signal);
+  } catch (error) {
+    signal.throwIfAborted();
+    return {
+      ok: false,
+      reason: `the model catalogue could not be loaded: ${describeError(error)}`,
+    };
+  }
+  signal.throwIfAborted();
+
+  const current = readRoleConfiguration(path);
+  if (current.status === "unreadable") {
+    return { ok: false, reason: `the role file is unreadable: ${current.reason}` };
+  }
+  let text = "";
+  if (current.status === "loaded") {
+    try {
+      text = readFileSync(path, "utf8");
+    } catch (error) {
+      return { ok: false, reason: `the role file could not be read: ${describeError(error)}` };
+    }
+  }
+
+  try {
+    const document = parseRoleFileDocument(text, path);
+    const inputs = ROLE_MANIFEST.map((spec) => ({
+      key: spec.key,
+      shape: spec.shape,
+      autoPanel: spec.autoPanel,
+      configured: document.roles.has(spec.key),
+      routes: document.roles.get(spec.key)?.routes ?? [{ kind: "inherit" as const }],
+    }));
+    const plan = planBudget(inputs, catalogue, parsed);
+    const blocked = plan.rows.filter(isBudgetRowBlocked);
+    if (blocked.length > 0) {
+      return {
+        ok: false,
+        reason: `the budget needs attention for: ${blocked.map((row) => row.key).join(", ")}`,
+      };
+    }
+    const next = renderBudgetText(text, plan, updateRoleText);
+    if (next === text) {
+      return { ok: true, snapshot: snapshotFromConfiguration(readRoleConfiguration(path)) };
+    }
+    writeAtomically(path, next);
+    return { ok: true, snapshot: snapshotFromConfiguration(parseRoleConfiguration(next, path)) };
+  } catch (error) {
+    return { ok: false, reason: describeError(error) };
+  }
 }
 
 function writeAtomically(path: string, text: string): void {

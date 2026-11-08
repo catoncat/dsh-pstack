@@ -21,11 +21,11 @@
 | 模型目录 | `src/models.ts`、`src/catalogue.ts` | 实现 `pstack_models`，读取实时 LLM adapter 目录，保留单 provider 或 model 的发现错误；共享 catalogue 类型、schema 与 wire 解析。 |
 | 角色清单 | `src/role-manifest.ts`、`src/role-catalog.ts` | 定义角色 key、shape 和自动面板属性；实现只读的 `pstack_roles`。 |
 | 子代理委派 | `src/subagent.ts` | 实现 `pstack_subagent`；解析角色路由，完成参数、能力和模型预检，再调用 `ctx.subagents.startActivation`。 |
-| 角色文件 | `src/role-config.ts`、`src/role-file.ts`、`src/route.ts`、`src/role-editor.ts` | 解析 `$DSH_HOME/pstack-models.mdc`，以共享 Route 语法和 RoleFileDocument 选择、校验并原子保存单个角色。 |
-| 角色 Remote 边界 | `src/role-wire.ts`、`src/role-remote.ts`、`src/role-service.ts` | 定义并严格校验传输结构；共享 Typert 描述符；在 Host 暴露状态、目录和保存方法。 |
+| 角色文件 | `src/role-config.ts`、`src/role-file.ts`、`src/route.ts`、`src/budget.ts`、`src/role-editor.ts` | 解析 `$DSH_HOME/pstack-models.mdc`，以共享 Route 语法和 RoleFileDocument 选择路由；按预算把目标推理档位映射到具体模型并原子保存。 |
+| 角色 Remote 边界 | `src/role-wire.ts`、`src/role-remote.ts`、`src/role-service.ts` | 定义并严格校验传输结构；共享 Typert 描述符；在 Host 暴露状态、目录、保存和预算应用方法。 |
 | 根与子代理 preset | `src/preset.ts`、`src/preset-copy.ts`、`src/poteto-mode.ts`、`src/readonly.ts` | 注册本地化 preset，向根会话注入常驻 `poteto-mode` 内容，并为只读子代理设置沙箱策略。 |
 | Client 入口与对话框 | `src/client/index.ts`、`src/client/PstackConfigDialog.tsx` | 挂载 Remote 描述符、注册 locale 和插件详情动作；管理配置对话框、页签和未保存草稿。 |
-| 角色与插件页面 | `src/client/RoleSettingsPage.tsx`、`src/client/RoleCard.tsx`、`src/client/RecommendedPluginsPage.tsx` | 编辑角色草稿并展示保存结果；展示关联插件及其变更结果。 |
+| 角色与插件页面 | `src/client/RoleSettingsPage.tsx`、`src/client/RoleCard.tsx`、`src/client/BudgetDialog.tsx`、`src/client/RecommendedPluginsPage.tsx` | 编辑角色草稿并展示保存结果；按预算批量预览并应用推理档位；展示关联插件及其变更结果。 |
 | Client 支撑 | `src/client/ui.tsx`、`src/client/icons.tsx`、`src/client/styles.ts`、`src/client/toast.tsx`、`src/client/message.ts`、`src/client/locales/`、`src/client/role-copy.ts`、`src/client/role-draft.ts`、`src/client/role-selectors.ts` | 提供本插件的 UI 组件、样式、共享提示、翻译、角色草稿和选择器文案。 |
 | 移植与生成 | `port/generate.mjs`、`port/scan.mjs`、`port/dsh.md`、`port/audit.md`、`port/audit.lock.json` | 从固定上游生成 `pstack/`；扫描能力、校验审核引用和当前基线处置。 |
 | 发布元数据 | `port/release-compatibility.ts`、`bump.config.ts` | 按显式兼容键同步双语 README 的版本表；每个 `x.y` 保留最新 `z`，新兼容键新增行，并把双语 README 加入发布提交。 |

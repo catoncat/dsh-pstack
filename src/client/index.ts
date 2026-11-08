@@ -68,6 +68,7 @@ export async function apply(ctx: Context): Promise<() => Promise<void>> {
       status: async () => unwrap(await pstack.status()),
       catalogue: async () => unwrap(await pstack.catalogue()),
       save: async (request) => unwrap(await pstack.save(request)),
+      budget: async (request) => unwrap(await pstack.budget(request)),
     };
     const translations = {
       common: ctx.locale.bind(NS.common),

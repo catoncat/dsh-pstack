@@ -20,11 +20,14 @@ import type {
 import type { TypertContribution } from "@deepseek-ai/dsh-typert-registry";
 
 import type { CatalogueResult } from "./models.ts";
+import { type BudgetApplyRequest, parseBudgetApplyRequest } from "./budget.ts";
 import {
+  parseBudgetApplyResult,
   parseCatalogueResult,
   parseRoleFileSnapshot,
   parseSaveRoleRequest,
   parseSaveRoleResult,
+  type BudgetApplyResult,
   type RoleFileSnapshot,
   type SaveRoleRequest,
   type SaveRoleResult,
@@ -134,23 +137,35 @@ const saveMethod = directMethod<{ request: SaveRoleRequest }, SaveRoleResult>({
   cancellation: true,
 });
 
+const budgetMethod = directMethod<{ request: BudgetApplyRequest }, BudgetApplyResult>({
+  method: "budget",
+  parameters: [parameter("request", "PstackBudgetApplyRequest", parseBudgetApplyRequest)],
+  result: codec("PstackBudgetApplyResult", parseBudgetApplyResult),
+  cancellation: true,
+});
+
 /** Typed Client face installed by `$mount()`. */
 export interface PstackRolesNamespace {
   readonly pstackRoles: {
     status(): Promise<RemoteResult<RoleFileSnapshot>>;
     catalogue(signal?: AbortSignal): Promise<RemoteResult<CatalogueResult>>;
     save(request: SaveRoleRequest, signal?: AbortSignal): Promise<RemoteResult<SaveRoleResult>>;
+    budget(
+      request: BudgetApplyRequest,
+      signal?: AbortSignal,
+    ): Promise<RemoteResult<BudgetApplyResult>>;
   };
 }
 
 /** Mountable contribution shared by Host registration and Client `$mount`. */
 export const pstackRolesRemote: TypertRemoteInfo = {
   package: REMOTE_PACKAGE,
-  descriptors: [statusMethod, catalogueMethod, saveMethod] as InvocationDescriptor[],
+  descriptors: [statusMethod, catalogueMethod, saveMethod, budgetMethod] as InvocationDescriptor[],
   methods: {
     [`${ROLES_SERVICE}/status`]: statusMethod,
     [`${ROLES_SERVICE}/catalogue`]: catalogueMethod,
     [`${ROLES_SERVICE}/save`]: saveMethod,
+    [`${ROLES_SERVICE}/budget`]: budgetMethod,
   } as TypertRemoteInfo["methods"],
 };
 
