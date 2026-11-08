@@ -68,9 +68,9 @@
 - 上游能力在普通更新中消失时，当前审核轮标为已移除；确认后从活动 lock 删除，历史只留在 Git 提交里。
 - 破坏性更新删除旧 lock，按新基线新建；旧的已移除项和 override 不迁移。
 
-`node port/scan.mjs --check-lock` 比较当前扫描结果和 lock。只有变化或新增的项需要重新审核。
+`vpx port/scan.mjs --check-lock` 比较当前扫描结果和 lock。只有变化或新增的项需要重新审核。
 
-`node port/scan.mjs` 扫描上游源树，把每项能力在 Markdown、脚本和配置中的出现位置写入 `.audit/scan/capability-scan.tsv`。`node port/scan.mjs --check port/audit.md` 校验审核记录里的引用行号仍然成立。上游变更后先重跑扫描，再重做审核。
+`vpx port/scan.mjs` 扫描上游源树，把每项能力在 Markdown、脚本和配置中的出现位置写入 `.audit/scan/capability-scan.tsv`。`vpx port/scan.mjs --check port/audit.md` 校验审核记录里的引用行号仍然成立。上游变更后先重跑扫描，再重做审核。
 
 ## 从 0 到 1
 

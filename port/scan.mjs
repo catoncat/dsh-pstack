@@ -155,7 +155,7 @@ function digestFor(key) {
 if (argv.includes("--check-lock")) {
   const lockPath = join(ROOT, "port/audit.lock.json");
   if (!existsSync(lockPath)) {
-    console.error("usage: node port/scan.mjs --check-lock（缺少 port/audit.lock.json）");
+    console.error("usage: vpx port/scan.mjs --check-lock（缺少 port/audit.lock.json）");
     process.exit(2);
   }
   const lock = JSON.parse(readFileSync(lockPath, "utf8"));
@@ -186,7 +186,7 @@ if (argv.includes("--check-lock")) {
 if (argv.includes("--check")) {
   const doc = argv[argv.indexOf("--check") + 1];
   if (!doc) {
-    console.error("usage: node port/scan.mjs --check port/audit.md");
+    console.error("usage: vpx port/scan.mjs --check port/audit.md");
     process.exit(2);
   }
   const stale = [];

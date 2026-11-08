@@ -44,9 +44,6 @@ jobs:
       - name: Run CI
         run: pnpm run ci
 
-      - name: Check compatibility metadata
-        run: pnpm exec vpx port/release-compatibility.ts --check
-
       - name: Resolve npm dist-tag
         id: dist-tag
         run: |

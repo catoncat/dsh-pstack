@@ -11,7 +11,7 @@
 - 工具清单取自运行时 `Tool.listTools`。官方插件状态取自当前 Web profile 的 `dsh.profile.bundles`。
 - `list_subagent_models` 由 `@deepseek-ai/dsh-tool-subagent` 的 `modelDiscovery` 注册。`modelDiscovery` 为 false 时工具根本不注册，不是隐藏或空列表。默认 false，Web 与 Desktop 标准预设设为 true，headless、SDK、ACP 不包含。
 - `subagent` 的 `agent_preset` 由 `allowedAgentPresets` 开启。预设是 Cordis 插件组合，子代理启动时按所选预设挂载，系统提示与工具随组合加载。
-- 扫描器：`node port/scan.mjs` 输出 `.audit/scan/capability-scan.tsv`，覆盖 136 个 Markdown 文件与 50 个脚本或配置文件。`node port/scan.mjs --check port/audit.md` 校验本文件引用的行号。
+- 扫描器：`vpx port/scan.mjs` 输出 `.audit/scan/capability-scan.tsv`，覆盖 136 个 Markdown 文件与 50 个脚本或配置文件。`vpx port/scan.mjs --check port/audit.md` 校验本文件引用的行号。
 
 ## 处置状态
 
