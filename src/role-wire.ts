@@ -209,8 +209,7 @@ export function parseRoleFileSnapshot(value: unknown): RoleFileSnapshot {
   };
 }
 
-/** Parse one role-save result returned by the Host. */
-export function parseSaveRoleResult(value: unknown): SaveRoleResult {
+function parseSnapshotResult(value: unknown): SaveRoleResult {
   const record = parseRecord(value, "result");
   if (record["ok"] === true)
     return { ok: true, snapshot: parseRoleFileSnapshot(record["snapshot"]) };
@@ -220,13 +219,12 @@ export function parseSaveRoleResult(value: unknown): SaveRoleResult {
   throw new WireTypeError("result", "a successful snapshot or a refusal reason");
 }
 
+/** Parse one role-save result returned by the Host. */
+export function parseSaveRoleResult(value: unknown): SaveRoleResult {
+  return parseSnapshotResult(value);
+}
+
 /** Parse one budget-apply result returned by the Host. */
 export function parseBudgetApplyResult(value: unknown): BudgetApplyResult {
-  const record = parseRecord(value, "result");
-  if (record["ok"] === true)
-    return { ok: true, snapshot: parseRoleFileSnapshot(record["snapshot"]) };
-  if (record["ok"] === false && typeof record["reason"] === "string") {
-    return { ok: false, reason: record["reason"] };
-  }
-  throw new WireTypeError("result", "a successful snapshot or a refusal reason");
+  return parseSnapshotResult(value);
 }
