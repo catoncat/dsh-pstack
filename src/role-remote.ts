@@ -12,7 +12,6 @@ import type {
   RemoteResult,
   TypertClientRemote,
   TypertCodec,
-  TypertRemoteContribution,
   TypertRemoteInfo,
   TypertRemoteMethod,
   TypertSchema,
@@ -177,6 +176,3 @@ export const pstackRolesHostContribution: TypertContribution = {
   model: { services: [], events: [], objects: [] },
   invocations: pstackRolesRemote.descriptors,
 };
-
-/** Same Remote contribution typed for the Client side. */
-export const pstackRolesContribution: TypertRemoteContribution = pstackRolesRemote;
