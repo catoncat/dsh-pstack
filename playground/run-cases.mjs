@@ -9,10 +9,10 @@
  * 用例断言目标行为。真实会话证据在 playground/.dsh/sessions 下，可用 zstdcat 复核。
  *
  * 用法（经 playground/cases-run.mjs 用 Vite runnerImport 运行，或 vp run cases）：
- *   node playground/cases-run.mjs --list          # 列出用例与就绪状态（不跑模型）
- *   node playground/cases-run.mjs --check         # 校验配置+部署+路由，不跑模型
- *   node playground/cases-run.mjs                 # 跑全部可跑用例
- *   node playground/cases-run.mjs --case CASE-ID
+ *   vpx playground/cases-run.mjs --list          # 列出用例与就绪状态（不跑模型）
+ *   vpx playground/cases-run.mjs --check         # 校验配置+部署+路由，不跑模型
+ *   vpx playground/cases-run.mjs                 # 跑全部可跑用例
+ *   vpx playground/cases-run.mjs --case CASE-ID
  *
  * 前置：playground 至少启动过一次（playground/.dsh/cordis.patch.yml 存在），
  *       并复制 config.example.json 为 config.json，填入 provider 的 apiKey 与模型。
@@ -40,6 +40,8 @@ const PROFILE_NAME = "pstack-headless";
 const PROFILE_DIR = join(DSH_HOME, "profiles", PROFILE_NAME);
 const PRESET_PROFILE_NAME = "pstack-presets";
 const PRESET_PROFILE_DIR = join(DSH_HOME, "profiles", PRESET_PROFILE_NAME);
+const ROOT_PROFILE_NAME = "pstack-root";
+const ROOT_PROFILE_DIR = join(DSH_HOME, "profiles", ROOT_PROFILE_NAME);
 const REPORT_DIR = join(DSH_HOME, "cases-report");
 const CONFIG_FILE = join(HERE, "config.json");
 const DSH_BIN = process.env.DSH_BIN || "dsh";
@@ -336,6 +338,18 @@ function ensurePresetProfile() {
   ensureProfile(PRESET_PROFILE_NAME, PRESET_PROFILE_DIR, patch);
 }
 
+function ensureRootProfile() {
+  const patch = [
+    "- insert:",
+    "    - id: agent-preset-registry",
+    "      name: '@deepseek-ai/dsh-agent-preset-registry'",
+    "      config:",
+    "        default: poteto-mode",
+    "",
+  ].join("\n");
+  ensureProfile(ROOT_PROFILE_NAME, ROOT_PROFILE_DIR, patch);
+}
+
 // ---------------------------------------------------------------------------
 // 事件流解析
 // ---------------------------------------------------------------------------
@@ -459,6 +473,7 @@ function main() {
 
   ensureHeadlessProfile();
   ensurePresetProfile();
+  ensureRootProfile();
 
   const results = [];
   for (const c of selected) {
@@ -474,7 +489,11 @@ function main() {
       process.stdout.write(`- ${c.id} 跑… `);
       const run = runHeadless(
         built.prompt,
-        built.profile === "presets" ? PRESET_PROFILE_NAME : PROFILE_NAME,
+        built.profile === "presets"
+          ? PRESET_PROFILE_NAME
+          : built.profile === "root"
+            ? ROOT_PROFILE_NAME
+            : PROFILE_NAME,
       );
       const events = parseEvents(run.stdout);
       const calls = collectToolCalls(events);
