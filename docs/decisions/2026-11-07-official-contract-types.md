@@ -21,6 +21,7 @@ Review: 2026-11-08
 - 页面 API 直接消费官方 `BundleInfo` 与 `ChangeResult`；删除 `toBundleChange`、`CHANGE_APPLICATIONS` 白名单、未知 application 的错误重建，以及 `RemoteResult` 解包时对 `value` 的冗余检查。
 - 本仓自有结构保留在本地：角色文件、委派计划与结果、模型目录、工具 schema、UI 草稿和页面窄接口。`SystemPromptHost` 等官方类型图未提供的服务切片仍保留，不伪造官方来源。
 - 官方类型包只进入 `devDependencies` 与 workspace 的 `catalogs.types`，不进入 `dependencies`、`peerDependencies`，也不加入 `dsh.client.inject`。Host 与 Client 构建继续把 `@deepseek-ai/*` 保持为外部依赖。
+- 运行时官方依赖的放置（哪些平台服务包进 `peerDependencies`、哪些随包运行时工具库进 `dependencies`）见 [2026-11-08-dsh-dependency-declarations.md](./2026-11-08-dsh-dependency-declarations.md)；本记录只管类型来源。
 - 规则写入 `docs/architecture.md`，并用 `tests/harness-types.test.ts` 固定依赖分类、Remote 来源和构建外部化。依赖安装协议与 `catalogMode` 另见 [2026-11-07-pnpm-catalog-policy.md](./2026-11-07-pnpm-catalog-policy.md)。
 
 ## 替代方案

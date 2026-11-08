@@ -8,7 +8,7 @@ Review: 2026-11-08
 
 ## 背景
 
-本仓使用 pnpm workspace，并在 `pnpm-workspace.yaml` 中按用途定义了命名 `catalogs`（`agentic`、`browser`、`cli`、`types`、`ui`、`testing`）。但安装流程没有强制约束：此前用 `vp add` 新增官方类型包时，`package.json` 一度写成裸 `catalog:`，`pnpm-workspace.yaml` 一度出现顶层 `catalog:` 块；虽然后续手工修正为 `catalog:types`，这类写入仍会再次发生。
+本仓使用 pnpm workspace，并在 `pnpm-workspace.yaml` 中按用途定义了命名 `catalogs`（`agentic`、`browser`、`cli`、`types`、`runtime`、`ui`、`testing`、`playground`）。但安装流程没有强制约束：此前用 `vp add` 新增官方类型包时，`package.json` 一度写成裸 `catalog:`，`pnpm-workspace.yaml` 一度出现顶层 `catalog:` 块；虽然后续手工修正为 `catalog:types`，这类写入仍会再次发生。
 
 同时 `catalogMode` 原为 `prefer`：pnpm 在 catalog 版本与请求版本不兼容时会回退为直接版本号并只给出警告。这样依赖声明可以绕过 catalog，分类和版本唯一性都失去保证。用户明确要求「所有依赖都需要基于 pnpm catalog 并分类后再安装，不要装在 `catalog:` 中」，目标是让安装命令本身产生正确结果，而不是依赖事后人工清理。
 
@@ -20,9 +20,9 @@ Review: 2026-11-08
 
 - `pnpm-workspace.yaml` 使用 `catalogMode: strict`。版本与 catalog 不兼容时安装失败，不再静默回退为直接版本号。
 - 只使用复数 `catalogs` 下的命名分类。禁止顶层单数 `catalog:` 块、裸 `catalog:` 协议（等价于默认 catalog）、以及任何直接版本号。
-- 安装命令固定为 `vp add --save-dev --save-catalog-name <分类> <pkg>`（或对应的 `--save-prod` / `--save-peer` 变体）。新增依赖前先确定分类；`types` 只放官方类型与类型工具，`ui` 放 React 与视图库，`testing` 放测试运行时，`browser`、`cli`、`agentic` 各自对应工具用途。
+- 安装命令固定为 `vp add --save-dev --save-catalog-name <分类> <pkg>`（或对应的 `--save-prod` / `--save-peer` 变体）。新增依赖前先确定分类；`types` 只放官方类型与类型工具，`runtime` 放 Host 或 Client 运行时直接导入的官方运行时包（如 `cordis`、`cordis-plugin-loader`、`dsh-typert-protocol`、`dsh-sandbox-policy`、`schemastery`），`ui` 放 React 与视图库，`testing` 放测试运行时，`playground` 放 playground 专用工具，`browser`、`cli`、`agentic` 各自对应工具用途。一个包从类型用途转为运行时用途时，必须从其原分类迁到 `runtime`，并同步修改 `package.json` 中的 `catalog:` 前缀。
 - 本记录是依赖安装、分类和测试文件语言规则的唯一来源。由安装命令、`catalogMode: strict` 和约定保证，不另写专门的 catalog 策略测试用例。新增测试用例优先使用 TypeScript 文件，非必要不写 JavaScript 测试文件。生成树保持排除在 `packages` 之外。
-- 与官方类型决策记录分工：该记录决定官方类型包的来源与依赖分类（`devDependencies` / `catalogs.types`），本记录决定所有依赖的安装协议与 catalog 模式。
+- 与官方类型决策记录分工：该记录决定官方类型包的来源与依赖分类（类型包为 `devDependencies` / `catalogs.types`；运行时包按本记录归入 `catalogs.runtime`），本记录决定所有依赖的安装协议与 catalog 模式。
 
 ## 替代方案
 

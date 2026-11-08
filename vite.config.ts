@@ -19,7 +19,7 @@ export default defineConfig({
       exports: {
         customExports: {
           "./locale/*.json": "./locale/*.json",
-          "./client": "./dist/client.mjs",
+          "./client": "./dist/client.js",
         },
       },
       copy: [
@@ -37,13 +37,13 @@ export default defineConfig({
       platform: "browser",
       dts: false,
       clean: false,
-      sourcemap: true,
+      sourcemap: false,
       exports: false,
       deps: {
         neverBundle: ["react", "react/jsx-runtime", "react-dom", "react-dom/client", dshProvided],
       },
       outputOptions: {
-        entryFileNames: "client.mjs",
+        entryFileNames: "client.js",
         banner: 'window.__ModuleLoader__.load({ id: "dsh-pstack", factory: (require) => {',
         footer: "return module.exports; } });",
         intro: "var module = { exports: {} }; var exports = module.exports;",
@@ -63,11 +63,11 @@ export default defineConfig({
         command: "tsc --noEmit -p tsconfig.json",
       },
       generate: {
-        command: "node port/generate.mjs",
+        command: "vpx port/generate.mjs",
         cache: false,
       },
       "generate:check": {
-        command: "node port/generate.mjs --check",
+        command: "vpx port/generate.mjs --check",
         cache: false,
       },
       "compatibility:check": {
@@ -75,31 +75,31 @@ export default defineConfig({
         cache: false,
       },
       playground: {
-        command: "node playground/start.mjs",
+        command: "vpx playground/start.mjs",
         cache: false,
       },
       "playground:reset": {
-        command: "node playground/start.mjs --reset",
+        command: "vpx playground/start.mjs --reset",
         cache: false,
       },
       "playground:reinstall": {
-        command: "node playground/start.mjs --reinstall",
+        command: "vpx playground/start.mjs --reinstall",
         cache: false,
       },
       "playground:browser": {
-        command: "node playground/browser.mjs",
+        command: "vpx playground/browser.mjs",
         cache: false,
       },
       cases: {
-        command: "node playground/cases-run.mjs",
+        command: "vpx playground/cases-run.mjs",
         cache: false,
       },
       "cases:list": {
-        command: "node playground/cases-run.mjs --list",
+        command: "vpx playground/cases-run.mjs --list",
         cache: false,
       },
       "cases:check": {
-        command: "node playground/cases-run.mjs --check",
+        command: "vpx playground/cases-run.mjs --check",
         cache: false,
       },
     },

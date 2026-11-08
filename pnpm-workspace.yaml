@@ -21,12 +21,10 @@ catalogs:
   cli:
     bumpp: ^12.3.0
     typescript: ^7.0.2
-    vite: npm:@voidzero-dev/vite-plus-core@1.4.0
-    vite-plus: 1.4.0
+    vite: npm:@voidzero-dev/vite-plus-core@1.5.0
+    vite-plus: 1.5.0
   types:
     "@types/node": ^24.1.0
-    "@deepseek-ai/cordis": 4.1.0
-    "@deepseek-ai/cordis-plugin-loader": 1.1.0
     "@deepseek-ai/dsh-agent": 0.2.2-rc.1
     "@deepseek-ai/dsh-agent-preset-registry": 0.2.2-rc.1
     "@deepseek-ai/dsh-api-gateway": 0.2.2-rc.1
@@ -38,23 +36,27 @@ catalogs:
     "@deepseek-ai/dsh-client-ui-slots": 0.2.2-rc.1
     "@deepseek-ai/dsh-llm": 0.2.2-rc.1
     "@deepseek-ai/dsh-plugin-manager": 0.2.2-rc.1
-    "@deepseek-ai/dsh-sandbox-policy": 0.2.2-rc.1
     "@deepseek-ai/dsh-settings": 0.2.2-rc.1
     "@deepseek-ai/dsh-skill": 0.2.2-rc.1
     "@deepseek-ai/dsh-subagent": 0.2.2-rc.1
     "@deepseek-ai/dsh-tools": 0.2.2-rc.1
-    "@deepseek-ai/dsh-typert-protocol": 0.2.2-rc.1
-    "@deepseek-ai/dsh-working-directory": 0.2.2-rc.1
-    "@deepseek-ai/schemastery": 3.19.0
     "@deepseek-ai/dsh-typert-registry": 0.2.2-rc.1
+    "@deepseek-ai/dsh-working-directory": 0.2.2-rc.1
+  runtime:
+    "@deepseek-ai/cordis": 4.1.0
+    "@deepseek-ai/cordis-plugin-loader": 1.1.0
+    "@deepseek-ai/dsh-sandbox-policy": 0.2.2-rc.1
+    "@deepseek-ai/dsh-typert-protocol": 0.2.2-rc.1
+    "@deepseek-ai/schemastery": 3.19.0
   ui:
     react: ^18.3.1
     react-dom: ^18.3.1
     "@types/react": ~18.3.1
     "@types/react-dom": ~18.3.0
   testing:
-    js-yaml: ^5.5.0
     happy-dom: ^21.0.4
+  playground:
+    js-yaml: ^5.5.0
 
 overrides:
   vite@*: "catalog:cli"

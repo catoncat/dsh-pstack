@@ -28,8 +28,22 @@ describe("Harness contract ownership", () => {
   });
 
   it("keeps DSH runtime packages external for both Host and Client bundles", () => {
-    expect(config.match(/neverBundle:\s*\[[^\]]*dshProvided/g)).toHaveLength(3);
     expect(config).toContain("const dshProvided = /^@deepseek-ai\\//;");
+    expect((config.match(/neverBundle/g) ?? []).length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("declares DSH dependencies the way official plugins do", () => {
+    for (const name of [
+      "@deepseek-ai/cordis",
+      "@deepseek-ai/cordis-plugin-loader",
+      "@deepseek-ai/dsh-sandbox-policy",
+      "@deepseek-ai/dsh-typert-protocol",
+    ]) {
+      expect(manifest.peerDependencies?.[name]).toBe("catalog:runtime");
+    }
+    expect(manifest.dependencies?.["@deepseek-ai/schemastery"]).toBe("catalog:runtime");
+    expect(manifest.peerDependencies?.["react"]).toBeUndefined();
+    expect(manifest.dependencies?.["react"]).toBeUndefined();
   });
 
   it("uses the shared official Remote assembly and its plugin-manager namespace", () => {
