@@ -21,8 +21,8 @@ Review: 2026-11-07
 - `pnpm-workspace.yaml` 使用 `catalogMode: strict`。版本与 catalog 不兼容时安装失败，不再静默回退为直接版本号。
 - 只使用复数 `catalogs` 下的命名分类。禁止顶层单数 `catalog:` 块、裸 `catalog:` 协议（等价于默认 catalog）、以及任何直接版本号。
 - 安装命令固定为 `vp add --save-dev --save-catalog-name <分类> <pkg>`（或对应的 `--save-prod` / `--save-peer` 变体）。新增依赖前先确定分类；`types` 只放官方类型与类型工具，`ui` 放 React 与视图库，`testing` 放测试运行时，`browser`、`cli`、`agentic` 各自对应工具用途。
-- 规则写入根 `AGENTS.md` 的 `## Dependencies` 与 `## Tests`，由安装命令、`catalogMode: strict` 和约定保证，不另写专门的 catalog 策略测试用例。新增测试用例优先使用 TypeScript 文件，非必要不写 JavaScript 测试文件。生成树保持排除在 `packages` 之外。
-- 与 [2026-11-07-official-contract-types.md](./2026-11-07-official-contract-types.md) 分工：该记录决定官方类型包的来源与依赖分类（`devDependencies` / `catalogs.types`），本记录决定所有依赖的安装协议与 catalog 模式。
+- 本记录是依赖安装、分类和测试文件语言规则的唯一来源。由安装命令、`catalogMode: strict` 和约定保证，不另写专门的 catalog 策略测试用例。新增测试用例优先使用 TypeScript 文件，非必要不写 JavaScript 测试文件。生成树保持排除在 `packages` 之外。
+- 与官方类型决策记录分工：该记录决定官方类型包的来源与依赖分类（`devDependencies` / `catalogs.types`），本记录决定所有依赖的安装协议与 catalog 模式。
 
 ## 替代方案
 
@@ -32,7 +32,7 @@ Review: 2026-11-07
 
 **`catalogMode: manual`。** 该模式完全不自动把依赖写入 catalog，`vp add` 会默认写成直接版本号，需要每次显式传 `--save-catalog-name`。它使规则完全依赖人工记忆，弱于 `strict` 的强制约束。该方案被否决。
 
-**把生成树 `pstack/` 下的上游脚本 `package.json` 也纳入 catalog。** 这些文件由生成器从固定上游整体复制，使用 Bun 与 `bun.lock`，不是 pnpm workspace importer；改写会破坏「上游脚本保持原样」的移植规则，并在下次生成时被覆盖。该方案被否决，改为在 `AGENTS.md` 中明确排除。
+**把生成树 `pstack/` 下的上游脚本 `package.json` 也纳入 catalog。** 这些文件由生成器从固定上游整体复制，使用 Bun 与 `bun.lock`，不是 pnpm workspace importer；改写会破坏「上游脚本保持原样」的移植规则，并在下次生成时被覆盖。该方案被否决，改为在本记录中明确排除。
 
 ## 后果
 
