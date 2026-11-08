@@ -229,4 +229,4 @@ vendored 技能的来源与哈希记录在 [`skills/skills-lock.json`](./skills/
 
 ## 📄 License
 
-本仓原创代码与文档采用 [MIT License](./LICENSE) © [leiwang](https://github.com/l246804)。上游项目及 vendored 技能保留各自的许可证与声明。
+本仓原创代码与文档采用 [MIT License](./LICENSE) © [leiwang](https://github.com/l246804)。上游项目及 vendored 技能按各自的许可证使用，详见[鸣谢](#-鸣谢)。

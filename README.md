@@ -229,4 +229,4 @@ This project is a community port, not an official Cursor or DeepSeek release.
 
 ## 📄 License
 
-Original dsh-pstack code and documentation use the [MIT license](./LICENSE) © [leiwang](https://github.com/l246804). Bundled upstream projects and vendored skills retain their licenses and notices.
+Original dsh-pstack code and documentation use the [MIT license](./LICENSE) © [leiwang](https://github.com/l246804). Bundled upstream projects and vendored skills are used under their upstream licenses; see [Credits](#-credits).

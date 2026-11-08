@@ -1,9 +1,9 @@
 # 决策：按官方插件惯例声明 DSH 依赖与客户端产物
 
-Status: proposed
+Status: accepted
 Date: 2026-11-08
 Scope: package.json, pnpm-workspace.yaml, pnpm-lock.yaml, vite.config.ts, docs/architecture.md, tests/harness-types.test.ts, docs/decisions/**
-Implemented-by: -
+Implemented-by: commit:670c9028e01cc00f1adf5cdfd516dce18b6283cc
 Review: 2026-11-08
 
 ## 背景
@@ -40,4 +40,4 @@ Review: 2026-11-08
 - `@deepseek-ai/schemastery` 从 dev 移到 `dependencies`，`pnpm-lock.yaml` 的 importer 记录随之变化。
 - 客户端入口由 `dist/client.mjs` 改为 `dist/client.js`，不再产出 `dist/client.mjs.map`；引用该路径的文档与导出同步更新。
 - 依赖分类由测试固定，后续新增运行时导入时必须先判定平台服务还是随包工具库，再选择 peer 或 dependency。
-- 本记录为 `proposed`，落地到默认分支后由 Land 更新为 `accepted` 并写入实现锚点。
+- 本记录已由 `commit:670c9028e01cc00f1adf5cdfd516dce18b6283cc` 落地到默认分支，`Status` 更新为 `accepted` 并写入该实现锚点。

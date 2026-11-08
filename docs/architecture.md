@@ -4,12 +4,12 @@
 
 ## 系统边界
 
-本仓提供一个 the agent harness Cordis bundle：
+本仓提供一个 DSH Cordis bundle：
 
 - Host 端注册技能、模型目录、角色目录和子代理工具，并提供角色配置 Remote 服务与 Agent preset。
 - Client 端在插件详情页注入配置入口，通过 Remote 服务管理角色配置，并通过可选的插件管理接口管理关联插件。
 - 上游 pstack 内容经生成器进入 `pstack/`，构建时复制到 `dist/pstack/`；vendored 和 authored 技能分别复制到 `dist/skills/` 下。
-- 角色配置保存在 `$DSH_HOME/pstack-models.mdc`。该文件由本插件读取和编辑，不是 the agent harness 自动加载的规则文件。
+- 角色配置保存在 `$DSH_HOME/pstack-models.mdc`。该文件由本插件读取和编辑，不是 DSH 自动加载的规则文件。
 
 ## 模块与入口
 
@@ -30,13 +30,13 @@
 | 移植与生成 | `port/generate.mjs`、`port/scan.mjs`、`port/dsh.md`、`port/dsh.zh.md`、`port/audit.md`、`port/audit.lock.json` | 从固定上游生成 `pstack/`；扫描能力、校验审核引用和当前基线处置。 |
 | 发布元数据 | `port/release-compatibility.ts`、`bump.config.ts` | 按显式兼容键同步双语 README 的版本表；每个 `x.y` 保留最新 `z`，新兼容键新增行，并把双语 README 加入发布提交。 |
 | 构建与打包 | `vite.config.ts`、`package.json` | 分别构建 Host 与浏览器 Client；导出 Host 模块，复制生成树和技能资源。 |
-| 自动化验证 | `tests/`、`playground/start.mjs`、`playground/cases-run.mjs`、`playground/run-cases.mjs`、`playground/browser.mjs` | 运行单元和 DOM 交互测试；在真实 the agent harness playground 中验证插件和模型驱动用例，并用浏览器脚本做不涉及模型选择的交互。 |
+| 自动化验证 | `tests/`、`playground/start.mjs`、`playground/cases-run.mjs`、`playground/run-cases.mjs`、`playground/browser.mjs` | 运行单元和 DOM 交互测试；在真实 DSH playground 中验证插件和模型驱动用例，并用浏览器脚本做不涉及模型选择的交互。 |
 
 ## 依赖方向
 
 ### 运行时装配
 
-`cordis.patch.yml` 选择公开模块并注入 the agent harness 服务。各模块通过 Cordis `inject` 获取 Host 能力；工具实现依赖 the agent harness 的工具、技能、LLM 和子代理接口，不建立独立的运行时。
+`cordis.patch.yml` 选择公开模块并注入 DSH 服务。各模块通过 Cordis `inject` 获取 Host 能力；工具实现依赖 DSH 的工具、技能、LLM 和子代理接口，不建立独立的运行时。
 
 ### 官方类型与本地投影
 
@@ -63,7 +63,7 @@ Client 页面
 ```text
 src/subagent.ts
   → src/role-config.ts + src/role-manifest.ts
-  → the agent harness LLM 预检
+  → DSH LLM 预检
   → ctx.subagents.startActivation
 ```
 
@@ -79,12 +79,12 @@ upstream/cursor-plugins/pstack + port/dsh.md
   → dist/pstack/
 ```
 
-`skills/.agents/skills/` 与 `skills/authored/` 由构建配置分别复制到 `dist/skills/vendored/` 和 `dist/skills/authored/`。`src/paths.ts` 从发布后的 `dist/` 定位这些资源。
+`skills/.agents/skills/` 与 `skills/authored/` 由构建配置分别复制到 `dist/skills/vendored/` 和 `dist/skills/authored/`；vendored 与 authored 技能目录由 `cordis.patch.yml` 的 `bundledSkillDir` 值在 `dist/skills/...` 下定位。`src/paths.ts` 在发布后的 `dist/pstack/` 下定位 pstack 资源。
 
 ## 扩展点
 
 - **技能内容**：生成树只由生成器维护。手工适配文案进入 `port/dsh.md`，本仓技能进入 `skills/authored/`，外部随包技能保留在 vendored 工作区。
-- **Host 工具或服务**：在 `src/` 实现 Cordis 入口，由 `cordis.patch.yml` 选择并配置；声明实际需要的 the agent harness 服务依赖。
+- **Host 工具或服务**：在 `src/` 实现 Cordis 入口，由 `cordis.patch.yml` 选择并配置；声明实际需要的 DSH 服务依赖。
 - **角色能力**：`src/role-manifest.ts` 同时驱动角色目录、文件解析、设置视图和委派选择。修改角色时同步其上游来源和对应测试。
 - **Agent preset**：在 `cordis.patch.yml` 组合插件行，由 `src/preset.ts` 注册；展示文案集中在 `src/client/locales/` 或 `src/preset-copy.ts`。
 - **Client 配置能力**：通过 `plugins.detail.actions` 进入现有对话框；Host 数据通过显式 Remote 描述符和页面 API 适配层传递。

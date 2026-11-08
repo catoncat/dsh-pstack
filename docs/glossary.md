@@ -31,7 +31,7 @@ Role 的路由基数和展开方式由两个独立属性描述：
 
 ## Agent preset（Agent 预设）
 
-the agent harness 对一类 Agent 的插件组合，包含人格、工具、沙箱及其他会话能力。根 preset 面向用户会话，子代理 preset 面向委派。`pstack_subagent` 的 `agent` 选择 preset 类别，`role` 选择模型路由，两者是正交配置。
+DSH 对一类 Agent 的插件组合，包含人格、工具、沙箱及其他会话能力。根 preset 面向用户会话，子代理 preset 面向委派。`pstack_subagent` 的 `agent` 选择 preset 类别，`role` 选择模型路由，两者是正交配置。
 
 ## Generated tree（生成树）
 

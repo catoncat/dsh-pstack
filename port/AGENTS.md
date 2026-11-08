@@ -24,7 +24,7 @@
 3. 本插件需要开发的能力。说明要提供的行为、限制和验收方式，等待审核后实现。
 4. 前三项都不能满足时，记录为舍弃或不支持。
 
-同一种能力可以复用审核结论，但必须列出它在各技能中的使用位置。`read`、`write` 等通用工具也要检查，不能只扫描上游生成器已知的关键词。工具类能力要对照工具 schema 的字段、状态与返回值，不能只确认工具存在。`TodoWrite` 的 `skip` 与 `merge` 就属于这种差异。标准模式只列 DSH 自带工具。准备作为替代的用户技能或外部技能写进推荐、插件要求或冲突，不写进标准模式。`dsh.md` 只记录适配映射和依赖，不是运行时清单。声明外部技能不会让技能可用，技能必须由插件随包提供，或由用户实际安装到技能目录。外部技能以 vendored 形式随包时，保留上游 LICENSE 与来源版本，放在插件包内 `skills/`，通过 `dsh-skill-filesystem` 的 `bundledSkillDir` 暴露。vendored 技能的依赖处理以上游说明为准；上游没有写依赖缺失处理时，插件不额外补偿，只在 `dsh.md` 与 README 记录前提。
+同一种能力可以复用审核结论，但必须列出它在各技能中的使用位置。`read`、`write` 等通用工具也要检查，不能只扫描上游生成器已知的关键词。工具类能力要对照工具 schema 的字段、状态与返回值，不能只确认工具存在。`TodoWrite` 的 `skip` 与 `merge` 就属于这种差异。标准模式只列 DSH 自带工具。准备作为替代的用户技能或外部技能写进推荐、插件要求或冲突，不写进标准模式。`dsh.md` 只记录适配映射和依赖，不是运行时清单。声明外部技能不会让技能可用，技能必须由插件随包提供，或由用户实际安装到技能目录。外部技能以 vendored 形式随包时，只需确认上游许可证允许再分发（MIT 及类似许可证），并在根 README 与 `skills/skills-lock.json` 记录来源和版本，再通过 `dsh-skill-filesystem` 的 `bundledSkillDir` 暴露。vendored 技能的依赖处理以上游说明为准；上游没有写依赖缺失处理时，插件不额外补偿，只在 `dsh.md` 与 README 记录前提。
 
 扫描词表必须覆盖 `dsh.md` 的每个平台能力映射，包括只出现在 README、指南或技能正文里的能力；手工添加的适配行没有对应扫描词，就是审核缺口。
 
@@ -105,7 +105,7 @@ DSH 或 pstack 任一上游发生破坏性变更时，按新基线重新实现�
 
 实现提交使用 Conventional Commits 的 `type!:` 形式。破坏性适配同时更新 `package.json` 的 DSH 范围和 lock 的 `compatibilityKey`，并在双语 README 注册新的兼容键、增加对应行；保留旧兼容行。
 
-`vp run release` 在版本更新后、发布提交前由 `bump.config.ts` 的 `execute` 钩子执行 `vpx port/release-compatibility.ts`。脚本读取当前版本、DSH 范围、兼容键与实际 pstack 版本：键匹配时更新该行，每个 `x.y` 只保留最新 `z`；键不存在时追加行；同一键对应不同 DSH 范围时停止。发布提交包含 `package.json` 和双语 README。`vp run compatibility:check` 以只读方式检查同步结果。
+`vp run release` 在版本更新后、发布提交前由 `bump.config.ts` 的 `execute` 钩子在同一进程内调用 `port/release-compatibility.ts` 导出的 `syncCompatibility`。该函数读取当前版本、DSH 范围、兼容键与实际 pstack 版本：键匹配时更新该行，每个 `x.y` 只保留最新 `z`；键不存在时追加行；同一键对应不同 DSH 范围时停止。发布提交包含 `package.json` 和双语 README。`vp run compatibility:check` 以只读方式检查同步结果。
 
 DSH 升级后从标准模式开始重新检查。标准能力已经满足时，删除本插件的补偿实现。
 

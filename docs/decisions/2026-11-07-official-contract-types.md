@@ -1,4 +1,4 @@
-# 决策：直接使用官方 the agent harness 契约类型
+# 决策：直接使用官方 DSH 契约类型
 
 Status: accepted
 Date: 2026-11-07
@@ -8,7 +8,7 @@ Review: 2026-11-08
 
 ## 背景
 
-本仓多个模块曾手写 the agent harness 的 wire 类型和服务类型：Client 自写 `Result<T>` 与插件管理 namespace，推荐插件页自写 bundle 视图与变更结果，角色服务自写 Typert 注册接口，子代理、技能加载、模型目录和 preset 各自维护宿主服务的局部切片。这些结构与官方 `@deepseek-ai/*` 声明重复，容易与运行时契约漂移：测试曾使用官方并不存在的 `availability: "available"`，并把缺少必填字段的对象当作 `ChangeResult`。
+本仓多个模块曾手写 DSH 的 wire 类型和服务类型：Client 自写 `Result<T>` 与插件管理 namespace，推荐插件页自写 bundle 视图与变更结果，角色服务自写 Typert 注册接口，子代理、技能加载、模型目录和 preset 各自维护宿主服务的局部切片。这些结构与官方 `@deepseek-ai/*` 声明重复，容易与运行时契约漂移：测试曾使用官方并不存在的 `availability: "available"`，并把缺少必填字段的对象当作 `ChangeResult`。
 
 与此同时，为兼容这些手写形状，代码加入了对 application 枚举的白名单检查、错误对象重建、以及宽度不定的 `unknown` 返回值。静态类型本可以保证这些字段，防御分支反而扩大了维护面。目标不是修某一个包，而是为全仓建立统一的类型来源规则。约束是：官方类型包只能作为开发期类型依赖，不能变成运行时依赖；`dsh.client.inject` 只承载需要运行时模块装载的 assembly；`dist` 不打包官方运行时实现。
 
