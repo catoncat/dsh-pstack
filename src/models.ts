@@ -8,7 +8,16 @@
 
 import type { Context } from "@deepseek-ai/cordis";
 import type { LlmModelInfo, LlmResolvedModelInfo, LlmRuntime } from "@deepseek-ai/dsh-llm";
-import type { JsonSchemaNode, ToolDefinition, ToolRunContext } from "@deepseek-ai/dsh-tools";
+import type { ToolDefinition, ToolRunContext } from "@deepseek-ai/dsh-tools";
+
+import {
+  CATALOGUE_OUTPUT_SCHEMA,
+  type CatalogueResult,
+  type ModelEntry,
+  type ProviderEntry,
+} from "./catalogue.ts";
+
+export type { CatalogueResult, ModelEntry, ProviderEntry } from "./catalogue.ts";
 
 export const name = "pstack-models";
 
@@ -18,31 +27,6 @@ export const TOOL_NAME = "pstack_models";
 
 const MAX_PROVIDERS = 64;
 const MAX_MODELS = 200;
-
-export interface ModelEntry {
-  readonly route: string;
-  readonly id: string;
-  readonly name: string;
-  readonly description?: string;
-  readonly contextWindow?: number;
-  readonly maxTokens?: number;
-  readonly efforts: readonly string[];
-  readonly defaultEffort?: string;
-  readonly error?: string;
-}
-
-export interface ProviderEntry {
-  readonly provider: string;
-  readonly name: string;
-  readonly models: readonly ModelEntry[];
-  readonly error?: string;
-}
-
-export interface CatalogueResult {
-  readonly providers: readonly ProviderEntry[];
-  readonly truncated: boolean;
-  readonly providerFilter?: string;
-}
 
 /** Collect the live catalogue with bounded provider/model counts. */
 export async function collectCatalogue(
@@ -62,10 +46,12 @@ export async function collectCatalogue(
   let truncated = providers.length > selected.length;
 
   for (const provider of selected) {
+    signal.throwIfAborted();
     let models: readonly LlmModelInfo[];
     try {
       models = await llm.listModels(provider.id);
     } catch (error) {
+      if (signal.aborted) throw error;
       output.push({
         provider: provider.id,
         name: provider.name,
@@ -86,6 +72,7 @@ export async function collectCatalogue(
         );
         entries.push(entryFor(provider.id, info));
       } catch (error) {
+        if (signal.aborted) throw error;
         entries.push({
           route: `${provider.id}/${model.id}`,
           id: model.id,
@@ -155,48 +142,6 @@ function entryFor(provider: string, info: LlmResolvedModelInfo): ModelEntry {
   };
 }
 
-const OUTPUT_SCHEMA: JsonSchemaNode = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    providers: {
-      type: "array",
-      items: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          provider: { type: "string" },
-          name: { type: "string" },
-          error: { type: "string" },
-          models: {
-            type: "array",
-            items: {
-              type: "object",
-              additionalProperties: false,
-              properties: {
-                route: { type: "string" },
-                id: { type: "string" },
-                name: { type: "string" },
-                description: { type: "string" },
-                contextWindow: { type: "integer" },
-                maxTokens: { type: "integer" },
-                efforts: { type: "array", items: { type: "string" } },
-                defaultEffort: { type: "string" },
-                error: { type: "string" },
-              },
-              required: ["route", "id", "name", "efforts"],
-            },
-          },
-        },
-        required: ["provider", "name", "models"],
-      },
-    },
-    truncated: { type: "boolean" },
-    providerFilter: { type: "string" },
-  },
-  required: ["providers", "truncated"],
-};
-
 const TOOL_DESCRIPTION = [
   "List the exact model routes this deployment serves, with each route's advertised reasoning-effort tokens.",
   "",
@@ -223,7 +168,7 @@ export function createPstackModelsTool(llm: LlmRuntime): ToolDefinition {
       },
     },
     output: {
-      schema: OUTPUT_SCHEMA,
+      schema: CATALOGUE_OUTPUT_SCHEMA,
       render: (_args, value) => [
         { type: "text", text: renderCatalogue(value as unknown as CatalogueResult) },
       ],

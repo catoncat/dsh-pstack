@@ -71,8 +71,3 @@ export function findRole(raw: string): RoleSpec | undefined {
 export function isRoleKey(raw: string): raw is RoleKey {
   return findRole(raw) !== undefined;
 }
-
-/** List-valued roles, including automatic panels. */
-export function listRoles(): readonly RoleKey[] {
-  return ROLE_MANIFEST.filter((role) => role.shape === "list").map((role) => role.key);
-}

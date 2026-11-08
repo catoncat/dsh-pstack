@@ -1,6 +1,5 @@
 /** Wire shapes shared by the role settings Host service and Client page. */
 
-import type { CatalogueResult } from "./models.ts";
 import {
   INHERIT_ALIASES,
   isRoleKey,
@@ -8,7 +7,12 @@ import {
   type InheritAlias,
   type RoleShape,
 } from "./role-manifest.ts";
+import { validateRouteParts } from "./route.ts";
+import { WireTypeError } from "./wire-error.ts";
 
+export type { CatalogueResult } from "./catalogue.ts";
+export { parseCatalogueResult } from "./catalogue.ts";
+export { WireTypeError } from "./wire-error.ts";
 export type { InheritAlias } from "./role-manifest.ts";
 
 export type RouteView =
@@ -53,14 +57,6 @@ export type SaveRoleResult =
   | { readonly ok: true; readonly snapshot: RoleFileSnapshot }
   | { readonly ok: false; readonly reason: string };
 
-/** A wire value failed validation at the named field path. */
-export class WireTypeError extends TypeError {
-  constructor(path: string, expected: string) {
-    super(`${path}: expected ${expected}`);
-    this.name = "WireTypeError";
-  }
-}
-
 function parseRecord(value: unknown, path: string): Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw new WireTypeError(path, "an object");
@@ -78,18 +74,6 @@ function optionalString(
     throw new WireTypeError(`${path}.${key}`, "a string when present");
   }
   return value as string | undefined;
-}
-
-function optionalNumber(
-  record: Record<string, unknown>,
-  key: string,
-  path: string,
-): number | undefined {
-  const value = record[key];
-  if (value !== undefined && typeof value !== "number") {
-    throw new WireTypeError(`${path}.${key}`, "a number when present");
-  }
-  return value as number | undefined;
 }
 
 function parseRouteView(value: unknown, path: string): RouteView {
@@ -114,11 +98,16 @@ function parseRouteView(value: unknown, path: string): RouteView {
   if (effort !== undefined && (typeof effort !== "string" || effort.trim() === "")) {
     throw new WireTypeError(`${path}.effort`, "a non-empty string when present");
   }
+  const providerValue = provider.trim();
+  const modelValue = model.trim();
+  const effortValue = typeof effort === "string" ? effort.trim() : undefined;
+  const issue = validateRouteParts(providerValue, modelValue, effortValue);
+  if (issue !== undefined) throw new WireTypeError(path, issue);
   return {
     kind: "route",
-    provider,
-    model,
-    ...(typeof effort === "string" ? { effort } : {}),
+    provider: providerValue,
+    model: modelValue,
+    ...(effortValue === undefined ? {} : { effort: effortValue }),
   };
 }
 
@@ -230,67 +219,4 @@ export function parseSaveRoleResult(value: unknown): SaveRoleResult {
     return { ok: false, reason: record["reason"] };
   }
   throw new WireTypeError("result", "a successful snapshot or a refusal reason");
-}
-
-/** Parse the live model catalogue used by the Client selectors. */
-export function parseCatalogueResult(value: unknown): CatalogueResult {
-  const record = parseRecord(value, "catalogue");
-  if (!Array.isArray(record["providers"])) {
-    throw new WireTypeError("catalogue.providers", "an array");
-  }
-  if (typeof record["truncated"] !== "boolean") {
-    throw new WireTypeError("catalogue.truncated", "a boolean");
-  }
-  const providerFilter = optionalString(record, "providerFilter", "catalogue");
-  return {
-    providers: record["providers"].map((provider, index) => {
-      const path = `catalogue.providers[${index}]`;
-      const entry = parseRecord(provider, path);
-      if (typeof entry["provider"] !== "string" || typeof entry["name"] !== "string") {
-        throw new WireTypeError(path, "provider and name strings");
-      }
-      if (!Array.isArray(entry["models"])) {
-        throw new WireTypeError(`${path}.models`, "an array");
-      }
-      const providerError = optionalString(entry, "error", path);
-      return {
-        provider: entry["provider"],
-        name: entry["name"],
-        ...(providerError === undefined ? {} : { error: providerError }),
-        models: entry["models"].map((model, modelIndex) => {
-          const modelPath = `${path}.models[${modelIndex}]`;
-          const item = parseRecord(model, modelPath);
-          if (
-            typeof item["route"] !== "string" ||
-            typeof item["id"] !== "string" ||
-            typeof item["name"] !== "string"
-          ) {
-            throw new WireTypeError(modelPath, "route, id, and name strings");
-          }
-          const efforts = item["efforts"];
-          if (!Array.isArray(efforts) || efforts.some((effort) => typeof effort !== "string")) {
-            throw new WireTypeError(`${modelPath}.efforts`, "an array of strings");
-          }
-          const description = optionalString(item, "description", modelPath);
-          const contextWindow = optionalNumber(item, "contextWindow", modelPath);
-          const maxTokens = optionalNumber(item, "maxTokens", modelPath);
-          const defaultEffort = optionalString(item, "defaultEffort", modelPath);
-          const modelError = optionalString(item, "error", modelPath);
-          return {
-            route: item["route"],
-            id: item["id"],
-            name: item["name"],
-            ...(description === undefined ? {} : { description }),
-            ...(contextWindow === undefined ? {} : { contextWindow }),
-            ...(maxTokens === undefined ? {} : { maxTokens }),
-            efforts,
-            ...(defaultEffort === undefined ? {} : { defaultEffort }),
-            ...(modelError === undefined ? {} : { error: modelError }),
-          };
-        }),
-      };
-    }),
-    truncated: record["truncated"],
-    ...(typeof providerFilter === "string" ? { providerFilter } : {}),
-  };
 }

@@ -43,4 +43,18 @@ describe("pstack_models", () => {
     expect((await collectCatalogue(llm, "CPA", signal)).providers).toHaveLength(1);
     expect((await collectCatalogue(llm, "missing", signal)).providers).toHaveLength(0);
   });
+
+  it("propagates cancellation instead of reporting it as a provider error", async () => {
+    const controller = new AbortController();
+    const cancelled = {
+      listProviders: () => [{ id: "cpa", name: "CPA" }],
+      listModels: async () => {
+        controller.abort();
+        throw new Error("cancelled");
+      },
+    } as unknown as LlmRuntime;
+    await expect(collectCatalogue(cancelled, undefined, controller.signal)).rejects.toThrow(
+      "cancelled",
+    );
+  });
 });

@@ -184,6 +184,24 @@ describe("role editor", () => {
     expect(readFileSync(path, "utf8")).toBe("# header\n");
   });
 
+  it("saves an inherit-only route without model discovery", async () => {
+    const home = tempHome("# header\nbug-fix: cpa/model-a [low]\n");
+    const path = join(home, "pstack-models.mdc");
+    const unavailable = {
+      listProviders() {
+        throw new Error("catalogue unavailable");
+      },
+    } as unknown as LlmRuntime;
+    const result = await saveRoleConfiguration(
+      path,
+      { key: "bug-fix", routes: [{ kind: "inherit", alias: "auto" }] },
+      unavailable,
+      new AbortController().signal,
+    );
+    if (!result.ok) throw new Error(result.reason);
+    expect(readFileSync(path, "utf8")).toContain("bug-fix: auto\n");
+  });
+
   it("does not create a file when an absent role is cleared", async () => {
     const path = join(tempHome(""), "missing.mdc");
     const result = await saveRoleConfiguration(

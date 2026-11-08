@@ -119,6 +119,13 @@ describe("role wire parsers", () => {
       const value = field === "contextWindow" || field === "maxTokens" ? "bad" : 1;
       expect(() => parseCatalogueResult(catalogueWithModel({ [field]: value }))).toThrow(path);
     }
+    for (const field of ["contextWindow", "maxTokens"] as const) {
+      for (const value of [1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
+        expect(() => parseCatalogueResult(catalogueWithModel({ [field]: value }))).toThrow(
+          "integer when present",
+        );
+      }
+    }
   });
 
   it("parses the model catalogue and rejects a malformed provider list", () => {

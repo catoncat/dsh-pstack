@@ -14,6 +14,7 @@ import { randomUUID } from "node:crypto";
 import type { LlmRuntime } from "@deepseek-ai/dsh-llm";
 
 import { collectCatalogue } from "./models.ts";
+import { parseRoleFileDocument, isRoleLineFor } from "./role-file.ts";
 import {
   parseRoleConfiguration,
   readRoleConfiguration,
@@ -21,7 +22,8 @@ import {
   type RoleEntry,
   type Route,
 } from "./role-config.ts";
-import { ROLE_MANIFEST, findRole, normalizeRoleName } from "./role-manifest.ts";
+import { ROLE_MANIFEST, findRole } from "./role-manifest.ts";
+import { renderRouteValue, validateRouteParts } from "./route.ts";
 import {
   parseSaveRoleRequest,
   type RoleFileSnapshot,
@@ -129,6 +131,14 @@ export function validateSaveRequest(
     if (provider === "" || model === "") {
       return { ok: false, reason: `route ${index + 1} needs both a provider and a model` };
     }
+    if (route.effort !== undefined && typeof route.effort !== "string") {
+      return { ok: false, reason: `route ${index + 1} has a non-string effort` };
+    }
+    const effort = route.effort?.trim();
+    const routeIssue = validateRouteParts(provider, model, effort);
+    if (routeIssue !== undefined) {
+      return { ok: false, reason: `route ${index + 1} ${routeIssue}` };
+    }
     const providerEntry = catalogue.providers.find((entry) => entry.provider === provider);
     if (providerEntry === undefined) {
       return {
@@ -155,10 +165,6 @@ export function validateSaveRequest(
         reason: `model ${JSON.stringify(`${provider}/${model}`)} failed discovery: ${modelEntry.error}`,
       };
     }
-    if (route.effort !== undefined && typeof route.effort !== "string") {
-      return { ok: false, reason: `route ${index + 1} has a non-string effort` };
-    }
-    const effort = route.effort?.trim();
     if (effort !== undefined && effort !== "" && !modelEntry.efforts.includes(effort)) {
       return {
         ok: false,
@@ -177,31 +183,20 @@ export function validateSaveRequest(
 
 /** Render one role value in the file grammar. */
 export function renderRoleValue(routes: readonly Route[]): string {
-  return routes
-    .map((route) =>
-      route.kind === "inherit"
-        ? (route.alias ?? "inherit-parent")
-        : route.effort === undefined
-          ? `${route.provider}/${route.model}`
-          : `${route.provider}/${route.model} [${route.effort}]`,
-    )
-    .join(", ");
+  return renderRouteValue(routes);
 }
 
 /** Replace or append one role line, preserving the other logical lines. */
 export function updateRoleText(text: string, key: string, value: string): string {
-  const target = normalizeRoleName(key);
-  const lines = text === "" ? [] : text.replace(/\n$/, "").split(/\r?\n/);
+  const document = parseRoleFileDocument(text.replace(/\n$/, ""), "");
   let replaced = false;
-  for (let index = 0; index < lines.length; index += 1) {
-    const line = lines[index]!;
-    const colon = line.indexOf(":");
-    if (colon === -1) continue;
-    if (normalizeRoleName(line.slice(0, colon)) !== target) continue;
-    lines[index] = `${key}: ${value}`;
-    replaced = true;
-    break;
-  }
+  const lines = document.lines.map((line) => {
+    if (!replaced && isRoleLineFor(line, key)) {
+      replaced = true;
+      return `${key}: ${value}`;
+    }
+    return line.raw;
+  });
   if (!replaced) {
     if (lines.length > 0 && lines[lines.length - 1] === "") lines.pop();
     lines.push(`${key}: ${value}`);
@@ -211,13 +206,11 @@ export function updateRoleText(text: string, key: string, value: string): string
 
 /** Remove every matching role line. Clearing an absent role is a no-op. */
 export function removeRoleText(text: string, key: string): string {
-  const target = normalizeRoleName(key);
-  const lines = text === "" ? [] : text.replace(/\n$/, "").split(/\r?\n/);
-  const remaining = lines.filter((line) => {
-    const colon = line.indexOf(":");
-    return colon === -1 || normalizeRoleName(line.slice(0, colon)) !== target;
-  });
-  if (remaining.length === lines.length) return text;
+  const document = parseRoleFileDocument(text.replace(/\n$/, ""), "");
+  const remaining = document.lines
+    .filter((line) => !isRoleLineFor(line, key))
+    .map((line) => line.raw);
+  if (remaining.length === document.lines.length) return text;
   return remaining.length === 0 ? "" : `${remaining.join("\n")}\n`;
 }
 
@@ -254,6 +247,10 @@ export async function saveRoleConfiguration(
     const validation = validateSaveRequest(parsed, { providers: [], truncated: false });
     if (!validation.ok) return validation;
     next = removeRoleText(text, validation.key);
+  } else if (parsed.routes.every((route) => route.kind === "inherit")) {
+    const validation = validateSaveRequest(parsed, { providers: [], truncated: false });
+    if (!validation.ok) return validation;
+    next = updateRoleText(text, validation.key, renderRoleValue(validation.routes));
   } else {
     let catalogue: Awaited<ReturnType<typeof collectCatalogue>>;
     try {

@@ -42,6 +42,13 @@ describe("role manifest and parser", () => {
       kind: "inherit",
       alias: "inherit-parent",
     });
+    expect(parseRoute("AUTO").route).toEqual({ kind: "inherit", alias: "auto" });
+  });
+
+  it("rejects whitespace in provider, model, or effort", () => {
+    expect(parseRoute("provider name/model").route).toBeUndefined();
+    expect(parseRoute("provider/model name").route).toBeUndefined();
+    expect(parseRoute("provider/model [high tier]").route).toBeUndefined();
   });
 
   it("parses a role document and keeps the winning duplicate", () => {
@@ -99,5 +106,17 @@ describe("role manifest and parser", () => {
     const selected = selectRoutes(findRole("swarm workers")!, parsed.roles.get("swarm workers"), 1);
     expect(selected.mode).toBe("selected");
     expect(selected.routes[0]).toMatchObject({ model: "b" });
+  });
+
+  it("rejects roleIndex on a single role or an automatic panel", () => {
+    const parsed = parseRoleConfiguration("bug-fix: p/a\narena runners: p/a, p/b\n", "/x");
+    expect(parsed.status).toBe("loaded");
+    if (parsed.status !== "loaded") return;
+    expect(() => selectRoutes(findRole("bug-fix")!, parsed.roles.get("bug-fix"), 0)).toThrow(
+      /single route/,
+    );
+    expect(() =>
+      selectRoutes(findRole("arena runners")!, parsed.roles.get("arena runners"), 0),
+    ).toThrow(/automatic panel/);
   });
 });
