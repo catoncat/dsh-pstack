@@ -15,7 +15,14 @@ import { IconAlert, IconEraser, IconInfo, IconRefresh, IconSave, IconUndo } from
 import { BudgetDialog, budgetLabel } from "./BudgetDialog.tsx";
 import { messageOf } from "./message.ts";
 import { RoleCard } from "./RoleCard.tsx";
-import { draftOf, inheritedRoutes, isClearDraft, isDirty, type DraftMap } from "./role-draft.ts";
+import {
+  draftOf,
+  inheritedRoutes,
+  isClearDraft,
+  isDirty,
+  resetRoutes,
+  type DraftMap,
+} from "./role-draft.ts";
 import { routeIsIncomplete, routeIsInvalid } from "./role-selectors.ts";
 import { ensurePstackStyles } from "./styles.ts";
 import { Toast, type ToastMessage } from "./toast.tsx";
@@ -152,7 +159,7 @@ export function RoleSettingsView(props: {
         ...current,
         [key]: {
           ...draft,
-          routes: draft.baseline.map((route) => ({ ...route })),
+          routes: resetRoutes(draft),
           message: undefined,
           busy: false,
         },
@@ -169,7 +176,7 @@ export function RoleSettingsView(props: {
             role.key,
             {
               ...draft,
-              routes: draft.baseline.map((route) => ({ ...route })),
+              routes: resetRoutes(draft),
               message: undefined,
               busy: false,
             },
@@ -377,6 +384,7 @@ export function RoleSettingsView(props: {
         <Button
           variant="outline"
           size="sm"
+          id="pstack-budget-trigger"
           disabled={
             !snapshot.canSave ||
             catalogue === undefined ||
@@ -436,7 +444,7 @@ export function RoleSettingsView(props: {
             draft={draftFor(role)}
             catalogue={catalogue}
             translations={translations}
-            disabled={!snapshot.canSave || bulkBusy !== undefined || anyBusy}
+            disabled={!snapshot.canSave || bulkBusy !== undefined || anyBusy || loading}
             onRoutesChange={(routes) => updateRoutes(role.key, routes)}
             onSave={() => void saveRole(role.key)}
             onReset={() => resetRole(role.key)}

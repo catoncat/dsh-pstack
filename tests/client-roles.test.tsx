@@ -6,6 +6,7 @@ import type { Context } from "@deepseek-ai/cordis";
 
 import { apply } from "../src/client/index.ts";
 import { createPstackConfigAction, PstackConfigDialog } from "../src/client/PstackConfigDialog.tsx";
+import { draftOf, resetRoutes } from "../src/client/role-draft.ts";
 import type { RoleSettingsApi } from "../src/client/RoleSettingsPage.tsx";
 import { catalogs, type PstackTranslations } from "../src/client/locales/index.ts";
 import type { CatalogueResult } from "../src/models.ts";
@@ -73,6 +74,14 @@ function snapshotFor(configured = true): RoleFileSnapshot {
 
 function snapshotWithBudget(): RoleFileSnapshot {
   return { ...snapshotFor(), budget: "large (xhigh)" };
+}
+
+function unconfiguredHillclimb(): RoleView {
+  return { key: "hillclimb", shape: "single", configured: false, routes: [], issues: [] };
+}
+
+function snapshotWithSecondUnconfiguredRole(): RoleFileSnapshot {
+  return { ...snapshotFor(), roles: [bugFixRole(true), unconfiguredHillclimb()] };
 }
 
 function snapshotAfter(request: SaveRoleRequest): RoleFileSnapshot {
@@ -319,6 +328,52 @@ describe("clear as deletion", () => {
       'select[aria-label="Bug fix Reasoning effort"]',
     );
     expect(effort?.value).toBe("high");
+  });
+});
+
+describe("resetRoutes", () => {
+  it("returns the inherited row for an unconfigured role", () => {
+    const draft = draftOf(unconfiguredHillclimb());
+    expect(draft.baseline).toEqual([]);
+    expect(resetRoutes(draft)).toEqual([{ kind: "inherit", alias: "inherit-parent" }]);
+  });
+
+  it("copies the configured baseline instead of sharing it", () => {
+    const draft = draftOf(bugFixRole(true));
+    const routes = resetRoutes(draft);
+    expect(routes).toEqual(draft.baseline.map((route) => ({ ...route })));
+    expect(routes).not.toBe(draft.baseline);
+    expect(routes[0]).not.toBe(draft.baseline[0]);
+  });
+});
+
+describe("Reset all with an unconfigured role", () => {
+  it("preserves the second role's editable inherited row", async () => {
+    const controller = makeRoleApi();
+    controller.api.status = async () => snapshotWithSecondUnconfiguredRole();
+    await openRoles(controller.api);
+
+    const cards = (): HTMLElement[] =>
+      Array.from(document.querySelectorAll<HTMLElement>(".pstack-role-card"));
+    expect(cards()).toHaveLength(2);
+    expect(cards()[1]!.querySelectorAll(".pstack-route-row")).toHaveLength(1);
+
+    const effort = document.querySelector<HTMLSelectElement>(
+      'select[aria-label="Bug fix Reasoning effort"]',
+    )!;
+    await act(async () => {
+      effort.value = "low";
+      effort.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await flush();
+
+    await click(buttonByText(document.body, "Reset all"));
+
+    const second = cards()[1]!;
+    expect(second.querySelectorAll(".pstack-route-row")).toHaveLength(1);
+    expect(second.querySelector<HTMLSelectElement>("select")?.value).toBe(
+      "__inherit__:inherit-parent",
+    );
   });
 });
 

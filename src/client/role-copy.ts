@@ -1,7 +1,7 @@
 /** Locale keys for the display name and scenario of every pstack role. */
 
-import type { RoleKey } from "../role-manifest.ts";
-import type { RolesKey } from "./locales/index.ts";
+import { isRoleKey, type RoleKey } from "../role-manifest.ts";
+import type { RolesKey, Translate } from "./locales/index.ts";
 
 export interface RoleCopy {
   readonly nameKey: RolesKey;
@@ -63,3 +63,8 @@ export const ROLE_COPY: Record<RoleKey, RoleCopy> = {
     descriptionKey: "roleInterrogateDescription",
   },
 };
+
+/** User-facing role name for a manifest key, falling back to the raw key. */
+export function roleLabel(key: string, t: Translate<RolesKey>): string {
+  return isRoleKey(key) ? t(ROLE_COPY[key].nameKey) : key;
+}

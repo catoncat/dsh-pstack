@@ -15,6 +15,13 @@ export function inheritedRoutes(): RouteView[] {
   return [{ kind: "inherit", alias: "inherit-parent" }];
 }
 
+/** Routes a reset restores: the configured baseline, or the inherited row for an unconfigured role. */
+export function resetRoutes(draft: RoleDraft): RouteView[] {
+  return draft.baseline.length === 0
+    ? inheritedRoutes()
+    : draft.baseline.map((route) => ({ ...route }));
+}
+
 export function draftOf(role: RoleView): RoleDraft {
   const routes =
     role.routes.length === 0 ? inheritedRoutes() : role.routes.map((route) => ({ ...route }));

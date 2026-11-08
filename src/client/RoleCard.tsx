@@ -15,7 +15,7 @@ import {
   IconTrash,
   IconUndo,
 } from "./icons.tsx";
-import { ROLE_COPY } from "./role-copy.ts";
+import { ROLE_COPY, roleLabel } from "./role-copy.ts";
 import { isDirty, inheritedRoutes, type RoleDraft } from "./role-draft.ts";
 import {
   effortChoices,
@@ -41,7 +41,7 @@ export function RoleCard(props: {
   const t = translations.roles;
   const common = translations.common;
   const copy = isRoleKey(role.key) ? ROLE_COPY[role.key] : undefined;
-  const name = copy === undefined ? role.key : t(copy.nameKey);
+  const name = roleLabel(role.key, t);
   const description = copy === undefined ? "" : t(copy.descriptionKey);
   const dirty = isDirty(draft, role);
   const controlsDisabled = disabled || draft.busy;

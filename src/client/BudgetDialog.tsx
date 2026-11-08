@@ -1,6 +1,6 @@
 /** Nested budget modal for the role settings page: preview a plan and apply it to the role file. */
 
-import { useCallback, useId, useMemo, useRef, useState, type ReactElement } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactElement } from "react";
 import { createPortal } from "react-dom";
 
 import type { CatalogueResult } from "../models.ts";
@@ -20,6 +20,7 @@ import { renderRouteValue, type Route } from "../route.ts";
 import { IconClose } from "./icons.tsx";
 import { useFocusTrap } from "./focus-trap.ts";
 import { messageOf } from "./message.ts";
+import { roleLabel } from "./role-copy.ts";
 import { providerLabel } from "./role-selectors.ts";
 import { findRole } from "../role-manifest.ts";
 import { Button, IconButton, Spinner, Status, type StatusTone } from "./ui.tsx";
@@ -74,6 +75,12 @@ export function BudgetDialog(props: BudgetDialogProps): ReactElement | null {
     if (!busy) onClose();
   }, [busy, onClose]);
   useFocusTrap(panelRef, requestClose, true, { stopEscapePropagation: true, capture: true });
+
+  useEffect(() => {
+    return () => {
+      document.getElementById("pstack-budget-trigger")?.focus();
+    };
+  }, []);
 
   const request: BudgetApplyRequest = {
     tier,
@@ -248,7 +255,7 @@ export function BudgetDialog(props: BudgetDialogProps): ReactElement | null {
               <ul className="pstack-notice-list">
                 {plan.plan.warnings.map((warning) => (
                   <li key={`${warning.kind}:${warning.role}`}>
-                    {t("budgetWarningAutoPanel", { role: warning.role })}
+                    {t("budgetWarningAutoPanel", { role: roleLabel(warning.role, t) })}
                   </li>
                 ))}
               </ul>
@@ -261,7 +268,7 @@ export function BudgetDialog(props: BudgetDialogProps): ReactElement | null {
                 {visibleRows.map((row) => (
                   <article className="pstack-budget-card" data-status={row.status} key={row.key}>
                     <header className="pstack-budget-card-head">
-                      <span className="pstack-budget-role">{row.key}</span>
+                      <span className="pstack-budget-role">{roleLabel(row.key, t)}</span>
                       <Status tone={statusTone(row.status)} label={statusText(row, t)} />
                     </header>
                     <div className="pstack-budget-route-grid">
