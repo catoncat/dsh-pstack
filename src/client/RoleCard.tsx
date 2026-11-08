@@ -16,7 +16,7 @@ import {
   IconUndo,
 } from "./icons.tsx";
 import { ROLE_COPY, roleLabel } from "./role-copy.ts";
-import { isDirty, inheritedRoutes, type RoleDraft } from "./role-draft.ts";
+import { isClearDraft, isDirty, type RoleDraft } from "./role-draft.ts";
 import {
   effortChoices,
   modelChoices,
@@ -34,10 +34,21 @@ export function RoleCard(props: {
   translations: PstackTranslations;
   disabled: boolean;
   onRoutesChange: (routes: RouteView[]) => void;
+  onClear: () => void;
   onSave: () => void;
   onReset: () => void;
 }): ReactElement {
-  const { role, draft, catalogue, translations, disabled, onRoutesChange, onSave, onReset } = props;
+  const {
+    role,
+    draft,
+    catalogue,
+    translations,
+    disabled,
+    onRoutesChange,
+    onClear,
+    onSave,
+    onReset,
+  } = props;
   const t = translations.roles;
   const common = translations.common;
   const copy = isRoleKey(role.key) ? ROLE_COPY[role.key] : undefined;
@@ -48,10 +59,8 @@ export function RoleCard(props: {
   const incomplete = draft.routes.some(routeIsIncomplete);
   const invalid = draft.routes.some((route) => routeIsInvalid(route, catalogue));
   const routeProblem = incomplete || invalid;
-  const canClearRole =
-    (role.configured || dirty) &&
-    !(draft.routes.length === 1 && draft.routes[0]?.kind === "inherit");
-  const clearRole = (): void => onRoutesChange(inheritedRoutes());
+  const clearing = isClearDraft(draft, role);
+  const canClearRole = !clearing && (role.configured || dirty);
   const status =
     role.issues.length > 0
       ? { tone: "error" as StatusTone, label: t("roleInvalid") }
@@ -122,12 +131,7 @@ export function RoleCard(props: {
             translations={translations}
           />
         ))}
-        {role.configured &&
-        dirty &&
-        draft.routes.length === 1 &&
-        draft.routes[0]?.kind === "inherit" ? (
-          <p className="pstack-role-desc">{t("clearHint")}</p>
-        ) : null}
+        {clearing ? <p className="pstack-role-desc">{t("clearHint")}</p> : null}
       </div>
       <footer className="pstack-role-foot">
         <div className="pstack-role-foot-actions">
@@ -161,7 +165,7 @@ export function RoleCard(props: {
             size="sm"
             icon={<IconEraser size={13} />}
             disabled={controlsDisabled || !canClearRole}
-            onClick={clearRole}
+            onClick={onClear}
           >
             {t("clearRole")}
           </Button>

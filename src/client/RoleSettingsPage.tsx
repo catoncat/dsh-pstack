@@ -134,10 +134,7 @@ export function RoleSettingsView(props: {
   );
   const canClearAll = snapshot.roles.some((role) => {
     const draft = drafts[role.key] ?? draftOf(role);
-    return (
-      (role.configured || isDirty(draft, role)) &&
-      !(draft.routes.length === 1 && draft.routes[0]?.kind === "inherit")
-    );
+    return !draft.cleared && (role.configured || isDirty(draft, role));
   });
   const fileStatus = statusPresentation(snapshot, t);
 
@@ -146,7 +143,26 @@ export function RoleSettingsView(props: {
     setDrafts((current) => {
       const draft = current[key];
       if (draft === undefined) return current;
-      return { ...current, [key]: { ...draft, routes, message: undefined } };
+      return { ...current, [key]: { ...draft, routes, cleared: false, message: undefined } };
+    });
+  };
+
+  const clearRole = (key: string): void => {
+    setBulkMessage(undefined);
+    setDrafts((current) => {
+      const draft = current[key];
+      if (draft === undefined) return current;
+      const role = snapshot.roles.find((entry) => entry.key === key);
+      return {
+        ...current,
+        [key]: {
+          ...draft,
+          routes: inheritedRoutes(),
+          cleared: role?.configured ?? false,
+          message: undefined,
+          busy: false,
+        },
+      };
     });
   };
 
@@ -160,6 +176,7 @@ export function RoleSettingsView(props: {
         [key]: {
           ...draft,
           routes: resetRoutes(draft),
+          cleared: false,
           message: undefined,
           busy: false,
         },
@@ -177,6 +194,7 @@ export function RoleSettingsView(props: {
             {
               ...draft,
               routes: resetRoutes(draft),
+              cleared: false,
               message: undefined,
               busy: false,
             },
@@ -195,7 +213,13 @@ export function RoleSettingsView(props: {
           const draft = current[role.key] ?? draftOf(role);
           return [
             role.key,
-            { ...draft, routes: inheritedRoutes(), message: undefined, busy: false },
+            {
+              ...draft,
+              routes: inheritedRoutes(),
+              cleared: role.configured,
+              message: undefined,
+              busy: false,
+            },
           ];
         }),
       ),
@@ -238,6 +262,7 @@ export function RoleSettingsView(props: {
               ...currentDraft,
               routes: draft.routes,
               baseline: savedRole?.routes ?? draft.routes,
+              cleared: false,
               busy: false,
               message: { tone: "success", text: common("saved") },
             },
@@ -446,6 +471,7 @@ export function RoleSettingsView(props: {
             translations={translations}
             disabled={!snapshot.canSave || bulkBusy !== undefined || anyBusy || loading}
             onRoutesChange={(routes) => updateRoutes(role.key, routes)}
+            onClear={() => clearRole(role.key)}
             onSave={() => void saveRole(role.key)}
             onReset={() => resetRole(role.key)}
           />

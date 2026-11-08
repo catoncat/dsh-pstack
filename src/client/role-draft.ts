@@ -6,6 +6,12 @@ export interface RoleDraft {
   readonly routes: RouteView[];
   readonly baseline: readonly RouteView[];
   readonly busy: boolean;
+  /**
+   * The user asked to delete this role's line. `routes` still holds the
+   * inherited placeholder row so the card stays editable without implying that
+   * an `inherit-parent` row is a configured route.
+   */
+  readonly cleared: boolean;
   readonly message?: { readonly tone: "success" | "error"; readonly text: string };
 }
 
@@ -25,10 +31,11 @@ export function resetRoutes(draft: RoleDraft): RouteView[] {
 export function draftOf(role: RoleView): RoleDraft {
   const routes =
     role.routes.length === 0 ? inheritedRoutes() : role.routes.map((route) => ({ ...route }));
-  return { routes, baseline: role.routes, busy: false };
+  return { routes, baseline: role.routes, busy: false, cleared: false };
 }
 
 export function isDirty(draft: RoleDraft, role: RoleView): boolean {
+  if (draft.cleared) return role.configured;
   if (!role.configured && signature(draft.routes) === signature(inheritedRoutes())) return false;
   return signature(draft.routes) !== signature(draft.baseline);
 }
@@ -39,9 +46,10 @@ export function signature(routes: readonly RouteView[]): string {
 
 export function isClearDraft(draft: RoleDraft, role: RoleView | undefined): boolean {
   return (
+    draft.cleared &&
     role !== undefined &&
+    role.configured &&
     draft.routes.length === 1 &&
-    draft.routes[0]?.kind === "inherit" &&
-    (role.routes.length === 0 || signature(draft.routes) !== signature(draft.baseline))
+    draft.routes[0]?.kind === "inherit"
   );
 }

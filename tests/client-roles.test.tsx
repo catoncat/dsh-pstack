@@ -72,6 +72,23 @@ function snapshotFor(configured = true): RoleFileSnapshot {
   };
 }
 
+function inheritedRole(alias: "inherit-parent" | "auto" = "inherit-parent"): RoleView {
+  return {
+    key: "bug-fix",
+    shape: "single",
+    configured: true,
+    line: 2,
+    routes: [{ kind: "inherit", alias }],
+    issues: [],
+  };
+}
+
+function snapshotWithInheritedRole(
+  alias: "inherit-parent" | "auto" = "inherit-parent",
+): RoleFileSnapshot {
+  return { ...snapshotFor(), roles: [inheritedRole(alias)] };
+}
+
 function snapshotWithBudget(): RoleFileSnapshot {
   return { ...snapshotFor(), budget: "large (xhigh)" };
 }
@@ -316,6 +333,61 @@ describe("clear as deletion", () => {
     expect(saved.textContent).not.toContain("Saving removes this role's line.");
     expect(buttonByText(saved, "Clear").disabled).toBe(true);
     expect(buttonByText(saved, "Add route")).toBeUndefined();
+  });
+
+  it("clears a role whose configured line only inherits the parent", async () => {
+    const controller = makeRoleApi();
+    controller.api.status = async () => snapshotWithInheritedRole();
+    await openRoles(controller.api);
+
+    const card = document.querySelector<HTMLElement>(".pstack-role-card")!;
+    expect(card.textContent).toContain("Configured");
+    expect(buttonByText(card, "Clear").disabled).toBe(false);
+
+    await click(buttonByText(card, "Clear"));
+    expect(card.textContent).toContain("Saving removes this role's line.");
+    expect(buttonByText(card, "Save").disabled).toBe(false);
+
+    await click(buttonByText(card, "Save"));
+    expect(controller.saves).toEqual([{ key: "bug-fix", routes: [] }]);
+    const saved = document.querySelector<HTMLElement>(".pstack-role-card")!;
+    expect(saved.textContent).toContain("Not configured");
+    expect(buttonByText(saved, "Clear").disabled).toBe(true);
+  });
+
+  it("clears every configured role from Clear all when each line only inherits", async () => {
+    const controller = makeRoleApi();
+    controller.api.status = async () => snapshotWithInheritedRole("auto");
+    await openRoles(controller.api);
+
+    const clearAll = buttonByText(document.body, "Clear all");
+    expect(clearAll.disabled).toBe(false);
+    await click(clearAll);
+
+    expect(buttonByText(document.body, "Save all (1)")).not.toBeNull();
+    await click(buttonByText(document.body, "Save all (1)"));
+    expect(controller.saves).toEqual([{ key: "bug-fix", routes: [] }]);
+  });
+
+  it("saves an explicitly chosen auto route instead of treating it as a clear", async () => {
+    const controller = makeRoleApi();
+    await openRoles(controller.api);
+
+    const card = document.querySelector<HTMLElement>(".pstack-role-card")!;
+    const provider = card.querySelector<HTMLSelectElement>(
+      'select[aria-label="Bug fix Provider"]',
+    )!;
+    await act(async () => {
+      provider.value = "__inherit__:auto";
+      provider.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await flush();
+
+    expect(card.textContent).not.toContain("Saving removes this role's line.");
+    await click(buttonByText(card, "Save"));
+    expect(controller.saves).toEqual([
+      { key: "bug-fix", routes: [{ kind: "inherit", alias: "auto" }] },
+    ]);
   });
 
   it("restores the baseline on reset instead of clearing", async () => {
