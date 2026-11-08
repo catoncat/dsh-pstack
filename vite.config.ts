@@ -1,11 +1,7 @@
-import { existsSync } from "node:fs";
 import { defineConfig } from "vite-plus";
 
 /** DSH provides its own runtime packages; never bundle them. */
 const dshProvided = /^@deepseek-ai\//;
-
-/** The generated tree is present for release builds and absent before step 5 of a fresh port. */
-const generatedTree = existsSync("pstack") ? ["pstack"] : [];
 
 export default defineConfig({
   pack: [
@@ -27,7 +23,7 @@ export default defineConfig({
         },
       },
       copy: [
-        ...generatedTree,
+        "pstack",
         { from: "skills/.agents/skills", to: "dist/skills", rename: "vendored" },
         { from: "skills/authored", to: "dist/skills", rename: "authored" },
       ],
@@ -61,6 +57,7 @@ export default defineConfig({
     tasks: {
       build: {
         command: "vp pack",
+        dependsOn: ["generate"],
       },
       typecheck: {
         command: "tsc --noEmit -p tsconfig.json",

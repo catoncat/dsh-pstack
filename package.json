@@ -36,6 +36,7 @@
   "types": "./dist/index.d.mts",
   "exports": {
     ".": "./dist/index.mjs",
+    "./catalogue": "./dist/catalogue.mjs",
     "./models": "./dist/models.mjs",
     "./paths": "./dist/paths.mjs",
     "./poteto-mode": "./dist/poteto-mode.mjs",
@@ -45,19 +46,23 @@
     "./role-catalog": "./dist/role-catalog.mjs",
     "./role-config": "./dist/role-config.mjs",
     "./role-editor": "./dist/role-editor.mjs",
+    "./role-file": "./dist/role-file.mjs",
     "./role-manifest": "./dist/role-manifest.mjs",
     "./role-remote": "./dist/role-remote.mjs",
     "./role-service": "./dist/role-service.mjs",
     "./role-wire": "./dist/role-wire.mjs",
+    "./route": "./dist/route.mjs",
     "./skill": "./dist/skill.mjs",
     "./subagent": "./dist/subagent.mjs",
+    "./wire-error": "./dist/wire-error.mjs",
     "./package.json": "./package.json",
     "./locale/*.json": "./locale/*.json",
     "./client": "./dist/client.mjs"
   },
   "scripts": {
     "prepare": "vp config && skills experimental_sync -y -a universal --copy && skills add ./skills/authored -y -a universal",
-    "prerelease": "vp run build && vp run typecheck && vp test && vp run compatibility:check",
+    "ci": "vp run typecheck && vp test && vp run generate:check && vp run compatibility:check && vp run build",
+    "prerelease": "vp run ci",
     "release": "bumpp",
     "prepublishOnly": "vp run build"
   },
