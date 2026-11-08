@@ -5,7 +5,7 @@
 ## 固定边界
 
 - 根 `pstack/` 只放生成的插件树。生成器可以整体替换该目录，不允许把手工文件放在其中。
-- 根 `port/` 保存生成器、扫描器、审核记录、`audit.lock.json`、本文件、`dsh.md` 和中文用户与审核参考 `dsh.zh.md`。英文适配文档进入生成树，中文版本不被生成树引用，由 `README.zh.md` 直接链接。
+- 根 `port/` 集中保存移植工具、审核与适配资料。以 `dsh.md` 为源生成的英文适配文档进入生成树；面向中文用户与审核者的版本不进入生成树，由 `README.zh.md` 直接链接。
 - `port/dsh.md` 是当前适配文案的唯一手写来源，必须按 `port/audit.md` 的处置、当前 `cordis.patch.yml` 和实现维护。可选插件表以包名为主键，不另外维护编号。
 - 插件源码、测试、扩展登记和回归记录都在生成树之外。生成器不会修改这些内容。
 - 根 `package.json` 的 `exports` 由根 `vite.config.ts` 生成。主 pack 的 `entry` 为 `./src/*.ts`；仅第一个 pack 的 `customExports` 补齐非源码入口。其他 pack 使用 `exports: false`。
@@ -60,6 +60,7 @@
 `port/audit.md` 是可重建的审核视图，`port/audit.lock.json` 是当前基线的决策记录。lock 只保存当前基线存在的能力，不保存历史项。
 
 - `baseline.id` 由 DSH 版本和 pstack 提交组成，`baseline.previous` 指向上一个基线，`baseline.transition` 取 `initial`、`normal` 或 `breaking`。
+- `baseline.compatibilityKey` 标识一套兼容适配，与具体审核提交分开。普通更新沿用该键；破坏性更新更换该键，与新的 lock 同时提交。
 - `transition` 写入后不变。普通更新生成新 lock 时用 `normal`，破坏性更新用 `breaking` 并整份替换旧 lock。
 - `origin: accepted` 表示当时直接接受推荐，破坏性更新后按新基线重新计算推荐。
 - `origin: override` 表示人工调整过推荐或处置，破坏性更新后标为待审核，不继承旧选择。
@@ -84,7 +85,7 @@
 
 ### 脚本登记
 
-随包生成树包含以下五个可执行入口脚本。
+按当前随包生成树登记每个可执行入口脚本：
 
 | 入口 | 用途 | 解释器 | 外部命令与运行时 | 重要限制 |
 |:--|:--|:--|:--|:--|
@@ -102,7 +103,9 @@
 
 DSH 或 pstack 任一上游发生破坏性变更时，按新基线重新实现受影响内容，不维护跨基线兼容分支或过渡实现。运行时适配文档只描述所选基线的行为。
 
-实现提交使用 Conventional Commits 的 `type!:` 形式。根 `README.md` 和 `README.zh.md` 的兼容表追加对应记录。每条记录列明基线范围和适用的插件版本。
+实现提交使用 Conventional Commits 的 `type!:` 形式。破坏性适配同时更新 `package.json` 的 DSH 范围和 lock 的 `compatibilityKey`，并在双语 README 注册新的兼容键、增加对应行；保留旧兼容行。
+
+`vp run release` 在版本更新后、发布提交前由 `bump.config.ts` 的 `execute` 钩子执行 `vpx port/release-compatibility.ts`。脚本读取当前版本、DSH 范围、兼容键与实际 pstack 版本：键匹配时更新该行，每个 `x.y` 只保留最新 `z`；键不存在时追加行；同一键对应不同 DSH 范围时停止。发布提交包含 `package.json` 和双语 README。`vp run compatibility:check` 以只读方式检查同步结果。
 
 DSH 升级后从标准模式开始重新检查。标准能力已经满足时，删除本插件的补偿实现。
 

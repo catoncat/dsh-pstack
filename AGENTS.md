@@ -38,31 +38,11 @@ release. Add a tool name to select part of the graph. For example, run
 - 为概念命名时阅读 `docs/glossary.md`；引入新概念时补充术语。
 - 开始任何仓库任务前，阅读 `docs/decisions/AGENTS.md`，按其中的查找规则阅读与任务相关的记录。
 
-## Dependencies
-
-- 所有 pnpm workspace 依赖先按用途归入 `pnpm-workspace.yaml` 的命名 `catalogs`，再用 `vp add --save-dev --save-catalog-name <分类>` 安装。
-- 依赖声明只使用 `catalog:<分类>`，禁止裸 `catalog:`、直接版本号或写入顶层 `catalog:`。
-- `pnpm-workspace.yaml` 保持 `catalogMode: strict`，依赖分类与 lockfile 由安装命令和约定保证，不另写策略测试。
-- 生成树 `pstack/` 中的上游脚本 `package.json` 由生成器复制，不属于 pnpm workspace，不按本规则改写。
-
-## Tests
-
-- 新增测试用例优先写 TypeScript 文件（`tests/*.test.ts` 或 `tests/*.test.tsx`）。
-- 非必要不写 JavaScript 测试文件（`.mjs` / `.js`）；只有测试对象本身是 JS/Node 模块且无法从 TS 测试覆盖时才使用。
-
-## Porting
-
-- 移植或升级 pstack、DSH 前读 `port/README.md`。其中保存能力审核、扩展保留目标和重建回归规则。
-- 根 `pstack/` 只由生成器写入。手工内容放 `port/`、插件源码或测试目录。
-- 根 `package.json` 的 `exports` 由根 `vite.config.ts` 生成。主 pack 的 `entry` 为 `./src/*.ts`；仅第一个 pack 的 `customExports` 补齐非源码入口。其他 pack 使用 `exports: false`。
-- 上游脚本保持原样，不另写 Node 替代实现。
-
 ## Commits
 
 - 破坏性变更提交使用 Conventional Commits 的 `type!:` 形式，例如 `feat!: ...`；不要使用 `!feat:`。
 
 ## Local scratch
 
-- 本地验证的临时文件一律写仓库 `.tmp/`。Bash 每次调用是独立沙箱，`/tmp` 不跨调用保留，不要用它承载后续步骤要读的文件。
-- 真实插件运行测试统一走 `playground/`。不要在 `~/.dsh` 或 `.tmp` 下另建测试用 home/profile。启动用 `vp run playground`。
-- 浏览器截图和不涉及模型选择的 UI 交互由 agent 自动化。真实会话的模型选择由用户确认，agent 用会话日志佐证。
+- 本地验证的临时文件写入仓库 `.tmp/`；后续步骤要读取的文件放在可持续访问的工作区。
+- 真实插件运行测试统一走 `playground/`，遵循目录指引。真实会话的模型选择由用户确认，agent 用会话日志佐证。

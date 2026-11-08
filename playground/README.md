@@ -5,7 +5,7 @@
 ## 准备
 
 1. 在仓库根目录运行 `vp install`。
-2. 按 `port/README.md` 准备插件源码和生成树，再运行 `vp run build`。
+2. 按 `port/AGENTS.md` 准备插件源码和生成树，再运行 `vp run build`。
 3. 确认 `dsh` 在 PATH 中。
 4. 运行 `vp run playground`，启动 `127.0.0.1:17353` 上的 Web 环境。
 
