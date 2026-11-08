@@ -21,7 +21,7 @@ import { IconClose } from "./icons.tsx";
 import { useFocusTrap } from "./focus-trap.ts";
 import { messageOf } from "./message.ts";
 import { roleLabel } from "./role-copy.ts";
-import { providerLabel } from "./role-selectors.ts";
+import { providerIsUsable, providerIssue, providerLabel } from "./role-selectors.ts";
 import { findRole } from "../role-manifest.ts";
 import { Button, IconButton, Spinner, Status, type StatusTone } from "./ui.tsx";
 import type { PstackTranslations } from "./locales/index.ts";
@@ -54,18 +54,16 @@ export function BudgetDialog(props: BudgetDialogProps): ReactElement | null {
   const t = translations.roles;
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
-  const providers = catalogue.providers.filter(
-    (provider) =>
-      provider.error === undefined && provider.models.some((model) => model.error === undefined),
-  );
-  const initialProvider = providers[0];
+  const providers = catalogue.providers;
+  const usableProviders = providers.filter(providerIsUsable);
+  const initialProvider = usableProviders[0];
   const [scope, setScope] = useState<"concrete" | "unconfigured">("concrete");
   const [tier, setTier] = useState<BudgetTier>(
     () => budgetTierFromLabel(snapshot.budget) ?? "large",
   );
   const [providerId, setProviderId] = useState(initialProvider?.provider ?? "");
   const activeProvider =
-    providers.find((provider) => provider.provider === providerId) ?? initialProvider;
+    usableProviders.find((provider) => provider.provider === providerId) ?? initialProvider;
   const models = activeProvider?.models.filter((model) => model.error === undefined) ?? [];
   const [modelId, setModelId] = useState(models[0]?.id ?? "");
   const activeModel = models.find((model) => model.id === modelId) ?? models[0];
@@ -210,20 +208,34 @@ export function BudgetDialog(props: BudgetDialogProps): ReactElement | null {
                   <select
                     className="pstack-select"
                     value={activeProvider?.provider ?? ""}
-                    disabled={busy || providers.length === 0}
+                    disabled={busy || usableProviders.length === 0}
                     onChange={(event) => {
-                      const next = providers.find(
+                      const next = usableProviders.find(
                         (provider) => provider.provider === event.target.value,
                       );
                       setProviderId(next?.provider ?? "");
                       setModelId(next?.models.find((model) => model.error === undefined)?.id ?? "");
                     }}
                   >
-                    {providers.map((provider) => (
-                      <option key={provider.provider} value={provider.provider}>
-                        {providerLabel(providers, provider.provider)}
-                      </option>
-                    ))}
+                    {usableProviders.length === 0 ? (
+                      <option value="">{t("budgetNoProvider")}</option>
+                    ) : null}
+                    {providers.map((provider) => {
+                      const issue = providerIssue(provider);
+                      return (
+                        <option
+                          key={provider.provider}
+                          value={provider.provider}
+                          disabled={issue !== undefined}
+                          title={provider.error}
+                        >
+                          {providerLabel(providers, provider.provider)}
+                          {issue === undefined
+                            ? null
+                            : ` (${t(issue === "unavailable" ? "providerUnavailable" : "noModels")})`}
+                        </option>
+                      );
+                    })}
                   </select>
                 </label>
                 <label className="pstack-field">
@@ -234,6 +246,7 @@ export function BudgetDialog(props: BudgetDialogProps): ReactElement | null {
                     disabled={busy || models.length === 0}
                     onChange={(event) => setModelId(event.target.value)}
                   >
+                    {models.length === 0 ? <option value="">{t("noModels")}</option> : null}
                     {models.map((model) => (
                       <option key={model.id} value={model.id}>
                         {model.id}
@@ -338,7 +351,7 @@ function budgetPlanErrorText(reason: unknown, t: PstackTranslations["roles"]): s
   if (reason instanceof BudgetPlanError) {
     switch (reason.code) {
       case "no-default-model":
-        return t("budgetNoModel");
+        return t("budgetNoProvider");
       case "provider-not-found":
       case "provider-discovery":
         return t("budgetErrorProvider", { provider: reason.detail ?? "" });

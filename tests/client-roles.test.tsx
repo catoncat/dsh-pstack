@@ -49,6 +49,15 @@ const catalogue: CatalogueResult = {
   ],
 };
 
+const catalogueWithUnusableProviders: CatalogueResult = {
+  truncated: false,
+  providers: [
+    { provider: "deepseek", name: "DeepSeek", models: [] },
+    ...catalogue.providers,
+    { provider: "broken", name: "Broken", models: [], error: "discovery failed" },
+  ],
+};
+
 function bugFixRole(configured = true): RoleView {
   return {
     key: "bug-fix",
@@ -446,6 +455,84 @@ describe("Reset all with an unconfigured role", () => {
     expect(second.querySelector<HTMLSelectElement>("select")?.value).toBe(
       "__inherit__:inherit-parent",
     );
+  });
+});
+
+describe("provider availability", () => {
+  it("keeps every provider visible in the role editor and disables unusable ones", async () => {
+    const controller = makeRoleApi();
+    controller.api.catalogue = async () => catalogueWithUnusableProviders;
+    await openRoles(controller.api);
+
+    const card = document.querySelector<HTMLElement>(".pstack-role-card")!;
+    const provider = card.querySelector<HTMLSelectElement>(
+      'select[aria-label="Bug fix Provider"]',
+    )!;
+    const options = Array.from(provider.options);
+    const byValue = (value: string): HTMLOptionElement =>
+      options.find((option) => option.value === value)!;
+
+    expect(byValue("deepseek").disabled).toBe(true);
+    expect(byValue("deepseek").textContent).toContain("No models");
+    expect(byValue("broken").disabled).toBe(true);
+    expect(byValue("broken").textContent).toContain("Unavailable");
+    expect(byValue("cpa").disabled).toBe(false);
+  });
+
+  it("keeps every provider visible in the budget dialog and disables unusable ones", async () => {
+    const controller = makeRoleApi();
+    controller.api.catalogue = async () => catalogueWithUnusableProviders;
+    await openRoles(controller.api);
+    await click(buttonByText(document.body, "Adjust budget"));
+
+    const panel = document.querySelector<HTMLElement>(".pstack-budget-panel")!;
+    const scope = Array.from(panel.querySelectorAll<HTMLSelectElement>("select")).find((select) =>
+      Array.from(select.options).some((option) => option.value === "unconfigured"),
+    )!;
+    await act(async () => {
+      scope.value = "unconfigured";
+      scope.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await flush();
+
+    const provider = Array.from(panel.querySelectorAll<HTMLSelectElement>("select")).find(
+      (select) => Array.from(select.options).some((option) => option.value === "deepseek"),
+    )!;
+    const byValue = (value: string): HTMLOptionElement =>
+      Array.from(provider.options).find((option) => option.value === value)!;
+
+    expect(provider.value).toBe("cpa");
+    expect(byValue("deepseek").disabled).toBe(true);
+    expect(byValue("deepseek").textContent).toContain("No models");
+    expect(byValue("broken").disabled).toBe(true);
+    expect(byValue("broken").textContent).toContain("Unavailable");
+    expect(byValue("cpa").disabled).toBe(false);
+  });
+
+  it("shows a placeholder when no provider has a usable model", async () => {
+    const controller = makeRoleApi();
+    controller.api.catalogue = async () => ({
+      truncated: false,
+      providers: [{ provider: "deepseek", name: "DeepSeek", models: [] }],
+    });
+    await openRoles(controller.api);
+    await click(buttonByText(document.body, "Adjust budget"));
+
+    const panel = document.querySelector<HTMLElement>(".pstack-budget-panel")!;
+    const scope = Array.from(panel.querySelectorAll<HTMLSelectElement>("select")).find((select) =>
+      Array.from(select.options).some((option) => option.value === "unconfigured"),
+    )!;
+    await act(async () => {
+      scope.value = "unconfigured";
+      scope.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await flush();
+
+    const provider = Array.from(panel.querySelectorAll<HTMLSelectElement>("select")).find(
+      (select) => Array.from(select.options).some((option) => option.value === "deepseek"),
+    )!;
+    expect(provider.disabled).toBe(true);
+    expect(provider.textContent).toContain("No provider with a usable model");
   });
 });
 

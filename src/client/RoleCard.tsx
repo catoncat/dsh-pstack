@@ -20,6 +20,7 @@ import { isClearDraft, isDirty, type RoleDraft } from "./role-draft.ts";
 import {
   effortChoices,
   modelChoices,
+  providerIssue,
   providerLabel,
   routeIsIncomplete,
   routeIsInvalid,
@@ -254,15 +255,22 @@ function RouteRow(props: {
           providers.every((provider) => provider.provider !== route.provider) ? (
             <option value={route.provider}>{route.provider}</option>
           ) : null}
-          {providers.map((provider) => (
-            <option
-              key={provider.provider}
-              value={provider.provider}
-              disabled={provider.error !== undefined}
-            >
-              {providerLabel(providers, provider.provider)}
-            </option>
-          ))}
+          {providers.map((provider) => {
+            const issue = providerIssue(provider);
+            return (
+              <option
+                key={provider.provider}
+                value={provider.provider}
+                disabled={issue !== undefined}
+                title={provider.error}
+              >
+                {providerLabel(providers, provider.provider)}
+                {issue === undefined
+                  ? null
+                  : ` (${t(issue === "unavailable" ? "providerUnavailable" : "noModels")})`}
+              </option>
+            );
+          })}
         </select>
       </label>
       {route.kind === "route" ? (
