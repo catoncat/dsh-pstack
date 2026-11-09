@@ -271,6 +271,14 @@ describe("role drafts across tabs", () => {
   });
 });
 
+describe("effort baseline hint", () => {
+  it("shows a hint card under the budget bar that reasoning effort is a baseline", async () => {
+    await openRoles(makeRoleApi().api);
+    const card = document.querySelector(".pstack-effort-hint");
+    expect(card?.textContent).toContain(catalogs.roles.en.effortBaselineHint);
+  });
+});
+
 describe("clear as deletion", () => {
   it("edits an unconfigured role directly without adding a route", async () => {
     const controller = makeRoleApi();

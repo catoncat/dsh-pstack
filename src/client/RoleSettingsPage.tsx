@@ -422,6 +422,10 @@ export function RoleSettingsView(props: {
           {t("budgetAdjust")}
         </Button>
       </div>
+      <div className="pstack-effort-hint" role="note">
+        <IconInfo size={14} />
+        <span>{t("effortBaselineHint")}</span>
+      </div>
       {budgetOpen && catalogue !== undefined ? (
         <BudgetDialog
           snapshot={snapshot}

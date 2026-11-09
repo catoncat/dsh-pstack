@@ -459,6 +459,29 @@ const CSS = `
   font-size: 12px;
   line-height: 18px;
 }
+.pstack-effort-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 0.5px solid
+    color-mix(in srgb, var(--dsw-alias-state-warn-primary) 35%, var(--dsw-alias-settings-card-stroke));
+  border-radius: var(--dsw-radius-lg);
+  background: color-mix(
+    in srgb,
+    var(--dsw-alias-state-warn-primary) 14%,
+    var(--dsw-alias-bg-layer-1)
+  );
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+.pstack-effort-hint > svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--dsw-alias-state-warn-primary);
+}
 .pstack-budget-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
