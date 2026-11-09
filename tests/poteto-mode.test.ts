@@ -122,6 +122,7 @@ describe("Agent Teams guard", () => {
 describe("apply", () => {
   it("registers exactly one section", () => {
     const captured: PromptSectionLike[] = [];
+    const { skillPath, directory } = temporarySkill();
     const ctx = {
       get() {
         return undefined;
@@ -141,7 +142,7 @@ describe("apply", () => {
       },
     } as unknown as Context;
 
-    apply(ctx);
+    apply(ctx, { skillPath, harnessDocPath: join(directory, "dsh.md") });
 
     expect(captured).toHaveLength(1);
     expect(captured[0]?.name).toBe(SECTION_NAME);

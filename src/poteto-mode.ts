@@ -75,10 +75,16 @@ export function createPotetoModeSection(
   return { name: SECTION_NAME, order: SECTION_ORDER, interpolate: false, text };
 }
 
-export function apply(ctx: Context): void {
+/** Optional section sources. Tests pass a temporary skill so `apply` does not read the built tree. */
+export interface PotetoModeSectionPaths {
+  readonly skillPath?: string;
+  readonly harnessDocPath?: string;
+}
+
+export function apply(ctx: Context, paths?: PotetoModeSectionPaths): void {
   assertNoAgentTeams(ctx);
   const host = ctx as unknown as SystemPromptHost;
-  const section = createPotetoModeSection();
+  const section = createPotetoModeSection(paths?.skillPath, paths?.harnessDocPath);
   ctx.effect(() => host.systemPrompt.section(section), "pstack.poteto-mode.section()");
   ctx.effect(
     () =>
