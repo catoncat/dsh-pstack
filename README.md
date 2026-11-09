@@ -33,6 +33,7 @@
     <a href="#-capabilities">🧩 Capabilities</a> ·
     <a href="#-optional-dsh-plugins">🔌 Optional plugins</a> ·
     <a href="#️-remaining-gaps">⚠️ Limitations</a> ·
+    <a href="#-faq">❓ FAQ</a> ·
     <a href="#-compatibility">📦 Compatibility</a>
   </p>
 </div>
@@ -200,6 +201,17 @@ These limitations remain even after all optional plugins that can coexist with p
 | Media evidence | No built-in video rendering, recording, or frame-level verification. Use external recording or FFmpeg tools. |
 | Desktop coverage | Computer use is limited to macOS PTC desktop-control sessions. Windows support is incomplete. |
 | MCP discovery | No automatic evidence-category discovery. Configure and identify MCP tools explicitly. |
+
+## ❓ FAQ
+
+<details>
+<summary><strong>Expand for questions and answers</strong></summary>
+
+1. **Agent preset names stay in English**
+
+   Set the language to Chinese in **Settings → General → Language**, then restart DSH. If the row already shows Chinese, select it again to save the preference that preset names read when the host starts.
+
+</details>
 
 ## 📦 Compatibility
 
