@@ -772,7 +772,7 @@
 对 lock 内 58 个技能逐个核对 dsh.md 的 Cursor-only features（Automations/routines、Bugbot、cloud agents、Cursor Projects、内置 PR 工具）。
 
 - 依赖并排除：make-bot-ui。
-- 仅正文提及但不依赖：poteto-help、poteto-mode，说明里涉及 Bugbot 或 cloud，但实际路径用 gh 与本地工具，不排除。
+- 仅正文提及但不依赖：poteto-mode、poteto-help、reflect，理由记在 lock 的 cursorNote，不排除。
 - 其余技能无 Cursor-only 依赖，cursorNote 记为 none used。
 
 ## 横切发现与通用适配

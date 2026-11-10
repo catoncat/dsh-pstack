@@ -165,7 +165,7 @@
       "skillHash": "sha256:768368881379d688c4e3bbdae55dd2d7874fde98a258324d3527de1bf09f9bd1",
       "status": "pending",
       "cursorOnly": false,
-      "cursorNote": "reviewed dsh.md Cursor-only features: none used"
+      "cursorNote": "documentation only, lists Cursor-only features as limitations, not a dependency"
     },
     "poteto-mode": {
       "caseFile": "playground/cases/poteto-mode.ts",
@@ -173,7 +173,7 @@
       "skillHash": "sha256:ee1848c973a112026f09ba12ea7a13c1654006e7bf170d1c34bf5d5816bc439b",
       "status": "pending",
       "cursorOnly": false,
-      "cursorNote": "reviewed dsh.md Cursor-only features: none used"
+      "cursorNote": "mentions Bugbot triage and a built-in PR tool; both have gh/origin local paths, not a dependency"
     },
     "principle-attack-the-premise": {
       "caseFile": "playground/cases/principle-attack-the-premise.ts",
@@ -381,7 +381,7 @@
       "skillHash": "sha256:9648df23cabaae99b78ed59cd93b6f35ebbf02105d228e3d0b5c3a3b3419d753",
       "status": "pending",
       "cursorOnly": false,
-      "cursorNote": "reviewed dsh.md Cursor-only features: none used"
+      "cursorNote": "an example string mentions Bugbot, not a dependency"
     },
     "setup-pstack": {
       "caseFile": "playground/cases/setup-pstack.ts",

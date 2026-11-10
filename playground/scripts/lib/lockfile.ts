@@ -76,6 +76,18 @@ export const CURSOR_ONLY_REASONS: Record<string, string> = {
 // The exclusion table is generated from the cursor-only table, never maintained separately.
 export const EXCLUSIONS: Record<string, string> = CURSOR_ONLY_REASONS;
 
+/**
+ * Skills whose text mentions a Cursor-only feature but do not depend on one. Recording
+ * the reason here lets check treat them as reviewed while still flagging any other skill
+ * whose text mentions one, so a new Cursor-only dependency surfaces instead of hiding.
+ */
+export const CURSOR_MENTION_REVIEWED: Record<string, string> = {
+  "poteto-mode":
+    "mentions Bugbot triage and a built-in PR tool; both have gh/origin local paths, not a dependency",
+  "poteto-help": "documentation only, lists Cursor-only features as limitations, not a dependency",
+  reflect: "an example string mentions Bugbot, not a dependency",
+};
+
 export function sha256File(path: string): string {
   return `sha256:${createHash("sha256").update(readFileSync(path)).digest("hex")}`;
 }
@@ -167,7 +179,9 @@ export function buildLock(existing: LockFile | null): LockFile {
       skillHash: sha256File(upstreamSkillFile(name)),
       status,
       cursorOnly,
-      cursorNote: cursorOnly ? CURSOR_ONLY_REASONS[name] : CURSOR_FREE_NOTE,
+      cursorNote: cursorOnly
+        ? CURSOR_ONLY_REASONS[name]
+        : (CURSOR_MENTION_REVIEWED[name] ?? CURSOR_FREE_NOTE),
     };
     // A plain regeneration must not erase an existing approval record.
     if (prior?.approvedAt !== undefined) entry.approvedAt = prior.approvedAt;

@@ -10,6 +10,7 @@ import { load as yamlLoad } from "js-yaml";
 import { RAW_SKILLS_DIR } from "./lib/env";
 import {
   caseSkills,
+  CURSOR_MENTION_REVIEWED,
   EXCLUSIONS,
   LOCK_FILE,
   packageDshVersion,
@@ -24,6 +25,26 @@ import {
 
 /** A release compatibility key must name a dsh version and a port/legacy revision. */
 const COMPATIBILITY_KEY_RE = /^[a-z0-9][a-z0-9.-]*\+(?:port|legacy)-v\d+$/;
+
+/** Text that suggests a Cursor-only dependency; reviewed mentions live in CURSOR_MENTION_REVIEWED. */
+const CURSOR_TOKENS =
+  /(Automations|SendToUser|Bugbot|cloud agents?|Cursor Projects?|built-in PR tool|routines?)/i;
+
+/** Return the first Cursor-only token found in a skill's Markdown, or null. */
+function firstCursorMention(dir: string): string | null {
+  if (!existsSync(dir)) return null;
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      const hit = firstCursorMention(path);
+      if (hit !== null) return hit;
+    } else if (entry.name.endsWith(".md")) {
+      const match = readFileSync(path, "utf8").match(CURSOR_TOKENS);
+      if (match) return match[0];
+    }
+  }
+  return null;
+}
 
 interface SkillCheck {
   skill: string;
@@ -164,6 +185,18 @@ function checkLockDrift(lock: LockFile): DriftProblem[] {
 
   for (const skill of cases) {
     if (!upstreamSet.has(skill)) problems.push({ skill, reason: "用例存在但上游技能已不存在" });
+  }
+
+  // A new or updated skill that mentions a Cursor-only feature must be reviewed: exclude
+  // it when it depends on one, or record the reason in CURSOR_MENTION_REVIEWED when it does not.
+  for (const skill of upstream) {
+    if (skill in EXCLUSIONS || skill in CURSOR_MENTION_REVIEWED) continue;
+    const hit = firstCursorMention(join(RAW_SKILLS_DIR, skill));
+    if (hit !== null)
+      problems.push({
+        skill,
+        reason: `文本提到 Cursor-only 能力 "${hit}"，需确认是否依赖：依赖则加入排除表，不依赖则记入 CURSOR_MENTION_REVIEWED`,
+      });
   }
 
   for (const [skill, entry] of Object.entries(lock.skills)) {

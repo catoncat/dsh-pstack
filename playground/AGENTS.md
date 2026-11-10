@@ -21,3 +21,4 @@
 - 破坏性更新更换 baseline.compatibilityKey；approve 时会把当前 compatibilityKey 写进 approvedCompatibilityKey，换了 key 后旧审批自动失效，check 报需重新审批。README 兼容行由发布流程处理，不在 playground 重复。
 - 审批命令是 `vp run playground:approve -- --skill a,b --round N`。
 - 闭环：raw 轮跑完出 skill-audit，用户逐条审批并填写建议，按建议实现 dsh.md 与插件工具，`vp run build`，adapted 轮只跑失败用例，循环到没有实现缺陷，收敛后整体复跑一次。
+- cursor-only 只排除真正依赖的技能，当前 make-bot-ui。poteto-mode、poteto-help、reflect 文本提到但已审为不依赖，理由在 lock 的 cursorNote。check 会扫描所有技能 Markdown，新技能提到 Cursor-only 能力即报待审，需排除或记入 CURSOR_MENTION_REVIEWED。
