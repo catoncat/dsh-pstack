@@ -130,6 +130,51 @@ function startSession(session: BrowserSession, workspaceTitle: string): string {
   return viaWorkspace;
 }
 
+/**
+ * First-line display labels for the agent presets a case may need. The adapted round
+ * runs pstack cases under `poteto-mode` so the model carries the skill-routing
+ * instructions; without that preset the hidden pstack skills never enter the catalog.
+ */
+const PRESET_LABELS: Record<string, string[]> = {
+  "poteto-mode": ["Poteto 模式", "Poteto mode"],
+  "poteto-mode-creator": ["Poteto 创造模式", "Poteto Creator mode"],
+  standard: ["标准模式", "Standard mode"],
+};
+
+/** Open the composer's preset menu and pick a preset by its display label. */
+function selectPreset(session: BrowserSession, presetId: string): string {
+  const labels = PRESET_LABELS[presetId] ?? [presetId];
+  const seat = session.eval<string>(
+    `(() => {
+      const button = [...document.querySelectorAll("button")].find((element) =>
+        (element.className || "").toString().includes("seat") ||
+        (element.getAttribute("aria-haspopup") === "menu" && !element.getAttribute("aria-label") && /模式|Mode/.test(element.innerText || ""))
+      );
+      if (!button) return "no-seat";
+      const before = (button.innerText || "").trim();
+      button.click();
+      return before || "clicked";
+    })()`,
+  );
+  if (seat === "no-seat") return "no-seat";
+  session.wait(900);
+  const picked = session.eval<string>(
+    `(() => {
+      const labels = ${JSON.stringify(labels)};
+      const items = [...document.querySelectorAll("[role=menuitem]")];
+      const item = items.find((element) => {
+        const text = (element.innerText || "").trim();
+        return labels.some((label) => text.startsWith(label));
+      });
+      if (!item) return "no-item";
+      item.click();
+      return (item.innerText || "").trim().split("\\n")[0];
+    })()`,
+  );
+  session.wait(900);
+  return picked;
+}
+
 function materializeWorkspace(
   paths: WorkerPaths,
   caseId: string,
@@ -230,6 +275,8 @@ interface AttemptInput {
   probeSeconds: number | null;
   timeoutSeconds: number;
   screenshotFile: string;
+  /** Agent preset display id to select before sending; adapted rounds use poteto-mode. */
+  preset?: string;
 }
 
 /**
@@ -238,7 +285,8 @@ interface AttemptInput {
  * digest the log. Throws InfraError when no session appears or its log cannot be read.
  */
 function attemptCase(input: AttemptInput): AttemptOutcome {
-  const { url, paths, skillCase, workerIndex, waitMs, probeSeconds, timeoutSeconds } = input;
+  const { url, paths, skillCase, workerIndex, waitMs, probeSeconds, timeoutSeconds, preset } =
+    input;
   const caseId = skillCase.id;
   const workerTag = `w${workerIndex}`;
   const session = createBrowserSession({
@@ -268,6 +316,14 @@ function attemptCase(input: AttemptInput): AttemptOutcome {
       )
     ) {
       throw new Error("composer did not appear after starting a session");
+    }
+    if (preset !== undefined) {
+      const picked = selectPreset(session, preset);
+      console.log(`[run-case] preset -> ${picked} (wanted ${preset})`);
+      if (picked === "no-seat" || picked === "no-item") {
+        session.screenshot(input.screenshotFile);
+        throw new Error(`could not select agent preset "${preset}" (got ${picked})`);
+      }
     }
     session.click(COMPOSER_SELECTOR);
     session.keyboardType(skillCase.prompt);
@@ -404,6 +460,11 @@ async function main(): Promise<void> {
   }
   const waitMs = probeSeconds !== null ? probeSeconds * 1000 : timeoutSeconds * 1000;
 
+  // Adapted rounds run pstack cases under the poteto-mode preset so the model carries
+  // the skill-routing instructions; raw rounds keep the standard preset.
+  const presetArg = argValue("--preset");
+  const preset = presetArg ?? (mode === "adapted" ? "poteto-mode" : undefined);
+
   const workspaceDir = materializeWorkspace(paths, caseId, skillCase.workspaceFiles);
   const url = readWebUrl(paths);
 
@@ -422,6 +483,7 @@ async function main(): Promise<void> {
     probeSeconds,
     timeoutSeconds,
     screenshotFile,
+    preset,
   };
 
   let outcome: AttemptOutcome;

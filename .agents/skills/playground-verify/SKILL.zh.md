@@ -56,7 +56,7 @@ vp run build
 
 ## 6. adapted 回归轮
 
-第一个 adapted 轮会用刚构建好的插件重建 worker profile，同时保留 raw 证据。不要在第一个轮次传 `--reuse`，否则 worker 会保留旧的 raw profile。
+第一个 adapted 轮会用刚构建好的插件重建 worker profile，同时保留 raw 证据。不要在第一个轮次传 `--reuse`，否则 worker 会保留旧的 raw profile。adapted 轮里 run-case 会在发送前于输入区选中 `poteto-mode` preset，让模型带上技能路由指令；raw 轮保持标准 preset。
 
 ```sh
 vp run playground:prepare -- --mode adapted --workers 4

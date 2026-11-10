@@ -56,7 +56,7 @@ vp run build
 
 ## 6. Adapted regression rounds
 
-The first adapted round rebuilds the worker profile with the freshly built plugin while keeping the raw evidence. Do not pass `--reuse` on that first round, or the workers keep the old raw profile.
+The first adapted round rebuilds the worker profile with the freshly built plugin while keeping the raw evidence. Do not pass `--reuse` on that first round, or the workers keep the old raw profile. In adapted rounds run-case selects the `poteto-mode` preset in the composer before sending, so the model carries the skill routing instructions; raw rounds stay on the standard preset.
 
 ```sh
 vp run playground:prepare -- --mode adapted --workers 4
