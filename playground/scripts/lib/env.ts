@@ -159,9 +159,11 @@ export function loadProviderPlan(mainFilter?: string): ProviderPlan {
   }
 
   const lowRoutes = routes.filter((route) => route.efforts.includes("low"));
-  const mainRoute =
-    lowRoutes.find((route) => new RegExp(mainFilter ?? "minimax", "i").test(route.model)) ??
-    (mainFilter === undefined ? lowRoutes[0] : undefined);
+  // No real provider or model name is hardcoded: --main picks by the operator's own
+  // substring, and without it the first allowed low route is the default probe.
+  const mainRoute = mainFilter
+    ? lowRoutes.find((route) => new RegExp(mainFilter, "i").test(route.model))
+    : lowRoutes[0];
   if (!mainRoute)
     throw new Error(
       mainFilter

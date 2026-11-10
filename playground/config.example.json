@@ -1,10 +1,9 @@
 {
   "providers": {
-    "magpie": {
+    "your-provider": {
       "apiKey": "<paste-your-key>",
       "models": {
-        "workbuddy/minimax-m3.1-flash": ["low"],
-        "workbuddy/deepseek-v4.1-flash": ["low"]
+        "your-provider/your-model": ["low", "high"]
       }
     }
   }
