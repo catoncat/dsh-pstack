@@ -1,10 +1,9 @@
-# Runtime DSH home for the playground: sessions, logs, credentials, evidence, installed deps.
+# Per-worker runtime: DSH home, browser profile, workspaces, evidence.
+.workers/
+
+# Legacy single-instance runtime paths, kept ignored so stale dirs never leak.
 .dsh/
-
-# Persistent browser profile and runtime dirs for browser verification.
 .browser/
-
-# Per-case verification workspaces.
 .workspace/
 
 # Local config with provider keys and allowed routes; copy config.example.json.
@@ -12,3 +11,7 @@ config.json
 node_modules
 *.log
 .DS_Store
+
+# Generated per-run stage report; stage1-findings.md is the hand-curated record.
+reports/stage1-raw-*.md
+reports/stage1-adapted-*.md

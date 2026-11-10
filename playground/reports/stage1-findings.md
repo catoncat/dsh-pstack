@@ -1,10 +1,12 @@
 # 阶段一 raw 验证 findings
 
-本文逐技能记录 raw 上游技能在 DSH Web 真实会话中的观察、需要的 dsh.md 适配说明、需要的插件工具。判定口径：阶段一不判通过，失败即发现。证据在 `playground/.dsh/evidence/` 的 JSON 与截图，原始会话在 `playground/.dsh/sessions/`。结论经用户确认后按 `port/AGENTS.md` 流程回填 `port/audit.md` 与 `port/dsh.md`。
+本文逐技能记录 raw 上游技能在 DSH Web 真实会话中的观察、需要的 dsh.md 适配说明、需要的插件工具。判定口径：阶段一不判通过，失败即发现。证据在 `playground/.workers/w<k>/evidence/` 的 JSON 与截图（早期批次在 `playground/.dsh/evidence/`），原始会话在对应 worker 的 `home/sessions/`。结论经用户确认后按 `port/AGENTS.md` 流程回填 `port/audit.md` 与 `port/dsh.md`。
 
 ## 方法与环境
 
 环境为 raw 模式：不装 dsh-pstack，用官方 `@deepseek-ai/dsh-skill-filesystem` 挂载 `upstream/cursor-plugins/pstack/skills`。主探针 magpie/workbuddy/minimax-m3.1-flash low。批次一（poteto-mode、how、tdd、unslop）运行时 approval 策略为 ask，自批次二起 home patch 固定为 never。默认技能根未关闭，宿主用户技能可见，skillLoads 可能出现非 pstack 技能，判定只看 pstack 名字。每用例独立工作区，run-case 以会话事件 cwd 校验落点。
+
+批次一至二为单实例串行、完整等待。之后改为多 worker 并行（默认 4）与动态端口，阶段一以短探针取早期信号（principle-light 120 秒、behavior 300 秒），到点中止并把证据标 `truncated`。两个阶段的证据口径不变，短探针只截短观察窗口，不改变加载、preset、工具错误这类早期信号的判定。重型用例在改造中把素材规模收到刚好触发工作流，避免 raw 环境不加载技能时模型把整件事跑完。
 
 ## 横切发现
 
@@ -41,8 +43,8 @@ unslop 用例首次 bash 调用因缺 description 参数报错， Cursor 的 Bas
 ### figure-it-out
 
 - 会话 session（批次二，raw，minimax low），run-case 在 1500 秒窗口放弃等待，web 侧 turn 继续跑到 160 步以上，证据未落 evidence JSON，本条依据会话文件直接 digest。计划以 --timeout 3600 重跑取完整判定。
-- observed：唯一加载了同名技能的用例（skill 调用 name=figure-it-out）。模型按迁移任务直接执行了完整搬迁（1114 事件、160 步、大量 write/edit/bash），超出窗口未见 turn/end。
-- neededAdapterNotes：大型迁移类任务的窗口预算需要单独定义（3600 秒级），或把用例拆成设计阶段与执行阶段两条；dsh.md 需说明 figure-it-out 的 bespoke playbook 流程在 DSH 的落地形态。
+- observed：唯一加载了同名技能的用例（skill 调用 name=figure-it-out）。模型按迁移任务直接执行了完整搬迁（1114 事件、160 步、大量 write/edit/bash），超出窗口未见 turn/end。改造中已把素材规模从「十几个子包、好几天」收到「两三个子包、几个小时」，意图保持在「先设计可审计的执行流程」，改用短探针在全量批跑中重取证据。
+- neededAdapterNotes：figure-it-out 的 bespoke playbook 流程在 DSH 的落地形态需要写清；触发依赖描述匹配的强度，不稳定，需由适配提示强化。
 - neededPluginTools：无新增。
 - verdict：gap（触发成功但窗口不足，重跑定论）。
 
@@ -52,6 +54,14 @@ unslop 用例首次 bash 调用因缺 description 参数报错， Cursor 的 Bas
 - observed：44 次调用完成三候选并行产出、评审选底、嫁接优点的完整 bakeoff，行为与 arena 意图一致。委派用的是 DSH 标准 subagent 工具（3 次并行），不是 pstack_subagent。首次 bash 缺 description 报错（X3）后恢复。arena 未加载。
 - neededAdapterNotes：多候选 bakeoff 路由到 arena 的触发指令；dsh.md 需写明 Cursor Task 到 DSH 委派工具的映射差异，标准 subagent 只有基础 fan-out，角色与路由控制要靠 pstack_subagent。
 - neededPluginTools：pstack_subagent（角色/路由化委派，arena runners 需要每 runner 独立模型与 effort）。
+- verdict：gap。
+
+### interrogate
+
+- 会话 session-aca6cc02，raw，minimax low。
+- observed：50 次调用，用 DSH 标准 subagent 并行拉起四个审查者（租户隔离、可变状态共享、并发与生命周期、缓存逻辑），再逐条重跑复现脚本，最终留下 4 条可复现问题（跨租户泄漏、缓存返回同一数组实例、永不失效、无上限）。首次 write 报错后恢复。interrogate 未加载，委派仍未走 pstack_subagent。
+- neededAdapterNotes：对抗式多模型审查路由到 interrogate 的触发指令；dsh.md 需写明多审查者要有不同模型族的角度，标准 subagent 只能给基础 fan-out，跨模型多样性要靠 pstack_subagent 的 role 路由。
+- neededPluginTools：pstack_subagent（interrogate reviewers 角色池，每 reviewer 独立路由）。
 - verdict：gap。
 
 ### architect
