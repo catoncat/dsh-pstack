@@ -44,7 +44,7 @@ vp run playground:collect -- --mode raw
 
 collect 写出 `reports/run-raw-<date>.md`，并把本轮的证据归档到 `reports/evidence/<round>-<date>/` 下。每一行都写明它自己的归档证据文件。
 
-然后写审核报告 `reports/skill-audit.md`，每个技能一节。每一节陈述上游能力以及当前状态与缺口，并留两个空行供操作者在审批时填写：建议的 dsh.md 适配和建议的插件工具。状态从待审批开始。不要预先填写这些建议。停在这里，把报告交给操作者逐节审批。
+然后写审核报告 `reports/skill-audit.md`，每个技能一节。每一节陈述上游能力以及当前状态与缺口，并留两个空行供操作者在审批时填写：建议的 dsh.md 适配和建议的插件工具。状态从待审批开始。不要预先填写这些建议。停在这里，把报告交给操作者逐节审批。用 `vp run playground:approve -- --skill <a>,<b> --round <n>` 记录每次审批，它写入该技能的审批字段，报告显示对应状态。
 
 ## 5. 审批后适配
 

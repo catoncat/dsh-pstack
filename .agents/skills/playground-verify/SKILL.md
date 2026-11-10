@@ -44,7 +44,7 @@ vp run playground:collect -- --mode raw
 
 Collect writes `reports/run-raw-<date>.md` and archives the round's evidence under `reports/evidence/<round>-<date>/`. Every row names its archived evidence file.
 
-Then write the audit report `reports/skill-audit.md`, one section per skill. Each section states the upstream capability and the current status and gap, and leaves two empty rows for the operator to fill during approval: the suggested dsh.md adaptation and the suggested plugin tools. Status starts at pending approval. Do not pre-fill the suggestions. Stop here and hand the report to the operator for per-section approval.
+Then write the audit report `reports/skill-audit.md`, one section per skill. Each section states the upstream capability and the current status and gap, and leaves two empty rows for the operator to fill during approval: the suggested dsh.md adaptation and the suggested plugin tools. Status starts at pending approval. Do not pre-fill the suggestions. Stop here and hand the report to the operator for per-section approval. Record each approval with `vp run playground:approve -- --skill <a>,<b> --round <n>`; it writes the skill's approved fields and the report shows the status.
 
 ## 5. Adapt after approval
 

@@ -1,7 +1,8 @@
-// cases.lock.json is the pinned map from upstream pstack skills to playground cases.
-// It records, per skill, which case file covers it, the SKILL.md content hash, and an
-// audit status, plus the exclusion table for Cursor-only skills. lock.ts regenerates
-// it; check.ts compares the generated-and-stored copy against disk to detect drift.
+// cases.lock.json is the pinned map from upstream pstack skills to playground cases,
+// plus the release baseline. It records, per skill, which case file covers it, the
+// SKILL.md content hash, an audit status and approval record, and the exclusion table
+// for Cursor-only skills. lock.ts regenerates it; check.ts compares the stored copy
+// against disk and the current package/upstream baseline to detect drift.
 
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
@@ -11,6 +12,11 @@ import { join } from "node:path";
 import { CASES_DIR, RAW_SKILLS_DIR, REPO_ROOT } from "./env";
 
 export const LOCK_FILE = join(REPO_ROOT, "playground", "cases.lock.json");
+export const PACKAGE_JSON = join(REPO_ROOT, "package.json");
+/** The legacy capability audit lock. Read once only, to seed a brand-new baseline. */
+const LEGACY_AUDIT_LOCK = join(REPO_ROOT, "port", "audit.lock.json");
+
+export const LOCK_SCHEMA_VERSION = 2;
 
 export type SkillStatus = "audited" | "excluded" | "pending";
 
@@ -24,6 +30,26 @@ export interface SkillLock {
   cursorOnly: boolean;
   /** Why the skill is cursor-only, or the review note when it is not. */
   cursorNote: string;
+  /** ISO timestamp of the last approval, present only after approve.ts runs. */
+  approvedAt?: string;
+  /** The run-batch round the approval was granted in. */
+  approvedRound?: number;
+  /** The SKILL.md hash accepted at approval time; drift from disk or skillHash is a fault. */
+  approvedHash?: string;
+}
+
+/** The release baseline: what dsh version, upstream commit, and compatibility key this lock pins. */
+export interface Baseline {
+  /** The package.json engines.dsh range this baseline pins. */
+  dshVersion: string;
+  /** The upstream/cursor-plugins commit this baseline pins. */
+  pstackCommit: string;
+  /** Release compatibility key; seeded once from the legacy audit lock, then hand-maintained. */
+  compatibilityKey: string;
+  /** "initial" on the first baseline; carried forward verbatim on every later regeneration. */
+  transition: string;
+  /** The prior baseline id during a transition, or null. */
+  previous: string | null;
 }
 
 export interface Exclusion {
@@ -32,7 +58,8 @@ export interface Exclusion {
 }
 
 export interface LockFile {
-  upstream: { repo: string; commit: string };
+  schemaVersion: number;
+  baseline: Baseline;
   round?: number;
   status?: string;
   skills: Record<string, SkillLock>;
@@ -87,7 +114,19 @@ export function readLock(): LockFile | null {
   return JSON.parse(readFileSync(LOCK_FILE, "utf8")) as LockFile;
 }
 
-function upstreamCommit(): string {
+/** The engines.dsh range from package.json, the version the baseline must match. */
+export function packageDshVersion(): string {
+  const manifest = JSON.parse(readFileSync(PACKAGE_JSON, "utf8")) as {
+    engines?: { dsh?: string };
+  };
+  const dsh = manifest.engines?.dsh;
+  if (typeof dsh !== "string" || dsh.trim() === "")
+    throw new Error("package.json must declare engines.dsh");
+  return dsh;
+}
+
+/** The current upstream/cursor-plugins HEAD, the commit the baseline must match. */
+export function upstreamCommit(): string {
   const result = spawnSync("git", ["-C", "upstream/cursor-plugins", "rev-parse", "HEAD"], {
     cwd: REPO_ROOT,
     encoding: "utf8",
@@ -96,20 +135,57 @@ function upstreamCommit(): string {
   return result.stdout.trim() || "unknown";
 }
 
-/** Build the lock from disk, preserving each existing skill's status and defaulting new ones to pending. */
+/** Seed a compatibility key from the legacy audit lock, if it still exists. */
+function legacyCompatibilityKey(): string | null {
+  if (!existsSync(LEGACY_AUDIT_LOCK)) return null;
+  const legacy = JSON.parse(readFileSync(LEGACY_AUDIT_LOCK, "utf8")) as {
+    baseline?: { compatibilityKey?: string };
+  };
+  const key = legacy.baseline?.compatibilityKey;
+  return typeof key === "string" && key.trim() !== "" ? key : null;
+}
+
+/** Derive a first compatibility key from the DSH range when no legacy lock exists. */
+function derivedCompatibilityKey(): string {
+  const version =
+    packageDshVersion()
+      .replace(/^[^0-9]*/, "")
+      .split(/\s/)[0] ?? "0.0.0";
+  return `dsh-${version}+port-v1`;
+}
+
+/**
+ * Build the release baseline. An existing baseline's compatibilityKey, transition, and
+ * previous carry forward verbatim. A brand-new lock seeds compatibilityKey once from the
+ * legacy audit lock; after that the lock is the only source and the legacy file is gone.
+ */
+function buildBaseline(existing: LockFile | null): Baseline {
+  const prior = existing?.baseline;
+  const compatibilityKey =
+    prior?.compatibilityKey ?? legacyCompatibilityKey() ?? derivedCompatibilityKey();
+  return {
+    dshVersion: packageDshVersion(),
+    pstackCommit: upstreamCommit(),
+    compatibilityKey,
+    transition: prior?.transition ?? "initial",
+    previous: prior?.previous ?? null,
+  };
+}
+
+/** Build the lock from disk, preserving each existing skill's status and approval record and defaulting new ones to pending. */
 export function buildLock(existing: LockFile | null): LockFile {
   const cases = new Set(caseSkills());
   const skills: Record<string, SkillLock> = {};
   for (const name of upstreamSkillNames()) {
     const cursorOnly = name in CURSOR_ONLY_REASONS;
-    const prior = existing?.skills[name]?.status;
+    const prior = existing?.skills[name];
     // Cursor-only skills are excluded by definition; any other skill never stays excluded.
     const status: SkillStatus = cursorOnly
       ? "excluded"
-      : prior === "excluded"
+      : prior?.status === "excluded"
         ? "pending"
-        : (prior ?? "pending");
-    skills[name] = {
+        : (prior?.status ?? "pending");
+    const entry: SkillLock = {
       caseFile: cases.has(name) ? `playground/cases/${name}.ts` : null,
       skillPath: `upstream/cursor-plugins/pstack/skills/${name}/SKILL.md`,
       skillHash: sha256File(upstreamSkillFile(name)),
@@ -117,12 +193,18 @@ export function buildLock(existing: LockFile | null): LockFile {
       cursorOnly,
       cursorNote: cursorOnly ? CURSOR_ONLY_REASONS[name] : CURSOR_FREE_NOTE,
     };
+    // A plain regeneration must not erase an existing approval record.
+    if (prior?.approvedAt !== undefined) entry.approvedAt = prior.approvedAt;
+    if (prior?.approvedRound !== undefined) entry.approvedRound = prior.approvedRound;
+    if (prior?.approvedHash !== undefined) entry.approvedHash = prior.approvedHash;
+    skills[name] = entry;
   }
   const exclusions = Object.entries(CURSOR_ONLY_REASONS)
     .map(([skill, reason]) => ({ skill, reason }))
     .sort((a, b) => a.skill.localeCompare(b.skill));
   return {
-    upstream: { repo: "cursor-plugins/pstack", commit: upstreamCommit() },
+    schemaVersion: LOCK_SCHEMA_VERSION,
+    baseline: buildBaseline(existing),
     round: existing?.round ?? 0,
     status: existing?.status ?? "pending-approval",
     skills,

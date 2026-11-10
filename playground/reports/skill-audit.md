@@ -1,5 +1,7 @@
 # 技能审核报告
 
+基线：dsh >=0.2.2-rc.1，pstack ae5650febf4320793844c12c4adaa937f417f8da，compatibilityKey dsh-0.2.2-rc.1+port-v1，transition initial。
+
 本报告待用户逐条审批。当前实现只作事实描述，不是结论；建议列留空，由用户在审批时填写。审批后按用户填写的建议实现适配与插件工具，`vp run build` 出构建版 dsh-pstack，adapted 轮只用构建版跑 raw 轮失败的用例，跑完回填本报告的缺口闭合状态。
 
 ## 闭环流程
@@ -22,40 +24,40 @@
 
 | 维度 | 内容 |
 | --- | --- |
-| 上游能力 | 写代码前先勾勒类型、签名与模块结构，并在实现填充时持续参与，避免直接编码锁死错误结构。 |
-| 当前实现：会话结果 | turnEnd=completed，调用 8 次 |
+| 上游能力 | 写代码前先勾勒类型、签名与模块结构，并在实现填充时持续参与；适用于 /architect 或直接编码会锁死错误结构的重要工作。 |
+| 当前实现：会话结果 | turnEnd=completed，调用 9 次 |
 | 当前实现：工具错误 | 无 |
 | 当前实现：缺口 | 技能未被成功加载（X1，隐藏技能无法用标准 skill 工具加载） |
-| 证据 | playground/reports/evidence/1-2026-11-10/w0-architect-raw-2026-11-10T08-55-33-847Z.json |
+| 证据 | playground/.workers/w0/evidence/w0-architect-adapted-2026-11-10T09-55-20-400Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### arena
 
 | 维度 | 内容 |
 | --- | --- |
-| 上游能力 | 就同一任务并行产出多个候选方案，选出一个基底，再把落选方案中最强的部分嫁接进去，避免一次尝试定死重要产物。 |
+| 上游能力 | 就同一任务并行产出多个候选方案，选出一个基底，再把落选方案中最强的部分嫁接进去；适用于 /arena 或一次尝试会定死重要产物时。 |
 | 当前实现：会话结果 | turnEnd=aborted，短探针截断，调用 15 次 |
 | 当前实现：工具错误 | bash |
 | 当前实现：缺口 | 技能未被成功加载（X1，隐藏技能无法用标准 skill 工具加载）；bash 缺少 description（X3） |
 | 证据 | playground/reports/evidence/1-2026-11-10/w1-arena-raw-2026-11-10T08-55-33-877Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### automate-me
 
 | 维度 | 内容 |
 | --- | --- |
-| 上游能力 | 把用户的工作方式与偏好整理成一枚个人 -mode 技能，用 create-skill 与 unslop 起草或修订，可从近期对话补充证据。 |
+| 上游能力 | 把用户的工作方式与偏好整理成一枚个人 -mode 技能，用 create-skill 与 unslop 起草或修订，可从近期对话补充证据；适用于 automate me 或希望 agent 遵循自己工作方式时。 |
 | 当前实现：会话结果 | turnEnd=completed，调用 40 次 |
 | 当前实现：工具错误 | write |
 | 当前实现：缺口 | 无早期信号缺口 |
 | 证据 | playground/reports/evidence/1-2026-11-10/w2-automate-me-raw-2026-11-10T08-55-33-865Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### benchmark-checklist
 
@@ -68,7 +70,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w3-benchmark-checklist-raw-2026-11-10T08-55-33-871Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### blast-radius
 
@@ -81,7 +83,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w4-blast-radius-raw-2026-11-10T08-55-33-872Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### bro
 
@@ -94,7 +96,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w5-bro-raw-2026-11-10T08-55-33-858Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### correct
 
@@ -107,7 +109,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w6-correct-raw-2026-11-10T08-55-33-881Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### create-formal-verification-skill
 
@@ -120,7 +122,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w7-create-formal-verification-skill-raw-2026-11-10T08-55-33-891Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### create-verification-skill
 
@@ -133,7 +135,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w8-create-verification-skill-raw-2026-11-10T08-55-33-865Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### figure-it-out
 
@@ -146,7 +148,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w9-figure-it-out-raw-2026-11-10T08-55-33-899Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### how
 
@@ -159,7 +161,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w10-how-raw-2026-11-10T08-55-33-935Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### in-your-own-words
 
@@ -172,7 +174,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w11-in-your-own-words-raw-2026-11-10T08-55-33-910Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### interrogate
 
@@ -185,33 +187,33 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w0-interrogate-raw-2026-11-10T08-56-50-517Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### ketchup
 
 | 维度 | 内容 |
 | --- | --- |
-| 上游能力 | 用平实的文字和少量图示，向用户汇报自其上次发言以来本对话的变化，并逐条列出等待其决定的事项与所需依据。 |
+| 上游能力 | 用平实的文字和少量图示，向用户汇报自其上次发言以来本对话的变化，并逐条列出等待其决定的事项与所需依据。适用于 /ketchup。 |
 | 当前实现：会话结果 | turnEnd=completed，调用 22 次 |
 | 当前实现：工具错误 | 无 |
 | 当前实现：缺口 | 技能未被成功加载（X1，隐藏技能无法用标准 skill 工具加载） |
 | 证据 | playground/reports/evidence/1-2026-11-10/w2-ketchup-raw-2026-11-10T08-59-17-065Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### ketchup-video
 
 | 维度 | 内容 |
 | --- | --- |
-| 上游能力 | 像 /ketchup 一样把用户拉回上下文，但用一段带字幕的幻灯片短视频呈现经过，并把等待决定的事项以文字置于其下。 |
+| 上游能力 | 像 /ketchup 一样把用户拉回上下文，但用一段带字幕的幻灯片短视频呈现经过，并把等待决定的事项以文字置于其下。适用于 /ketchup-video。 |
 | 当前实现：会话结果 | turnEnd=aborted，短探针截断，调用 29 次 |
 | 当前实现：工具错误 | 无 |
 | 当前实现：缺口 | 技能未被成功加载（X1，隐藏技能无法用标准 skill 工具加载） |
 | 证据 | playground/reports/evidence/1-2026-11-10/w1-ketchup-video-raw-2026-11-10T09-00-57-102Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### maintain-formal-verification-skill
 
@@ -224,7 +226,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w3-maintain-formal-verification-skill-raw-2026-11-10T08-59-18-884Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### maintain-verification-skill
 
@@ -237,7 +239,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w4-maintain-verification-skill-raw-2026-11-10T09-00-56-556Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### no-comments
 
@@ -250,7 +252,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w5-no-comments-raw-2026-11-10T08-55-55-792Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### poteto-help
 
@@ -263,7 +265,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w6-poteto-help-raw-2026-11-10T09-00-56-258Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### poteto-mode
 
@@ -276,7 +278,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w7-poteto-mode-raw-2026-11-10T09-00-58-239Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### principle-attack-the-premise
 
@@ -289,7 +291,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w8-principle-attack-the-premise-raw-2026-11-10T09-00-11-608Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### principle-boundary-discipline
 
@@ -302,7 +304,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w9-principle-boundary-discipline-raw-2026-11-10T08-57-29-261Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### principle-build-the-lever
 
@@ -315,7 +317,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w10-principle-build-the-lever-raw-2026-11-10T08-57-04-982Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### principle-encode-lessons-in-structure
 
@@ -328,7 +330,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w11-principle-encode-lessons-in-structure-raw-2026-11-10T08-57-08-122Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### principle-exhaust-the-design-space
 
@@ -341,7 +343,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w0-principle-exhaust-the-design-space-raw-2026-11-10T09-02-11-077Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### principle-experience-first
 
@@ -354,7 +356,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w1-principle-experience-first-raw-2026-11-10T09-06-18-155Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### principle-explain-the-number
 
@@ -367,7 +369,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w2-principle-explain-the-number-raw-2026-11-10T09-02-59-408Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### principle-fix-root-causes
 
@@ -380,7 +382,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w3-principle-fix-root-causes-raw-2026-11-10T09-04-41-094Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### principle-foundational-thinking
 
@@ -393,7 +395,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w4-principle-foundational-thinking-raw-2026-11-10T09-06-18-755Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### principle-guard-the-context-window
 
@@ -406,7 +408,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w5-principle-guard-the-context-window-raw-2026-11-10T08-57-48-391Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### principle-laziness-protocol
 
@@ -419,7 +421,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w6-principle-laziness-protocol-raw-2026-11-10T09-02-57-621Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### principle-make-operations-idempotent
 
@@ -432,7 +434,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w7-principle-make-operations-idempotent-raw-2026-11-10T09-06-18-871Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### principle-migrate-callers-then-delete-legacy-apis
 
@@ -445,7 +447,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w8-principle-migrate-callers-then-delete-legacy-apis-raw-2026-11-10T09-02-32-634Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### principle-minimize-reader-load
 
@@ -458,7 +460,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w9-principle-minimize-reader-load-raw-2026-11-10T08-59-50-451Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### principle-model-the-domain
 
@@ -471,7 +473,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w10-principle-model-the-domain-raw-2026-11-10T08-57-40-849Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### principle-never-block-on-the-human
 
@@ -484,7 +486,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w11-principle-never-block-on-the-human-raw-2026-11-10T08-59-29-304Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### principle-outcome-oriented-execution
 
@@ -497,7 +499,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w0-principle-outcome-oriented-execution-raw-2026-11-10T09-04-33-058Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### principle-prove-it-works
 
@@ -510,7 +512,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w1-principle-prove-it-works-raw-2026-11-10T09-07-47-780Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### principle-redesign-from-first-principles
 
@@ -523,7 +525,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w2-principle-redesign-from-first-principles-raw-2026-11-10T09-05-20-154Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### principle-separate-before-serializing-shared-state
 
@@ -536,7 +538,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w3-principle-separate-before-serializing-shared-state-raw-2026-11-10T09-07-02-530Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### principle-sequence-verifiable-units
 
@@ -549,7 +551,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w4-principle-sequence-verifiable-units-raw-2026-11-10T09-08-39-706Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### principle-subtract-before-you-add
 
@@ -562,7 +564,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w5-principle-subtract-before-you-add-raw-2026-11-10T08-59-53-023Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### principle-test-behavior-not-implementation
 
@@ -575,7 +577,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w6-principle-test-behavior-not-implementation-raw-2026-11-10T09-05-18-648Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### principle-type-system-discipline
 
@@ -588,7 +590,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w7-principle-type-system-discipline-raw-2026-11-10T09-07-18-639Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### recall
 
@@ -601,7 +603,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w8-recall-raw-2026-11-10T09-04-58-287Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### reflect
 
@@ -614,7 +616,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w9-reflect-raw-2026-11-10T09-01-16-777Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### setup-pstack
 
@@ -627,7 +629,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w10-setup-pstack-raw-2026-11-10T09-00-01-999Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### sharpen
 
@@ -640,7 +642,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w11-sharpen-raw-2026-11-10T09-01-03-579Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### show-me-your-work
 
@@ -653,20 +655,20 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w0-show-me-your-work-raw-2026-11-10T09-05-10-119Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### statechart
 
 | 维度 | 内容 |
 | --- | --- |
-| 上游能力 | 检查在状态间迁移的系统（产品流程、协议或服务）的 TLA+ 模型，画成 Mermaid statechart，并给出到达每个破坏规则状态的最短路径。 |
+| 上游能力 | 检查在状态间迁移的系统（产品流程、协议或服务）的 TLA+ 模型，画成 Mermaid statechart，并给出到达每个破坏规则状态的最短路径；适用于 /statechart 或把 bug 表现为状态路径。 |
 | 当前实现：会话结果 | turnEnd=completed，调用 23 次 |
 | 当前实现：工具错误 | 无 |
 | 当前实现：缺口 | 技能未被成功加载（X1，隐藏技能无法用标准 skill 工具加载） |
 | 证据 | playground/reports/evidence/1-2026-11-10/w1-statechart-raw-2026-11-10T09-10-07-229Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### swarm
 
@@ -679,7 +681,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w2-swarm-raw-2026-11-10T09-07-42-707Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### tdd
 
@@ -692,7 +694,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w3-tdd-raw-2026-11-10T09-09-23-349Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 已审批 2026-11-10T10:03:34.553Z（第 1 轮） |
 
 ### teach
 
@@ -705,7 +707,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w4-teach-raw-2026-11-10T09-11-00-410Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### technical-writing
 
@@ -718,7 +720,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w5-technical-writing-raw-2026-11-10T09-02-14-050Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### typescript-best-practices
 
@@ -731,7 +733,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w6-typescript-best-practices-raw-2026-11-10T09-07-40-459Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ### unslop
 
@@ -744,7 +746,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w7-unslop-raw-2026-11-10T09-09-28-778Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 已审批 2026-11-10T10:03:34.553Z（第 1 轮） |
 
 ### why
 
@@ -757,7 +759,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w8-why-raw-2026-11-10T09-07-42-821Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 待审批 | 待审批 |
+| 审批状态 | 待审批 |
 
 ## 显式排除清单
 

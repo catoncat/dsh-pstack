@@ -24,7 +24,7 @@ interface Manifest {
   engines?: { dsh?: string };
 }
 
-interface AuditLock {
+interface CasesLock {
   baseline?: { compatibilityKey?: string };
 }
 
@@ -49,7 +49,7 @@ function readJson(path: string, root = ROOT): unknown {
 
 export function releaseMetadata(read = readJson): ReleaseMetadata {
   const manifest = read("package.json") as Manifest;
-  const lock = read("port/audit.lock.json") as AuditLock;
+  const lock = read("playground/cases.lock.json") as CasesLock;
   const upstream = read("upstream/cursor-plugins/pstack/plugin.json") as UpstreamManifest;
   const version = manifest.version;
   const dshRange = manifest.engines?.dsh;

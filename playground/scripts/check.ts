@@ -12,12 +12,18 @@ import {
   caseSkills,
   EXCLUSIONS,
   LOCK_FILE,
+  packageDshVersion,
   readLock,
   sha256File,
+  upstreamCommit,
   upstreamSkillFile,
   upstreamSkillNames,
+  type Baseline,
   type LockFile,
 } from "./lib/lockfile";
+
+/** A release compatibility key must name a dsh version and a port/legacy revision. */
+const COMPATIBILITY_KEY_RE = /^[a-z0-9][a-z0-9.-]*\+(?:port|legacy)-v\d+$/;
 
 interface SkillCheck {
   skill: string;
@@ -121,6 +127,35 @@ function checkLockDrift(lock: LockFile): DriftProblem[] {
   const cases = new Set(caseSkills());
   const problems: DriftProblem[] = [];
 
+  const baseline: Baseline | undefined = lock.baseline;
+  if (baseline === undefined) {
+    problems.push({
+      skill: "baseline",
+      reason: "cases.lock.json 缺少 baseline，请运行 playground:lock 重新生成",
+    });
+  } else {
+    const expectedDsh = packageDshVersion();
+    if (baseline.dshVersion !== expectedDsh)
+      problems.push({
+        skill: "baseline.dshVersion",
+        reason: `与 package.json engines.dsh 不一致（lock ${baseline.dshVersion}，当前 ${expectedDsh}）`,
+      });
+    const currentCommit = upstreamCommit();
+    if (baseline.pstackCommit !== currentCommit)
+      problems.push({
+        skill: "baseline.pstackCommit",
+        reason: `与当前上游提交不一致（lock ${baseline.pstackCommit}，当前 ${currentCommit}）`,
+      });
+    if (
+      typeof baseline.compatibilityKey !== "string" ||
+      !COMPATIBILITY_KEY_RE.test(baseline.compatibilityKey)
+    )
+      problems.push({
+        skill: "baseline.compatibilityKey",
+        reason: `缺失或格式不符（${baseline.compatibilityKey}）`,
+      });
+  }
+
   for (const skill of upstream) {
     const excluded = lock.skills[skill]?.status === "excluded" || skill in EXCLUSIONS;
     if (!cases.has(skill) && !excluded)
@@ -132,8 +167,16 @@ function checkLockDrift(lock: LockFile): DriftProblem[] {
   }
 
   for (const [skill, entry] of Object.entries(lock.skills)) {
-    if (entry.status !== "audited" || !upstreamSet.has(skill)) continue;
+    if (entry.status !== "audited") continue;
+    if (entry.approvedAt === undefined || entry.approvedRound === undefined)
+      problems.push({ skill, reason: "status=audited 但缺少 approvedAt/approvedRound" });
+    if (!upstreamSet.has(skill)) continue;
     const current = sha256File(upstreamSkillFile(skill));
+    if (entry.approvedHash !== undefined && current !== entry.approvedHash)
+      problems.push({
+        skill,
+        reason: `status=audited 但 SKILL.md 哈希与 approvedHash 不一致（approved ${entry.approvedHash}，当前 ${current}）`,
+      });
     if (current !== entry.skillHash)
       problems.push({
         skill,

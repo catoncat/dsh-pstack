@@ -1,7 +1,11 @@
 {
-  "upstream": {
-    "repo": "cursor-plugins/pstack",
-    "commit": "ae5650febf4320793844c12c4adaa937f417f8da"
+  "schemaVersion": 2,
+  "baseline": {
+    "dshVersion": ">=0.2.2-rc.1",
+    "pstackCommit": "ae5650febf4320793844c12c4adaa937f417f8da",
+    "compatibilityKey": "dsh-0.2.2-rc.1+port-v1",
+    "transition": "initial",
+    "previous": null
   },
   "round": 1,
   "status": "pending-approval",

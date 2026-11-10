@@ -32,7 +32,12 @@ function main(): void {
   console.log(
     `[lock] ${total} skills: ${counts.audited} audited, ${counts.excluded} excluded, ${counts.pending} pending`,
   );
-  console.log(`[lock] upstream ${lock.upstream.repo}@${lock.upstream.commit}`);
+  console.log(
+    `[lock] baseline schemaVersion ${lock.schemaVersion}: dsh ${lock.baseline.dshVersion}, pstack ${lock.baseline.pstackCommit}`,
+  );
+  console.log(
+    `[lock] compatibilityKey ${lock.baseline.compatibilityKey} (transition ${lock.baseline.transition})`,
+  );
   const cursorOnly = cursorOnlySkills(lock);
   console.log(
     `[lock] cursorOnly ${cursorOnly.length}: ${cursorOnly.length === 0 ? "none" : cursorOnly.join(", ")}`,

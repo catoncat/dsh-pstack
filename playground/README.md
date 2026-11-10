@@ -4,7 +4,7 @@
 
 ## 两阶段流程
 
-raw 轮 发现。环境不装 dsh-pstack，用官方 `@deepseek-ai/dsh-skill-filesystem` 挂载 `upstream/cursor-plugins/pstack/skills` 的原始技能。逐用例执行，只记录证据与缺口，不判通过。每个技能的缺口汇总成需要的 dsh.md 适配说明与需要的插件工具，写入 `reports/skill-audit.md`。结论经用户确认后按 `port/AGENTS.md` 的流程回填 `port/audit.md`。
+raw 轮 发现。环境不装 dsh-pstack，用官方 `@deepseek-ai/dsh-skill-filesystem` 挂载 `upstream/cursor-plugins/pstack/skills` 的原始技能。逐用例执行，只记录证据与缺口，不判通过。每个技能的缺口汇总成需要的 dsh.md 适配说明与需要的插件工具，写入 `reports/skill-audit.md`。结论经用户审批后写回 `playground/cases.lock.json`。
 
 adapted 轮 adapted 回归。适配说明与插件工具落地后，用同名用例在装了 dsh-pstack 的环境镜像复验，按首轮通过口径判定。
 
@@ -35,6 +35,7 @@ vp run playground:run -- --worker 0 --case <id> --mode raw    # 单用例调试
 vp run playground:collect -- --mode raw                       # 归档证据并生成 run-raw 报告
 vp run playground:status                                      # 打印单一进度文件与轮次
 vp run playground:lock                                        # 重算用例与上游 lock
+vp run playground:approve -- --skill a,b --round 1              # 写回审批结果
 vp run playground:stop                                        # 停全部 worker 与浏览器
 vp run playground:browser -- --worker 0 --shot out.png        # 临时浏览器操作
 ```

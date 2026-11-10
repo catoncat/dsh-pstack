@@ -97,6 +97,10 @@ export default defineConfig({
         command: "vpx playground/scripts/lock.ts",
         cache: false,
       },
+      "playground:approve": {
+        command: "vpx playground/scripts/approve.ts",
+        cache: false,
+      },
       "playground:status": {
         command: "vpx playground/scripts/status.ts",
         cache: false,
