@@ -22,7 +22,7 @@
 
 ### X3 DSH bash 工具要求 description 必填
 
-大量用例首轮 bash 调用因缺 description 报错后重试（architect、arena、benchmark-checklist、swarm、principle-exhaust-the-design-space、principle-explain-the-number 等）。Cursor 的 Bash 没有该必填字段。dsh.md 的工具映射必须写明 bash 的 description 必填与语义，减少首轮工具错误。
+大量用例首轮 bash 调用因缺 description 报错后重试（architect、arena、benchmark-checklist、swarm、principle-exhaust-the-design-space、principle-explain-the-number 等）。Cursor 的 Bash 没有该必填字段。dsh.md 的工具映射必须写明 bash 的 description 必填与语义，减少首轮工具错误。交叉探针显示该错误在 deepseek-v4.1-flash 的八个用例里零复现，更像 minimax 的参数习惯，映射仍要写，但不算跨模型硬缺口。
 
 ### X4 skill 工具拒绝 disable-model-invocation 技能
 
@@ -664,16 +664,20 @@ ketchup-video 无视频渲染、statechart 无 SVG 渲染、make-bot-ui 无 rout
 
 ## 交叉探针复核
 
-用 deepseek-v4.1-flash low 复跑四个用例，检查主探针结论是否 minimax 特有。
+用 deepseek-v4.1-flash low 在独立 workers 目录复跑八个用例，检查主探针结论是否 minimax 特有。证据在 `playground/.workers-flash/`，报告快照 `.tmp/stage1-crossprobe.md`。
 
-| 用例 | 结束 | 成功加载 | 工具错误 | 与主探针一致性 |
-| --- | --- | --- | --- | --- |
-| poteto-mode | 截断 | agent-browser | bash | X1 复现，standard preset，未加载 poteto-mode |
-| unslop | 完成 | 无 | 无 | X1 复现，未加载技能 |
-| interrogate | 截断 | 无 | 无 | 未加载技能，本轮未触发角色路由报错 |
-| make-bot-ui | 截断 | agent-browser | bash | X1 与 X3 复现，未触发提问报错 |
+| 用例 | 结束 | 调用数 | 成功加载 | 工具错误 | 与主探针一致性 |
+| --- | --- | --- | --- | --- | --- |
+| poteto-mode | 完成 | 24 | 无 | 无 | X1 复现，standard preset，未加载 poteto-mode |
+| unslop | 完成 | 5 | 无 | 无 | X1 复现，未加载技能 |
+| architect | 完成 | 10 | 无 | 无 | X1 复现，未加载技能 |
+| tdd | 完成 | 12 | 无 | 无 | X1 复现，未加载技能 |
+| bro | 完成 | 0 | 无 | 无 | 直接作答，未加载技能 |
+| principle-laziness-protocol | 完成 | 6 | 无 | 无 | X1 复现，未加载技能 |
+| teach | 截断 | 36 | 无 | skill | X1 与 X4 复现，skill 工具报 not available for model invocation |
+| principle-prove-it-works | 截断 | 27 | 无 | skill | X1 与 X4 复现，skill 工具报 not available for model invocation |
 
-结论：X1（隐藏技能无法用标准 skill 工具加载）与 X3（bash description 必填）跨模型复现，属环境与工具层事实。X5（无人值守提问失败）与 X6（角色路由缺失）本轮 flash 样本未触发，只算单探针观察，不做跨模型断言。
+结论。X1 与 X4（disable-model-invocation 技能被标准 skill 工具拒绝、技能无法加载）在两个模型上都复现，属工具层与环境层事实，不是 minimax 特有。X3（bash description 必填）在 flash 的八个用例里零复现，而 minimax 上高频出现，说明它更像 minimax 的工具参数习惯问题，dsh.md 仍应写明 bash schema，但不能当作所有模型的硬缺口。X5（无人值守提问中止）与 X6（角色路由缺失）本轮 flash 样本未触发，只算单探针观察，不做跨模型断言。
 
 ## 基建遗留
 
