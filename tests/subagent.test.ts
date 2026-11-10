@@ -94,6 +94,40 @@ describe("pstack_subagent arguments and planning", () => {
     ]);
   });
 
+  it("refuses a delegate spawn and does not start a child", async () => {
+    let starts = 0;
+    const base = fakeRuntime(home());
+    const runtime = {
+      ...base,
+      subagents: {
+        getProvider: base.subagents.getProvider.bind(base.subagents),
+        list: base.subagents.list.bind(base.subagents),
+        resolveMaxDepth: base.subagents.resolveMaxDepth.bind(base.subagents),
+        startActivation: async () => {
+          starts += 1;
+          return { childId: "should-not-start" };
+        },
+      },
+    } as unknown as DelegationRuntime;
+    const plan = planDelegation(args({ maxDepth: 1 }), runtime);
+    const result = await startPlannedChildren(
+      {
+        options: {},
+        session: { header: { delegationDepth: 1 } },
+      } as unknown as Agent,
+      plan,
+      runtime,
+      new AbortController().signal,
+    );
+    expect(starts).toBe(0);
+    expect(result.kind).toBe("forbidden");
+    const rendered = createPstackSubagentTool(runtime).output?.render({}, result as never) as {
+      text: string;
+    }[];
+    expect(rendered[0]?.text).toContain("Do this work in this session");
+    expect(rendered[0]?.text).not.toContain("exceeds");
+  });
+
   it("starts planned children and returns their ids", async () => {
     const runtime = fakeRuntime(home());
     const plan = planDelegation(args(), runtime);
