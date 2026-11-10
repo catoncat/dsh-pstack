@@ -4,7 +4,14 @@
 // agent-browser daemon cannot be driven concurrently inside one process.
 
 import { spawn } from "node:child_process";
-import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
+import {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 
 import type { Mode } from "../types";
@@ -95,6 +102,27 @@ interface CaseResult {
   code: number | null;
 }
 
+function acquireLock(lockFile: string): void {
+  if (existsSync(lockFile)) {
+    const held = Number(readFileSync(lockFile, "utf8").trim());
+    let alive = false;
+    if (Number.isInteger(held) && held > 0) {
+      try {
+        process.kill(held, 0);
+        alive = true;
+      } catch {
+        alive = false;
+      }
+    }
+    if (alive)
+      throw new Error(
+        `another run-batch is already running (pid ${held}). A long batch moved to the background may still hold the lock; wait or stop it first.`,
+      );
+    rmSync(lockFile, { force: true });
+  }
+  writeFileSync(lockFile, `${process.pid}\n`);
+}
+
 async function main(): Promise<void> {
   const mode = argValue("--mode") as Mode | undefined;
   if (mode !== "raw" && mode !== "adapted")
@@ -120,6 +148,24 @@ async function main(): Promise<void> {
   const queues = distribute(caseIds, workersArg);
   mkdirSync(WORKERS_DIR, { recursive: true });
   const logFile = join(WORKERS_DIR, "run-batch.log");
+  const lockFile = join(WORKERS_DIR, "run-batch.lock");
+  acquireLock(lockFile);
+  try {
+    await runQueues(queues, mode, probe, timeout, workersArg, caseIds, logFile);
+  } finally {
+    rmSync(lockFile, { force: true });
+  }
+}
+
+async function runQueues(
+  queues: string[][],
+  mode: Mode,
+  probe: number | undefined,
+  timeout: number | undefined,
+  workersArg: number,
+  caseIds: string[],
+  logFile: string,
+): Promise<void> {
   writeFileSync(
     logFile,
     `run-batch ${new Date().toISOString()} mode=${mode} workers=${workersArg} probe=${probe ?? "-"} timeout=${timeout ?? "-"}\n`,
