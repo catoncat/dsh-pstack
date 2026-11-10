@@ -8,9 +8,9 @@
 
 ## 横切发现
 
-### X1 目录投递不触发技能加载
+### X1 目录投递几乎不触发技能加载
 
-四个用例无一加载 pstack 技能（skillLoads 为空或仅宿主技能），但任务本身都按技能意图完成了。raw 环境里技能只是目录里的一张卡片，自然请求不会主动加载它。适配的主机制必须是根 preset 常驻指令与生成树里的适配读取提示，而不是指望目录匹配。阶段二要用 skill-loaded 与 preset-active 断言证明加载发生。
+八个用例里七个的 skillLoads 为空或仅宿主技能，任务本身却都按技能意图完成了。raw 环境里技能只是目录里的一张卡片，自然请求通常不会主动加载它。唯一例外是 figure-it-out，它加载了同名技能，说明触发取决于请求与技能描述的匹配强度，不稳定而非不可能。适配的主机制必须是根 preset 常驻指令与生成树里的适配读取提示，把触发变成确定性行为。阶段二要用 skill-loaded 与 preset-active 断言证明加载发生。
 
 ### X2 审批墙挂起无人值守会话
 
@@ -37,6 +37,14 @@ unslop 用例首次 bash 调用因缺 description 参数报错， Cursor 的 Bas
 - neededAdapterNotes：X3 的 bash schema 映射；子系统探究类任务路由到 how 的触发指令；清点可选插件的步骤在 never 策略下会被拒绝，dsh.md 应给出不依赖审批的替代（读推荐插件页或 official-plugins 技能）。
 - neededPluginTools：无新增。
 - verdict：gap。
+
+### figure-it-out
+
+- 会话 session（批次二，raw，minimax low），run-case 在 1500 秒窗口放弃等待，web 侧 turn 继续跑到 160 步以上，证据未落 evidence JSON，本条依据会话文件直接 digest。计划以 --timeout 3600 重跑取完整判定。
+- observed：唯一加载了同名技能的用例（skill 调用 name=figure-it-out）。模型按迁移任务直接执行了完整搬迁（1114 事件、160 步、大量 write/edit/bash），超出窗口未见 turn/end。
+- neededAdapterNotes：大型迁移类任务的窗口预算需要单独定义（3600 秒级），或把用例拆成设计阶段与执行阶段两条；dsh.md 需说明 figure-it-out 的 bespoke playbook 流程在 DSH 的落地形态。
+- neededPluginTools：无新增。
+- verdict：gap（触发成功但窗口不足，重跑定论）。
 
 ### arena
 
