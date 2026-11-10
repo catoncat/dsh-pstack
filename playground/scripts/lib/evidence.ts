@@ -16,12 +16,14 @@ import type {
 interface SessionEvent {
   type: string;
   cwd?: string;
+  agentPreset?: string;
   data?: Record<string, unknown>;
 }
 
 export interface SessionDigest {
   sessionId: string;
   workspacePath: string | null;
+  agentPreset: string | null;
   route: { provider: string; model: string; effort: string } | null;
   skillLoads: string[];
   toolCalls: ToolCallEvidence[];
@@ -71,6 +73,7 @@ export function digestSession(file: string, sessionId: string): SessionDigest {
   const callsById = new Map<string, ToolCallEvidence>();
   const skillLoads: string[] = [];
   let workspacePath: string | null = null;
+  let agentPreset: string | null = null;
   let route: SessionDigest["route"] = null;
   let turnEndReason: string | null = null;
   const assistantParts: string[] = [];
@@ -81,6 +84,7 @@ export function digestSession(file: string, sessionId: string): SessionDigest {
     switch (event.type) {
       case "session": {
         if (typeof event.cwd === "string") workspacePath = event.cwd;
+        if (typeof event.agentPreset === "string") agentPreset = event.agentPreset;
         break;
       }
       case "request/header": {
@@ -155,6 +159,7 @@ export function digestSession(file: string, sessionId: string): SessionDigest {
   return {
     sessionId,
     workspacePath,
+    agentPreset,
     route,
     skillLoads,
     toolCalls,
@@ -188,6 +193,7 @@ export function toSessionEvidence(
     sessionId: digest.sessionId,
     sessionFile,
     workspacePath: digest.workspacePath,
+    agentPreset: digest.agentPreset,
     route: digest.route,
     skillLoads: digest.skillLoads,
     toolCalls: digest.toolCalls,
@@ -257,6 +263,14 @@ export function judgeExpectations(
           (entry) => entry.split("#")[0] === wanted || entry.split("#")[0].endsWith(`:${wanted}`),
         );
         if (!loaded) failures.push(`skill-loaded: ${wanted} was never loaded`);
+        break;
+      }
+      case "preset-active": {
+        const wanted = expectation.detail ?? "";
+        if (evidence.agentPreset !== wanted)
+          failures.push(
+            `preset-active: session preset is ${evidence.agentPreset ?? "none"}, expected ${wanted}`,
+          );
         break;
       }
       case "artifact-contains": {

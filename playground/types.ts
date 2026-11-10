@@ -28,6 +28,7 @@ export type ExpectationKind =
   | "no-duplicate-skill-load"
   | "no-retry-after-failure"
   | "skill-loaded"
+  | "preset-active"
   | "artifact-contains";
 
 export interface Expectation {
@@ -58,6 +59,7 @@ export interface SessionEvidence {
   sessionId: string;
   sessionFile: string;
   workspacePath: string | null;
+  agentPreset: string | null;
   route: { provider: string; model: string; effort: string } | null;
   skillLoads: string[];
   toolCalls: ToolCallEvidence[];
