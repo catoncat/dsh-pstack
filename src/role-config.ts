@@ -11,7 +11,12 @@ import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 
-import { parseRoleFileDocument, type RoleEntry, type RoleFileIssue } from "./role-file.ts";
+import {
+  parseRoleFileDocument,
+  type PoolEntry,
+  type RoleEntry,
+  type RoleFileIssue,
+} from "./role-file.ts";
 import { PSTACK_MODELS_FILENAME, ROLE_MANIFEST, findRole, type RoleSpec } from "./role-manifest.ts";
 import type { Route } from "./route.ts";
 
@@ -26,6 +31,7 @@ export type RoleConfiguration =
       readonly status: "loaded";
       readonly path: string;
       readonly budget?: string;
+      readonly pools: ReadonlyMap<string, PoolEntry>;
       readonly roles: ReadonlyMap<string, RoleEntry>;
       readonly issues: readonly RoleFileIssue[];
     };
@@ -70,6 +76,7 @@ export function parseRoleConfiguration(text: string, path: string): RoleConfigur
     status: "loaded",
     path,
     ...(document.budget === undefined ? {} : { budget: document.budget }),
+    pools: document.pools,
     roles: document.roles,
     issues: document.issues,
   };

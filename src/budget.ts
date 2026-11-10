@@ -253,7 +253,7 @@ function planRole(
   let aggregate: BudgetRowStatus = "unchanged";
   let detail: BudgetDetail | undefined;
   const routes = previous.map((route) => {
-    if (route.kind === "inherit") return route;
+    if (route.kind !== "route") return route;
     const model = findCatalogueModel(catalogue, route.provider, route.model);
     if (model === undefined) {
       aggregate = mergeStatus(aggregate, "custom");

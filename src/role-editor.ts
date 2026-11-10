@@ -88,6 +88,7 @@ function roleView(key: string, shape: "single" | "list", entry: RoleEntry | unde
 
 function routeView(route: Route): RouteView {
   if (route.kind === "inherit") return { kind: "inherit", alias: route.alias };
+  if (route.kind === "pool") return { kind: "pool", name: route.name };
   return {
     kind: "route",
     provider: route.provider,
@@ -113,6 +114,10 @@ export function validateSaveRequest(
   for (const [index, route] of request.routes.entries()) {
     if (route.kind === "inherit") {
       routes.push({ kind: "inherit", alias: route.alias });
+      continue;
+    }
+    if (route.kind === "pool") {
+      routes.push({ kind: "pool", name: route.name });
       continue;
     }
     const provider = route.provider.trim();

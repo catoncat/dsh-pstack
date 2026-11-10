@@ -207,6 +207,18 @@ function RouteRow(props: {
   const { roleName, route, catalogue, disabled, canRemove, onChange, onRemove, translations } =
     props;
   const t = translations.roles;
+  if (route.kind === "pool") {
+    return (
+      <div className="pstack-route-row" style={{ gridTemplateColumns: "minmax(0, 1fr)" }}>
+        <label className="pstack-field">
+          <span className="pstack-field-label">{t("poolRef")}</span>
+          <select className="pstack-select" disabled aria-label={`pool ${route.name}`}>
+            <option>{`pool ${route.name}`}</option>
+          </select>
+        </label>
+      </div>
+    );
+  }
   const providerValue = route.kind === "inherit" ? `__inherit__:${route.alias}` : route.provider;
   const providers = catalogue?.providers ?? [];
   const models = route.kind === "route" ? modelChoices(catalogue, route.provider) : [];

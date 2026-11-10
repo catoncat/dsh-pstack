@@ -21,7 +21,9 @@ import type {
 } from "@deepseek-ai/dsh-subagent";
 import type { JsonSchemaNode, ToolDefinition, ToolRunContext } from "@deepseek-ai/dsh-tools";
 
+import { healthFilePath, readHealth, recordOutcome } from "./health.ts";
 import { POTETO_MODE_SKILL_PATH } from "./paths.ts";
+import { resolveRoleRoutes } from "./pool-resolution.ts";
 import {
   modelsFilePath,
   readRoleConfiguration,
@@ -132,6 +134,7 @@ export interface DelegationRuntime {
   readonly llm: LlmRuntime;
   readonly workingDirectory: WorkingDirectoryService;
   readonly dshHome: string;
+  readonly healthPath: string;
   readonly potetoModeSkillPath: string;
 }
 
@@ -284,9 +287,16 @@ export function planDelegation(
     }
   }
 
-  const routes = selection?.routes ?? [
+  const refs = selection?.routes ?? [
     { kind: "inherit" as const, alias: "inherit-parent" as const },
   ];
+  const resolved = resolveRoleRoutes(
+    refs,
+    roleFile.status === "loaded" ? roleFile.pools : new Map(),
+    readHealth(runtime.healthPath),
+  );
+  for (const line of resolved.diagnostics) diagnostics.push(line);
+  const routes = resolved.routes;
   const roleName = selection?.role.key ?? "(none)";
   const agentPreset = args.agent === "general" ? undefined : AGENT_PRESETS[args.agent];
   const prompt =
@@ -378,6 +388,7 @@ export async function startPlannedChildren(
         delivery: "parent",
       });
       records.push(recordFor(child, activation));
+      watchChildOutcome(runtime.healthPath, child.route, activation);
     } catch (error) {
       if (records.length === 0) throw error;
       return {
@@ -402,6 +413,30 @@ export async function startPlannedChildren(
   };
 }
 
+/** Record the child's terminal outcome against its concrete route. */
+function watchChildOutcome(path: string, route: Route, activation: SubagentActivation): void {
+  const result = activation.result;
+  if (result === undefined || typeof result.then !== "function") return;
+  void result
+    .then(
+      (result) => {
+        recordOutcome(
+          path,
+          route,
+          result.stopReason === "completed" ? "ok" : "fail",
+          Date.now(),
+          result.diagnostic,
+        );
+      },
+      (error: unknown) => {
+        recordOutcome(path, route, "fail", Date.now(), describeError(error));
+      },
+    )
+    .catch(() => {
+      // Health is advisory; a write failure must never change the tool result.
+    });
+}
+
 /** Complete delegation: plan, check, start. */
 export async function delegate(
   parent: Agent,
@@ -420,6 +455,7 @@ export function apply(ctx: Context, rawConfig?: unknown): void {
     llm: ctx.llm,
     workingDirectory: ctx.workingDirectory,
     dshHome: resolveDshHome(),
+    healthPath: healthFilePath(),
     potetoModeSkillPath: POTETO_MODE_SKILL_PATH,
   };
   ctx.tools.register(createPstackSubagentTool(runtime, config));

@@ -7,7 +7,7 @@ import {
   type InheritAlias,
   type RoleShape,
 } from "./role-manifest.ts";
-import { validateRouteParts, type Route } from "./route.ts";
+import { POOL_NAME, validateRouteParts, type Route } from "./route.ts";
 import { WireTypeError } from "./wire-error.ts";
 
 export type { CatalogueResult } from "./catalogue.ts";
@@ -84,7 +84,16 @@ function parseRouteView(value: unknown, path: string): RouteView {
     }
     return { kind: "inherit", alias: alias as InheritAlias };
   }
-  if (record["kind"] !== "route") throw new WireTypeError(`${path}.kind`, '"route" or "inherit"');
+  if (record["kind"] === "pool") {
+    const name = record["name"];
+    if (typeof name !== "string" || !POOL_NAME.test(name.trim())) {
+      throw new WireTypeError(`${path}.name`, "a lowercase pool name");
+    }
+    return { kind: "pool", name: name.trim() };
+  }
+  if (record["kind"] !== "route") {
+    throw new WireTypeError(`${path}.kind`, '"route", "inherit" or "pool"');
+  }
   const provider = record["provider"];
   const model = record["model"];
   const effort = record["effort"];

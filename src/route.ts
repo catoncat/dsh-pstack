@@ -10,7 +10,14 @@ export type Route =
       readonly provider: string;
       readonly model: string;
       readonly effort?: string;
-    };
+    }
+  | { readonly kind: "pool"; readonly name: string };
+
+/** Prefix that marks a role value as a named model pool. */
+export const POOL_PREFIX = "pool";
+
+/** Pool names use the same kebab-case shape as skill names. */
+export const POOL_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 /** One parsed route token. */
 export interface ParsedRoute {
@@ -25,6 +32,17 @@ export function parseRoute(raw: string): ParsedRoute {
   const alias = value.toLowerCase();
   if ((INHERIT_ALIASES as readonly string[]).includes(alias)) {
     return { route: { kind: "inherit", alias: alias as InheritAlias }, issue: "" };
+  }
+
+  const pool = /^pool\s+(.+)$/i.exec(value);
+  if (pool !== null) {
+    const name = pool[1]!.trim();
+    if (!POOL_NAME.test(name)) {
+      return {
+        issue: `${JSON.stringify(name)} is not a pool name; use lowercase letters, digits and hyphens`,
+      };
+    }
+    return { route: { kind: "pool", name }, issue: "" };
   }
 
   const slash = value.indexOf("/");
@@ -102,9 +120,11 @@ export function renderRouteValue(routes: readonly Route[]): string {
     .map((route) =>
       route.kind === "inherit"
         ? route.alias
-        : route.effort === undefined
-          ? `${route.provider}/${route.model}`
-          : `${route.provider}/${route.model} [${route.effort}]`,
+        : route.kind === "pool"
+          ? `pool ${route.name}`
+          : route.effort === undefined
+            ? `${route.provider}/${route.model}`
+            : `${route.provider}/${route.model} [${route.effort}]`,
     )
     .join(", ");
 }
@@ -112,6 +132,11 @@ export function renderRouteValue(routes: readonly Route[]): string {
 /** Type guard for a concrete route. */
 export function isRoute(route: Route): route is Extract<Route, { kind: "route" }> {
   return route.kind === "route";
+}
+
+/** Type guard for a named pool reference. */
+export function isPoolRef(route: Route): route is Extract<Route, { kind: "pool" }> {
+  return route.kind === "pool";
 }
 
 /** The single-route shape rule shared by the file parser and the save validator. */
