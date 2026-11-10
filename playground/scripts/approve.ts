@@ -65,6 +65,7 @@ function main(): void {
     entry.approvedAt = approvedAt;
     entry.approvedRound = round;
     entry.approvedHash = hash;
+    entry.approvedCompatibilityKey = lock.baseline.compatibilityKey;
     entry.skillHash = hash;
     console.log(`[approve] ${name}: audited (round ${round}, ${hash})`);
   }

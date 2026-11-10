@@ -32,6 +32,8 @@ export interface SkillLock {
   approvedRound?: number;
   /** The SKILL.md hash accepted at approval time; drift from disk or skillHash is a fault. */
   approvedHash?: string;
+  /** The compatibilityKey in force when the approval was granted; a changed key voids it. */
+  approvedCompatibilityKey?: string;
 }
 
 /** The release baseline: what dsh version, upstream commit, and compatibility key this lock pins. */
@@ -171,6 +173,8 @@ export function buildLock(existing: LockFile | null): LockFile {
     if (prior?.approvedAt !== undefined) entry.approvedAt = prior.approvedAt;
     if (prior?.approvedRound !== undefined) entry.approvedRound = prior.approvedRound;
     if (prior?.approvedHash !== undefined) entry.approvedHash = prior.approvedHash;
+    if (prior?.approvedCompatibilityKey !== undefined)
+      entry.approvedCompatibilityKey = prior.approvedCompatibilityKey;
     skills[name] = entry;
   }
   const exclusions = Object.entries(CURSOR_ONLY_REASONS)

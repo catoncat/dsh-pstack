@@ -18,6 +18,6 @@
 - `reports/skill-audit.md` 是待审批审核报告，每个技能一节，固定行：上游能力、当前实现与会话结果、当前实现与工具错误、当前实现与缺口、证据、建议的 dsh.md 适配、建议的插件工具、审批状态。两条建议行留空，由用户在审批时填写。
 - 审批结果写回 `cases.lock.json`。每个技能记 caseFile、skillPath、skillHash、status、cursorOnly、cursorNote，审批后补 approvedAt、approvedRound、approvedHash。
 - `cases.lock.json` 的 baseline 记 dshVersion、pstackCommit、compatibilityKey。上游 SKILL.md 哈希、pstack 提交或 DSH 版本范围变化时 `vp run playground:check` 报漂移，受影响的技能需重新审批，未变的沿用旧审批。
-- 破坏性更新更换 compatibilityKey 并重置相关技能为待审批；README 兼容行由发布流程处理，不在 playground 重复。
+- 破坏性更新更换 baseline.compatibilityKey；approve 时会把当前 compatibilityKey 写进 approvedCompatibilityKey，换了 key 后旧审批自动失效，check 报需重新审批。README 兼容行由发布流程处理，不在 playground 重复。
 - 审批命令是 `vp run playground:approve -- --skill a,b --round N`。
 - 闭环：raw 轮跑完出 skill-audit，用户逐条审批并填写建议，按建议实现 dsh.md 与插件工具，`vp run build`，adapted 轮只跑失败用例，循环到没有实现缺陷，收敛后整体复跑一次。

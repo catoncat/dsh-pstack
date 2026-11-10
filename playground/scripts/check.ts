@@ -170,6 +170,11 @@ function checkLockDrift(lock: LockFile): DriftProblem[] {
     if (entry.status !== "audited") continue;
     if (entry.approvedAt === undefined || entry.approvedRound === undefined)
       problems.push({ skill, reason: "status=audited 但缺少 approvedAt/approvedRound" });
+    if (entry.approvedCompatibilityKey !== baseline.compatibilityKey)
+      problems.push({
+        skill,
+        reason: `status=audited 但 approvedCompatibilityKey 与当前基线不一致（approved ${entry.approvedCompatibilityKey ?? "未记录"}，当前 ${baseline.compatibilityKey}），需重新审批`,
+      });
     if (!upstreamSet.has(skill)) continue;
     const current = sha256File(upstreamSkillFile(skill));
     if (entry.approvedHash !== undefined && current !== entry.approvedHash)
