@@ -38,6 +38,14 @@ unslop 用例首次 bash 调用因缺 description 参数报错， Cursor 的 Bas
 - neededPluginTools：无新增。
 - verdict：gap。
 
+### arena
+
+- 会话 session-c45a9e2b，raw，minimax low。
+- observed：44 次调用完成三候选并行产出、评审选底、嫁接优点的完整 bakeoff，行为与 arena 意图一致。委派用的是 DSH 标准 subagent 工具（3 次并行），不是 pstack_subagent。首次 bash 缺 description 报错（X3）后恢复。arena 未加载。
+- neededAdapterNotes：多候选 bakeoff 路由到 arena 的触发指令；dsh.md 需写明 Cursor Task 到 DSH 委派工具的映射差异，标准 subagent 只有基础 fan-out，角色与路由控制要靠 pstack_subagent。
+- neededPluginTools：pstack_subagent（角色/路由化委派，arena runners 需要每 runner 独立模型与 effort）。
+- verdict：gap。
+
 ### architect
 
 - 会话 session-4f265a51，raw，minimax low。
