@@ -93,6 +93,14 @@ export default defineConfig({
         command: "vpx playground/scripts/check.ts",
         cache: false,
       },
+      "playground:lock": {
+        command: "vpx playground/scripts/lock.ts",
+        cache: false,
+      },
+      "playground:status": {
+        command: "vpx playground/scripts/status.ts",
+        cache: false,
+      },
       "playground:run": {
         command: "vpx playground/scripts/run-case.ts",
         cache: false,

@@ -16,7 +16,6 @@ import { skillCase as ketchup } from "./ketchup";
 import { skillCase as ketchupVideo } from "./ketchup-video";
 import { skillCase as maintainFormalVerificationSkill } from "./maintain-formal-verification-skill";
 import { skillCase as maintainVerificationSkill } from "./maintain-verification-skill";
-import { skillCase as makeBotUi } from "./make-bot-ui";
 import { skillCase as noComments } from "./no-comments";
 import { skillCase as potetoHelp } from "./poteto-help";
 import { skillCase as potetoMode } from "./poteto-mode";
@@ -76,7 +75,6 @@ export const cases: SkillCase[] = [
   ketchupVideo,
   maintainFormalVerificationSkill,
   maintainVerificationSkill,
-  makeBotUi,
   noComments,
   potetoHelp,
   potetoMode,

@@ -2,15 +2,22 @@
 // materialize the case workspace, drive the real composer in one browser process,
 // locate the session it created, wait for turn/end (or a probe window), then persist
 // evidence plus a verdict. In probe mode the turn is aborted at the window's end and
-// the evidence is marked truncated.
+// the evidence is marked truncated. A missing session or an unreadable session log is
+// an infrastructure error: retry once with a fresh session, then exit 2 (not a FAIL).
 
 import { existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
-import type { Mode, SkillCase, ToolCallEvidence } from "../types";
+import type { Mode, SessionEvidence, SkillCase, ToolCallEvidence } from "../types";
 import { createBrowserSession, type BrowserSession } from "./lib/browser";
 import { loadCase, loadCaseFile } from "./lib/cases";
-import { buildVerdict, digestSession, readSessionEvents, toSessionEvidence } from "./lib/evidence";
+import {
+  buildVerdict,
+  digestSession,
+  readSessionEvents,
+  toSessionEvidence,
+  type SessionDigest,
+} from "./lib/evidence";
 import { readWebUrl } from "./lib/env";
 import { workerPaths, type WorkerPaths } from "./lib/worker";
 
@@ -23,6 +30,13 @@ const DEFAULT_PROBE_SECONDS: Record<SkillCase["kind"], number> = {
   behavior: 300,
   "principle-light": 120,
 };
+
+/** A failure that is the harness's fault, not the case's: no session, or an unreadable log. */
+class InfraError extends Error {}
+
+function isEnoent(error: unknown): boolean {
+  return (error as NodeJS.ErrnoException | null)?.code === "ENOENT";
+}
 
 function argValue(flag: string): string | undefined {
   const index = process.argv.indexOf(flag);
@@ -201,60 +215,36 @@ function stopInFlightTurn(session: BrowserSession): string {
   );
 }
 
-async function main(): Promise<void> {
-  const mode = argValue("--mode") as Mode | undefined;
-  if (mode !== "raw" && mode !== "adapted")
-    throw new Error(
-      "usage: run-case.ts --worker <k> --case <id> --mode raw|adapted [--probe <seconds>] [--timeout <seconds>] [--case-file <path>]",
-    );
-  const workerIndex = Number(argValue("--worker") ?? "0");
-  if (!Number.isInteger(workerIndex) || workerIndex < 0)
-    throw new Error("--worker must be a non-negative integer");
-  const paths = workerPaths(workerIndex);
+interface AttemptOutcome {
+  digest: SessionDigest;
+  matchFile: string;
+  truncated: boolean;
+}
 
-  const caseFileArg = argValue("--case-file");
-  const caseIdArg = argValue("--case");
-  if (!caseFileArg && !caseIdArg) throw new Error("missing --case <id> (or --case-file <path>)");
-  const skillCase: SkillCase = caseFileArg
-    ? await loadCaseFile(caseFileArg)
-    : await loadCase(caseIdArg as string);
+interface AttemptInput {
+  url: string;
+  paths: WorkerPaths;
+  skillCase: SkillCase;
+  workerIndex: number;
+  waitMs: number;
+  probeSeconds: number | null;
+  timeoutSeconds: number;
+  screenshotFile: string;
+}
+
+/**
+ * One full attempt against a freshly opened browser session: open, start a session, send
+ * the prompt, locate the created session, wait for turn/end or the probe window, and
+ * digest the log. Throws InfraError when no session appears or its log cannot be read.
+ */
+function attemptCase(input: AttemptInput): AttemptOutcome {
+  const { url, paths, skillCase, workerIndex, waitMs, probeSeconds, timeoutSeconds } = input;
   const caseId = skillCase.id;
-  if (!skillCase.stages.includes(mode))
-    console.warn(
-      `[run-case] ${caseId} does not list stage "${mode}" (has ${skillCase.stages.join(",")}); running anyway`,
-    );
-
-  const probeFlag = argValue("--probe");
-  const timeoutFlag = argValue("--timeout");
-  const timeoutSeconds = timeoutFlag !== undefined ? Number(timeoutFlag) : DEFAULT_WAIT_SECONDS;
-  if (!Number.isFinite(timeoutSeconds) || timeoutSeconds <= 0)
-    throw new Error("--timeout must be a positive number of seconds");
-  let probeSeconds: number | null;
-  if (probeFlag !== undefined) {
-    const parsed = Number(probeFlag);
-    if (!Number.isFinite(parsed) || parsed <= 0)
-      throw new Error("--probe must be a positive number of seconds");
-    probeSeconds = parsed;
-  } else if (timeoutFlag !== undefined) {
-    probeSeconds = null; // explicit --timeout runs the full wait, no short probe
-  } else {
-    probeSeconds = skillCase.probeSeconds ?? DEFAULT_PROBE_SECONDS[skillCase.kind];
-  }
-  const waitMs = probeSeconds !== null ? probeSeconds * 1000 : timeoutSeconds * 1000;
-
-  const workspaceDir = materializeWorkspace(paths, caseId, skillCase.workspaceFiles);
-  const url = readWebUrl(paths);
-
   const workerTag = `w${workerIndex}`;
   const session = createBrowserSession({
     session: `w${workerIndex}`,
     browserDir: paths.browserDir,
   });
-  const capturedAt = new Date().toISOString();
-  const stamp = capturedAt.replace(/[:.]/g, "-");
-  const evidenceFile = join(paths.evidenceDir, `${workerTag}-${caseId}-${mode}-${stamp}.json`);
-  const screenshotFile = join(paths.evidenceDir, `${workerTag}-${caseId}-${mode}-${stamp}.png`);
-
   try {
     session.open(url);
     session.wait(6000);
@@ -308,16 +298,15 @@ async function main(): Promise<void> {
     const { match, ended } = waitForMatch(paths, before, startedAtMs, skillCase.prompt, waitMs);
     let truncated = false;
     if (!match) {
-      session.screenshot(screenshotFile);
-      throw new Error(
-        `no session matching the prompt appeared within ${waitMs / 1000}s (screenshot ${screenshotFile})`,
+      throw new InfraError(
+        `no session matching the prompt appeared within ${waitMs / 1000}s (worker ${workerTag})`,
       );
     }
     if (!ended) {
       if (probeSeconds === null) {
-        session.screenshot(screenshotFile);
+        session.screenshot(input.screenshotFile);
         throw new Error(
-          `no session matching the prompt reached turn/end within ${timeoutSeconds}s (screenshot ${screenshotFile})`,
+          `no session matching the prompt reached turn/end within ${timeoutSeconds}s (screenshot ${input.screenshotFile})`,
         );
       }
       const how = stopInFlightTurn(session);
@@ -328,30 +317,162 @@ async function main(): Promise<void> {
       );
     }
     session.wait(1000);
-    session.screenshot(screenshotFile);
+    session.screenshot(input.screenshotFile);
 
-    const digest = digestSession(match.file, match.id, workerIndex);
-    const evidence = toSessionEvidence(digest, caseId, mode, match.file, capturedAt, truncated);
-    mkdirSync(paths.evidenceDir, { recursive: true });
-    writeFileSync(evidenceFile, `${JSON.stringify(evidence, null, 2)}\n`);
-    const verdict = buildVerdict(skillCase.expect, evidence, workspaceDir);
-
-    console.log(
-      `[run-case] ${workerTag} ${caseId} [${mode}] probe=${probeSeconds ?? "-"} truncated=${truncated} ${verdict.passed ? "PASS" : "FAIL"}`,
-    );
-    if (!verdict.passed) for (const failure of verdict.failures) console.log(`  - ${failure}`);
-    console.log(
-      `[run-case] route=${evidence.route ? `${evidence.route.provider}/${evidence.route.model}[${evidence.route.effort}]` : "unknown"} turnEnd=${evidence.turnEndReason ?? "none"}`,
-    );
-    console.log(
-      `[run-case] toolCalls=${summarizeCalls(evidence.toolCalls)} skillLoads=${evidence.skillLoads.join(", ") || "none"}`,
-    );
-    console.log(`[run-case] evidence=${evidenceFile}`);
-    console.log(JSON.stringify(verdict));
-    process.exitCode = verdict.passed ? 0 : 1;
+    if (!existsSync(match.file))
+      throw new InfraError(`session log vanished before read: ${match.file} (worker ${workerTag})`);
+    let digest: SessionDigest;
+    try {
+      digest = digestSession(match.file, match.id, workerIndex);
+    } catch (error) {
+      if (isEnoent(error))
+        throw new InfraError(`reading session log hit ENOENT: ${match.file} (worker ${workerTag})`);
+      throw error;
+    }
+    return { digest, matchFile: match.file, truncated };
   } finally {
     session.close();
   }
+}
+
+/** Evidence record for a run that failed on infrastructure twice; counted as ERROR, not FAIL. */
+function buildInfraEvidence(
+  caseId: string,
+  mode: Mode,
+  workerIndex: number,
+  workspaceDir: string,
+  capturedAt: string,
+): SessionEvidence {
+  return {
+    caseId,
+    mode,
+    worker: workerIndex,
+    truncated: false,
+    sessionId: "",
+    sessionFile: "",
+    workspacePath: workspaceDir,
+    agentPreset: null,
+    route: null,
+    skillLoads: [],
+    toolCalls: [],
+    turnEndReason: null,
+    assistantText: "",
+    capturedAt,
+    error: "infra",
+  };
+}
+
+async function main(): Promise<void> {
+  const mode = argValue("--mode") as Mode | undefined;
+  if (mode !== "raw" && mode !== "adapted")
+    throw new Error(
+      "usage: run-case.ts --worker <k> --case <id> --mode raw|adapted [--probe <seconds>] [--timeout <seconds>] [--case-file <path>]",
+    );
+  const workerIndex = Number(argValue("--worker") ?? "0");
+  if (!Number.isInteger(workerIndex) || workerIndex < 0)
+    throw new Error("--worker must be a non-negative integer");
+  const paths = workerPaths(workerIndex);
+
+  const caseFileArg = argValue("--case-file");
+  const caseIdArg = argValue("--case");
+  if (!caseFileArg && !caseIdArg) throw new Error("missing --case <id> (or --case-file <path>)");
+  const skillCase: SkillCase = caseFileArg
+    ? await loadCaseFile(caseFileArg)
+    : await loadCase(caseIdArg as string);
+  const caseId = skillCase.id;
+  if (!skillCase.stages.includes(mode))
+    console.warn(
+      `[run-case] ${caseId} does not list stage "${mode}" (has ${skillCase.stages.join(",")}); running anyway`,
+    );
+
+  const probeFlag = argValue("--probe");
+  const timeoutFlag = argValue("--timeout");
+  const timeoutSeconds = timeoutFlag !== undefined ? Number(timeoutFlag) : DEFAULT_WAIT_SECONDS;
+  if (!Number.isFinite(timeoutSeconds) || timeoutSeconds <= 0)
+    throw new Error("--timeout must be a positive number of seconds");
+  let probeSeconds: number | null;
+  if (probeFlag !== undefined) {
+    const parsed = Number(probeFlag);
+    if (!Number.isFinite(parsed) || parsed <= 0)
+      throw new Error("--probe must be a positive number of seconds");
+    probeSeconds = parsed;
+  } else if (timeoutFlag !== undefined) {
+    probeSeconds = null; // explicit --timeout runs the full wait, no short probe
+  } else {
+    probeSeconds = skillCase.probeSeconds ?? DEFAULT_PROBE_SECONDS[skillCase.kind];
+  }
+  const waitMs = probeSeconds !== null ? probeSeconds * 1000 : timeoutSeconds * 1000;
+
+  const workspaceDir = materializeWorkspace(paths, caseId, skillCase.workspaceFiles);
+  const url = readWebUrl(paths);
+
+  const workerTag = `w${workerIndex}`;
+  const capturedAt = new Date().toISOString();
+  const stamp = capturedAt.replace(/[:.]/g, "-");
+  const evidenceFile = join(paths.evidenceDir, `${workerTag}-${caseId}-${mode}-${stamp}.json`);
+  const screenshotFile = join(paths.evidenceDir, `${workerTag}-${caseId}-${mode}-${stamp}.png`);
+
+  const attemptInput: AttemptInput = {
+    url,
+    paths,
+    skillCase,
+    workerIndex,
+    waitMs,
+    probeSeconds,
+    timeoutSeconds,
+    screenshotFile,
+  };
+
+  let outcome: AttemptOutcome;
+  try {
+    outcome = attemptCase(attemptInput);
+  } catch (error) {
+    if (!(error instanceof InfraError)) throw error;
+    console.error(
+      `[run-case] INFRA ${workerTag} ${caseId}: ${error.message}; closing browser and retrying once with a fresh session`,
+    );
+    try {
+      outcome = attemptCase(attemptInput);
+    } catch (retryError) {
+      if (!(retryError instanceof InfraError)) throw retryError;
+      console.error(
+        `[run-case] ERROR ${workerTag} ${caseId}: infra retry failed: ${retryError.message}`,
+      );
+      const evidence = buildInfraEvidence(caseId, mode, workerIndex, workspaceDir, capturedAt);
+      mkdirSync(paths.evidenceDir, { recursive: true });
+      writeFileSync(evidenceFile, `${JSON.stringify(evidence, null, 2)}\n`);
+      console.log(`[run-case] ${workerTag} ${caseId} [${mode}] ERROR error=infra`);
+      console.log(`[run-case] evidence=${evidenceFile}`);
+      process.exitCode = 2;
+      return;
+    }
+  }
+
+  const evidence = toSessionEvidence(
+    outcome.digest,
+    caseId,
+    mode,
+    outcome.matchFile,
+    capturedAt,
+    outcome.truncated,
+  );
+  mkdirSync(paths.evidenceDir, { recursive: true });
+  writeFileSync(evidenceFile, `${JSON.stringify(evidence, null, 2)}\n`);
+  const verdict = buildVerdict(skillCase.expect, evidence, workspaceDir);
+
+  console.log(
+    `[run-case] ${workerTag} ${caseId} [${mode}] probe=${probeSeconds ?? "-"} truncated=${outcome.truncated} ${verdict.passed ? "PASS" : "FAIL"}`,
+  );
+  if (!verdict.passed) for (const failure of verdict.failures) console.log(`  - ${failure}`);
+  console.log(
+    `[run-case] route=${evidence.route ? `${evidence.route.provider}/${evidence.route.model}[${evidence.route.effort}]` : "unknown"} turnEnd=${evidence.turnEndReason ?? "none"}`,
+  );
+  console.log(
+    `[run-case] toolCalls=${summarizeCalls(evidence.toolCalls)} skillLoads=${evidence.skillLoads.join(", ") || "none"}`,
+  );
+  console.log(`[run-case] evidence=${evidenceFile}`);
+  console.log(JSON.stringify(verdict));
+  process.exitCode = verdict.passed ? 0 : 1;
 }
 
 function summarizeCalls(calls: ToolCallEvidence[]): string {

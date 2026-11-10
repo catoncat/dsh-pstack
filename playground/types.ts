@@ -70,6 +70,8 @@ export interface SessionEvidence {
   turnEndReason: string | null;
   assistantText: string;
   capturedAt: string;
+  /** Set to "infra" when the run failed on infrastructure (no session / unreadable log), not a FAIL. */
+  error?: string;
 }
 
 export interface CaseVerdict {

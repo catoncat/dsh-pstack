@@ -8,6 +8,16 @@ import { dirname, join, resolve } from "node:path";
 import { load as yamlLoad } from "js-yaml";
 
 import { RAW_SKILLS_DIR } from "./lib/env";
+import {
+  caseSkills,
+  EXCLUSIONS,
+  LOCK_FILE,
+  readLock,
+  sha256File,
+  upstreamSkillFile,
+  upstreamSkillNames,
+  type LockFile,
+} from "./lib/lockfile";
 
 interface SkillCheck {
   skill: string;
@@ -96,6 +106,49 @@ function renderTable(checks: SkillCheck[]): void {
   for (const row of rows) console.log(line(row));
 }
 
+interface DriftProblem {
+  skill: string;
+  reason: string;
+}
+
+/**
+ * Compare cases.lock.json against the current upstream skills tree and cases directory.
+ * Each returned problem names a skill and why it drifted from the locked state.
+ */
+function checkLockDrift(lock: LockFile): DriftProblem[] {
+  const upstream = upstreamSkillNames();
+  const upstreamSet = new Set(upstream);
+  const cases = new Set(caseSkills());
+  const problems: DriftProblem[] = [];
+
+  for (const skill of upstream) {
+    const excluded = lock.skills[skill]?.status === "excluded" || skill in EXCLUSIONS;
+    if (!cases.has(skill) && !excluded)
+      problems.push({ skill, reason: "上游新增技能但没有用例且未 excluded" });
+  }
+
+  for (const skill of cases) {
+    if (!upstreamSet.has(skill)) problems.push({ skill, reason: "用例存在但上游技能已不存在" });
+  }
+
+  for (const [skill, entry] of Object.entries(lock.skills)) {
+    if (entry.status !== "audited" || !upstreamSet.has(skill)) continue;
+    const current = sha256File(upstreamSkillFile(skill));
+    if (current !== entry.skillHash)
+      problems.push({
+        skill,
+        reason: `status=audited 但 SKILL.md 哈希不一致（lock ${entry.skillHash}，当前 ${current}）`,
+      });
+  }
+
+  for (const [skill, entry] of Object.entries(lock.skills)) {
+    if (entry.status === "excluded" && cases.has(skill))
+      problems.push({ skill, reason: "excluded 技能却仍存在用例文件" });
+  }
+
+  return problems;
+}
+
 function main(): void {
   const json = process.argv.includes("--json");
   if (!existsSync(RAW_SKILLS_DIR)) throw new Error(`raw skills dir not found: ${RAW_SKILLS_DIR}`);
@@ -112,14 +165,30 @@ function main(): void {
     failed: failed.length,
   };
 
+  const lock = readLock();
+  const drift = lock ? checkLockDrift(lock) : [];
+
   if (json) {
-    console.log(JSON.stringify({ summary, skills: checks }, null, 2));
+    console.log(
+      JSON.stringify({ summary, skills: checks, lock: { present: lock !== null, drift } }, null, 2),
+    );
   } else {
     renderTable(checks);
     console.log("");
     console.log(`${summary.total} skills, ${summary.ok} ok, ${summary.failed} failed`);
+    console.log("");
+    if (lock === null) {
+      console.log(`[check] no cases.lock.json at ${LOCK_FILE}; run playground:lock first`);
+    } else if (drift.length === 0) {
+      console.log(
+        `[check] cases.lock.json: no drift (${Object.keys(lock.skills).length} skills locked)`,
+      );
+    } else {
+      console.log(`[check] cases.lock.json drift (${drift.length}):`);
+      for (const problem of drift) console.log(`  - ${problem.skill}: ${problem.reason}`);
+    }
   }
-  if (failed.length > 0) process.exitCode = 1;
+  if (failed.length > 0 || lock === null || drift.length > 0) process.exitCode = 1;
 }
 
 main();

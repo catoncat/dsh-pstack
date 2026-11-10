@@ -19,6 +19,7 @@ import {
 } from "./lib/env";
 import type { Mode } from "../types";
 import { listCaseIds } from "./lib/cases";
+import { computeWorkers } from "./lib/capacity";
 import { listWorkers, workerPaths, WORKERS_DIR } from "./lib/worker";
 
 function argValue(flag: string): string | undefined {
@@ -75,9 +76,17 @@ async function main(): Promise<void> {
   }
   const mainFilter = argValue("--main");
   const reset = process.argv.includes("--reset");
-  const workersArg = Number(argValue("--workers") ?? "4");
-  if (!Number.isInteger(workersArg) || workersArg < 1)
+  const workersFlag = argValue("--workers");
+  const explicitWorkers = workersFlag !== undefined ? Number(workersFlag) : undefined;
+  if (explicitWorkers !== undefined && (!Number.isInteger(explicitWorkers) || explicitWorkers < 1))
     throw new Error("--workers must be a positive integer");
+  const capacity = computeWorkers(explicitWorkers);
+  const workersArg = capacity.workers;
+  if (explicitWorkers === undefined)
+    console.log(
+      `[prepare] 检测到 ${capacity.cores} 核 / ${capacity.availableGB.toFixed(1)} G 可用，采用 ${workersArg} 个 worker`,
+    );
+  else console.log(`[prepare] --workers override：采用 ${workersArg} 个 worker`);
 
   if (reset) {
     for (const paths of listWorkers()) {
@@ -88,6 +97,19 @@ async function main(): Promise<void> {
     console.log("[prepare] reset: cleared playground/.workers");
   }
   mkdirSync(WORKERS_DIR, { recursive: true });
+
+  // Shrinking the fleet without --reset leaves the higher-numbered workers running and
+  // still owning their homes; stop and delete them so the count matches --workers.
+  if (!reset) {
+    for (const paths of listWorkers()) {
+      if (paths.index < workersArg) continue;
+      const { stopped } = stopWeb(paths);
+      rmSync(paths.root, { recursive: true, force: true });
+      console.log(
+        `[prepare] pruned worker ${paths.index}: stopped=${stopped} removed=${paths.root}`,
+      );
+    }
+  }
 
   const plan = loadProviderPlan(mainFilter);
   const caseIds = listCaseIds();
@@ -133,6 +155,9 @@ async function main(): Promise<void> {
 
   console.log(
     `[prepare] mode=${mode} workers=${workersArg} main=${plan.main.provider}/${plan.main.model}[${plan.main.effort}] (${plan.main.name})`,
+  );
+  console.log(
+    `[prepare] capacity workers=${workersArg} cores=${capacity.cores} availableGB=${capacity.availableGB.toFixed(1)} (${capacity.reason})`,
   );
   console.log(
     `[prepare] allowed routes: ${plan.routes.map((route) => `${route.provider}/${route.model}[${route.efforts.join(",")}]`).join(", ")}`,

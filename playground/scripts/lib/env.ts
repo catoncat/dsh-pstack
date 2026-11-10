@@ -213,6 +213,18 @@ export function writeHomePatch(paths: WorkerPaths, plan: ProviderPlan): void {
       name: "@deepseek-ai/dsh-user-approval",
       config: { policy: "never" },
     },
+    {
+      // The permission preset table composes a sandbox mode with an approval policy and
+      // refuses to start when the effective pair matches no declared preset. The base
+      // bundle only pairs "never" with danger-full-access, so declare the pair this
+      // playground actually runs (confined sandbox + no approvals) and make it default.
+      id: "permission",
+      name: "@deepseek-ai/dsh-permission-presets",
+      config: {
+        presets: { unattended: { sandbox: "workspace-write", approval: "never" } },
+        defaultPreset: "unattended",
+      },
+    },
   ];
   writeFileSync(homePatchFile(paths), yamlDump(patch, { lineWidth: 120 }));
 }

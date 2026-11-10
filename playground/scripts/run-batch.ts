@@ -1,7 +1,8 @@
 // Run a set of skill cases across N workers in parallel: round-robin the cases into
 // per-worker queues, then run each worker's queue serially by spawning one run-case
 // child process per case. Parallelism comes from the child processes, because the
-// agent-browser daemon cannot be driven concurrently inside one process.
+// agent-browser daemon cannot be driven concurrently inside one process. Every case
+// transition rewrites playground/.workers/progress.json so a run is observable.
 
 import { spawn } from "node:child_process";
 import {
@@ -16,8 +17,10 @@ import { join } from "node:path";
 
 import type { Mode } from "../types";
 import { listCaseIds } from "./lib/cases";
+import { computeWorkers } from "./lib/capacity";
 import { REPO_ROOT } from "./lib/env";
-import { WORKERS_DIR, workerCount } from "./lib/worker";
+import { progressFilePath, updateProgress, writeProgress } from "./lib/progress";
+import { WORKERS_DIR } from "./lib/worker";
 
 const VPX = process.platform === "win32" ? "vpx.cmd" : "vpx";
 
@@ -95,10 +98,12 @@ function caseArgs(
   return args;
 }
 
+type Outcome = "passed" | "failed" | "error";
+
 interface CaseResult {
   worker: number;
   caseId: string;
-  passed: boolean;
+  outcome: Outcome;
   code: number | null;
 }
 
@@ -123,15 +128,47 @@ function acquireLock(lockFile: string): void {
   writeFileSync(lockFile, `${process.pid}\n`);
 }
 
+/** Exit code 2 means run-case classified it as infrastructure; everything else nonzero is a FAIL. */
+function outcomeFor(code: number | null): Outcome {
+  if (code === 0) return "passed";
+  if (code === 2) return "error";
+  return "failed";
+}
+
+/** Pull the verdict's failure list out of run-case's final JSON line so status shows a reason. */
+function summarizeFailure(output: string): string {
+  const lines = output.split("\n");
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const line = lines[i].trim();
+    if (!line.startsWith("{") || !line.endsWith("}")) continue;
+    try {
+      const parsed = JSON.parse(line) as { failures?: unknown };
+      if (Array.isArray(parsed.failures) && parsed.failures.length > 0)
+        return parsed.failures.join("; ");
+    } catch {
+      // not the verdict line
+    }
+  }
+  return "";
+}
+
 async function main(): Promise<void> {
   const mode = argValue("--mode") as Mode | undefined;
   if (mode !== "raw" && mode !== "adapted")
     throw new Error(
       "usage: run-batch.ts --mode raw|adapted [--workers N] [--cases a,b,c | --all] [--probe <seconds>] [--timeout <seconds>]",
     );
-  const workersArg = Number(argValue("--workers") ?? String(workerCount() || 4));
-  if (!Number.isInteger(workersArg) || workersArg < 1)
+  const workersFlag = argValue("--workers");
+  const explicitWorkers = workersFlag !== undefined ? Number(workersFlag) : undefined;
+  if (explicitWorkers !== undefined && (!Number.isInteger(explicitWorkers) || explicitWorkers < 1))
     throw new Error("--workers must be a positive integer");
+  const capacity = computeWorkers(explicitWorkers);
+  const workersArg = capacity.workers;
+  if (explicitWorkers === undefined)
+    console.log(
+      `[run-batch] 检测到 ${capacity.cores} 核 / ${capacity.availableGB.toFixed(1)} G 可用，采用 ${workersArg} 个 worker`,
+    );
+  else console.log(`[run-batch] --workers override：采用 ${workersArg} 个 worker`);
 
   const probeArg = argValue("--probe");
   const probe = probeArg !== undefined ? Number(probeArg) : undefined;
@@ -149,9 +186,32 @@ async function main(): Promise<void> {
   mkdirSync(WORKERS_DIR, { recursive: true });
   const logFile = join(WORKERS_DIR, "run-batch.log");
   const lockFile = join(WORKERS_DIR, "run-batch.lock");
+  const progressFile = progressFilePath();
+
   acquireLock(lockFile);
   try {
-    await runQueues(queues, mode, probe, timeout, workersArg, caseIds, logFile);
+    const now = new Date().toISOString();
+    const perWorker: Record<string, { done: number; total: number }> = {};
+    queues.forEach((queue, worker) => {
+      perWorker[`w${worker}`] = { done: 0, total: queue.length };
+    });
+    writeProgress(progressFile, {
+      total: caseIds.length,
+      done: 0,
+      passed: 0,
+      failed: 0,
+      error: 0,
+      running: [],
+      startedAt: now,
+      updatedAt: now,
+      perWorker,
+      failures: [],
+      workers: capacity.workers,
+      cores: capacity.cores,
+      availableGB: capacity.availableGB,
+    });
+
+    await runQueues(queues, mode, probe, timeout, workersArg, caseIds, logFile, progressFile);
   } finally {
     rmSync(lockFile, { force: true });
   }
@@ -165,6 +225,7 @@ async function runQueues(
   workersArg: number,
   caseIds: string[],
   logFile: string,
+  progressFile: string,
 ): Promise<void> {
   writeFileSync(
     logFile,
@@ -178,25 +239,48 @@ async function runQueues(
   await Promise.all(
     queues.map(async (queue, worker) => {
       for (const caseId of queue) {
+        updateProgress(progressFile, (state) => {
+          state.running.push({ worker, case: caseId });
+        });
         const { code, output } = await runCase(caseArgs(worker, caseId, mode, probe, timeout));
-        const passed = code === 0;
+        const outcome = outcomeFor(code);
+        const reason =
+          outcome === "error"
+            ? "infra"
+            : outcome === "failed"
+              ? summarizeFailure(output) || `exit ${code ?? "?"}`
+              : "";
         appendFileSync(
           logFile,
           `\n===== worker ${worker} ${caseId} [${mode}] exit=${code ?? "?"} =====\n${output}\n`,
         );
-        results.push({ worker, caseId, passed, code });
-        console.log(
-          `[run-batch] worker ${worker} ${caseId} ${passed ? "PASS" : "FAIL"} (exit ${code ?? "?"})`,
-        );
+        updateProgress(progressFile, (state) => {
+          state.running = state.running.filter(
+            (entry) => !(entry.worker === worker && entry.case === caseId),
+          );
+          state.done += 1;
+          if (outcome === "passed") state.passed += 1;
+          else if (outcome === "error") state.error += 1;
+          else state.failed += 1;
+          const workerProgress = state.perWorker[`w${worker}`];
+          if (workerProgress) workerProgress.done += 1;
+          if (outcome !== "passed") state.failures.push({ case: caseId, worker, reason });
+        });
+        results.push({ worker, caseId, outcome, code });
+        const label = outcome === "passed" ? "PASS" : outcome === "error" ? "ERROR" : "FAIL";
+        console.log(`[run-batch] worker ${worker} ${caseId} ${label} (exit ${code ?? "?"})`);
       }
     }),
   );
 
-  const passed = results.filter((result) => result.passed).length;
-  const failed = results.length - passed;
-  console.log(`[run-batch] total=${results.length} passed=${passed} failed=${failed}`);
+  const passed = results.filter((result) => result.outcome === "passed").length;
+  const failed = results.filter((result) => result.outcome === "failed").length;
+  const error = results.filter((result) => result.outcome === "error").length;
+  console.log(
+    `[run-batch] total=${results.length} passed=${passed} failed=${failed} error=${error}`,
+  );
   console.log(`[run-batch] log=${logFile}`);
-  if (failed > 0) process.exitCode = 1;
+  if (failed > 0 || error > 0) process.exitCode = 1;
 }
 
 main().catch((error: unknown) => {
