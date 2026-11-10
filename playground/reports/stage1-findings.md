@@ -8,7 +8,7 @@
 
 全量批次为 4 worker 并行、动态端口、短探针（principle-light 120 秒、behavior 300 秒），58 个用例全部取到证据，typescript-best-practices 因首轮漏跑而单独补齐。早批次的完整运行记录（单实例、完整等待）保留在 `.dsh` 证据里，本轮的逐技能观察见下文。
 
-两点读表约定。skillLoads 表示「发起了加载请求」，是否成功要结合 toolCalls 里的 skill 错误判断，本文表格的「加载请求」列只列请求名。本轮有 29 个用例被重复执行两次，原因是 run-case 子进程在写工作区文件时被再次触发，证据按 capturedAt 取最新，不影响结论，但阶段二前必须修掉 run-batch 的子进程重入。
+两点读表约定。skillLoads 只统计成功的 skill 调用；下表「加载尝试」列记录请求，带 skill 错误的行是隐藏技能被标准 skill 工具拒绝的尝试，见 X4。本轮有 29 个用例被重复执行两次，原因是长批次被工具移入后台时被再次进入，两个 run-batch 循环交错，run-batch 已加 pid 锁拒绝并发重入。
 
 ## 横切发现
 
@@ -510,7 +510,7 @@ ketchup-video 尝试生成视频脚本时 edit 报错，DSH 无视频渲染，�
 
 ## 全量证据总表
 
-| 技能 | 加载请求 | 工具错误 | 结束 | 观察摘要 |
+| 技能 | 加载尝试 | 工具错误 | 结束 | 观察摘要 |
 | --- | --- | --- | --- | --- |
 | architect | - | bash | 完成 | 没有 docs/ 目录和 git 仓库可参考 |
 | arena | - | bash | 截断 | Read the current state |
@@ -587,7 +587,7 @@ create-verification-skill、create-formal-verification-skill、maintain-verifica
 
 ### principle 叶子
 
-24 个 principle 叶子同样是 disable-model-invocation 隐藏技能，raw 下用标准 skill 工具请求会报错，多数模型退回 read 直接读 SKILL.md。dsh.md 需说明叶子在应用前用 pstack_skill 完整读取，preset 正文要求应用某原则前先读其叶子。叶子的加载请求与工具错误见上表对应行。
+24 个 principle 叶子同样是 disable-model-invocation 隐藏技能，raw 下用标准 skill 工具请求会报错，多数模型退回 read 直接读 SKILL.md。dsh.md 需说明叶子在应用前用 pstack_skill 完整读取，preset 正文要求应用某原则前先读其叶子。叶子的成功加载与工具错误见上表对应行。
 
 ### 渲染与平台能力
 
@@ -666,7 +666,7 @@ ketchup-video 无视频渲染、statechart 无 SVG 渲染、make-bot-ui 无 rout
 
 用 deepseek-v4.1-flash low 复跑四个用例，检查主探针结论是否 minimax 特有。
 
-| 用例 | 结束 | 加载请求 | 工具错误 | 与主探针一致性 |
+| 用例 | 结束 | 成功加载 | 工具错误 | 与主探针一致性 |
 | --- | --- | --- | --- | --- |
 | poteto-mode | 截断 | agent-browser | bash | X1 复现，standard preset，未加载 poteto-mode |
 | unslop | 完成 | 无 | 无 | X1 复现，未加载技能 |
