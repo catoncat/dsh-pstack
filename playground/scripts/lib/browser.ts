@@ -3,9 +3,10 @@
 // it, so it dies when that process exits and the next script cannot reach it.
 
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
-import { basename, dirname, join } from "node:path";
+import { dirname, join } from "node:path";
 
 import { REPO_ROOT } from "./env";
 
@@ -66,9 +67,10 @@ export function browserEnv(browserDir: string): NodeJS.ProcessEnv {
   const config = join(home, ".config");
   // agent-browser's daemon socket has a 103-byte path budget; the worker home sits deep
   // in the repo checkout, so both the runtime dir and the socket dir go to a short tmp
-  // path. HOME (the Chrome profile) stays under the worker so profiles never collide.
-  const workerTag = basename(dirname(browserDir));
-  const socketDir = join(tmpdir(), `pgw-${workerTag}`);
+  // path. A short hash of the absolute browser dir keeps separate repo checkouts from
+  // sharing a socket dir, while HOME (the Chrome profile) stays under the worker.
+  const socketTag = createHash("sha1").update(browserDir).digest("hex").slice(0, 8);
+  const socketDir = join(tmpdir(), `pgw-${socketTag}`);
   for (const dir of [home, config, socketDir]) mkdirSync(dir, { recursive: true });
   return {
     ...process.env,
@@ -90,7 +92,10 @@ export function createBrowserSession(options: BrowserOptions): BrowserSession {
     "--executable-path",
     chromeExecutable(),
     "--args",
-    "--no-sandbox",
+    // --no-sandbox for the container; --disable-dev-shm-usage because several Chrome
+    // instances share /dev/shm; the crash flags keep Chrome from writing Crashpad
+    // state, which failed intermittently across parallel workers.
+    "--no-sandbox,--disable-dev-shm-usage,--disable-crash-reporter,--disable-breakpad,--no-first-run",
   ];
 
   const raw = (args: string[]): string => {
