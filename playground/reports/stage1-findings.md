@@ -32,11 +32,19 @@ unslop 用例首次 bash 调用因缺 description 参数报错， Cursor 的 Bas
 
 ### how
 
-- 会话 session（批次一）因 X2 挂起，900 秒超时，证据截图在 evidence/how-raw-2026-11-10T04-51-47-914Z.png。
-- observed：前 48 秒完成 19 次调用（bash/read/grep 探索子系统），随后 plugin_manager list_plugins 触发审批墙。技能意图（彻底搞懂子系统）本身在推进中。
-- neededAdapterNotes：how 技能里清点可选插件的步骤需要不依赖审批的 DSH 映射（读推荐插件页或 official-plugins 技能），或写明人工步骤；批次二以 never 策略重跑取完整证据。
+- 会话 session-4224cde4（批次二重跑，never 策略），raw，minimax low。批次一 session 因 X2 挂起 900 秒超时，截图 evidence/how-raw-2026-11-10T04-51-47-914Z.png。
+- observed：重跑完整完成，11 次调用，产出支付重试子系统的调用链、退避算法、状态存储与缺陷清单，并跑了真实探针验证时间线。首次 bash 缺 description 报错（X3）后恢复。how 未加载。never 策略下未再出现审批挂起，模型本轮没有调用 plugin_manager。
+- neededAdapterNotes：X3 的 bash schema 映射；子系统探究类任务路由到 how 的触发指令；清点可选插件的步骤在 never 策略下会被拒绝，dsh.md 应给出不依赖审批的替代（读推荐插件页或 official-plugins 技能）。
 - neededPluginTools：无新增。
-- verdict：blocked，批次二重跑。
+- verdict：gap。
+
+### architect
+
+- 会话 session-4f265a51，raw，minimax low。
+- observed：跨层新功能请求产出完整设计文档（分层依赖、关键类型、判别联合、不变量、待拍板清单），7 次调用零错误，未动实现代码，行为与 architect 意图一致。architect 未加载。
+- neededAdapterNotes：设计先行类任务路由到 architect 的触发指令属于适配层；raw 不加载即证据。
+- neededPluginTools：无。
+- verdict：gap。
 
 ### tdd
 
