@@ -3,13 +3,18 @@
 // share a writable path.
 
 import { existsSync, readdirSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 
 import { PLAYGROUND_DIR } from "./env";
 
 // A probe run may point PLAYGROUND_WORKERS_DIR at a sibling dir so the cross-probe
-// evidence never overwrites the primary probe's sessions and report.
-export const WORKERS_DIR = process.env.PLAYGROUND_WORKERS_DIR ?? join(PLAYGROUND_DIR, ".workers");
+// evidence never overwrites the primary probe's sessions and report. Resolve it
+// absolute: workspace rows the web reads must be absolute paths or the app shows an
+// empty "pick a workspace" state.
+const OVERRIDE = process.env.PLAYGROUND_WORKERS_DIR;
+export const WORKERS_DIR = OVERRIDE
+  ? resolve(PLAYGROUND_DIR, OVERRIDE)
+  : join(PLAYGROUND_DIR, ".workers");
 
 export interface WorkerPaths {
   index: number;
