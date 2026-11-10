@@ -6,7 +6,7 @@ export const skillCase: SkillCase = {
   kind: "behavior",
   stages: ["raw", "adapted"],
   prompt:
-    "我要把这个用 Webpack 的 monorepo 迁到 Vite，涉及十几个子包和一堆共享配置，估计要做好几天，中间我会走开不盯着。先别急着改，帮我把这件事设计成一个严谨、每一步都可验证、又能让我回来审计的执行流程。",
+    "我要把这个用 Webpack 的 monorepo 迁到 Vite，涉及两三个子包和一份共享配置，估计要跑上几个小时，中间我会走开不盯着。先别急着改，帮我把这件事设计成一个严谨、每一步都可验证、又能让我回来审计的执行流程。",
   workspaceFiles: {
     "package.json": `{
   "name": "monorepo",
@@ -48,5 +48,5 @@ module.exports = {
     { kind: "skill-loaded", detail: "figure-it-out" },
   ],
   intent:
-    "一个没有现成 playbook 的大型、跨包、多天且需要事后审计的迁移，正好命中 figure-it-out 声明的“先设计一套可审计的执行流程”的场景。",
+    "一个没有现成 playbook 的跨包迁移、需要事后审计的执行流程，正好命中 figure-it-out 声明的“先设计一套可审计的执行流程”的场景。素材规模收到两三个包，避免模型在 raw 环境不加载技能时直接把整场迁移跑完。",
 };
