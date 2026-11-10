@@ -10,6 +10,7 @@ import type {} from "@deepseek-ai/dsh-client-ui-plugin-manager/client";
 
 import { pstackRolesRemote, type PstackRolesNamespace } from "../role-remote.ts";
 import { createPstackConfigAction } from "./PstackConfigDialog.tsx";
+import { SubagentRow } from "./SubagentCard.tsx";
 import { NS, catalogs } from "./locales/index.ts";
 import type { PluginManagerApi } from "./RecommendedPluginsPage.tsx";
 import type { RoleSettingsApi } from "./RoleSettingsPage.tsx";
@@ -48,6 +49,15 @@ export async function apply(ctx: Context): Promise<() => Promise<void>> {
     "pstack-config.locale.plugins",
   );
   ctx.effect(() => ctx.locale.register(NS.roles, catalogs.roles), "pstack-config.locale.roles");
+  // The tool-slot contract lives in a host client package this bundle does not
+  // depend on, so the keyed registration goes through a structural signature.
+  const slots = ctx.slots as unknown as {
+    inject(name: string, contribution: () => unknown): unknown;
+    register(spec: { name: string; key: string }, component: unknown): () => void;
+  };
+  slots.inject("tool.call.toolview", () =>
+    slots.register({ name: "tool.call.toolview", key: "pstack_subagent" }, SubagentRow),
+  );
 
   // Observe the plugin-manager namespace without gating the role action on it.
   // If it arrives later, the next listBundles call sees it; if it never arrives,

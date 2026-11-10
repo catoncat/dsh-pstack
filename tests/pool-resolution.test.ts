@@ -11,7 +11,7 @@ function route(value: string): Route {
   return parsed.route;
 }
 
-function healthy(routes: readonly Route[]): HealthFile {
+function healthy(): HealthFile {
   return { version: 1, routes: {} };
 }
 
@@ -64,7 +64,7 @@ describe("pool resolution", () => {
   it("picks the first healthy candidate", () => {
     const document = documentWith("pool code: a/one, b/two\n");
     const pools = document.pools;
-    const result = resolveRoleRoutes([route("pool code")], pools, healthy([]), 1000);
+    const result = resolveRoleRoutes([route("pool code")], pools, healthy(), 1000);
     expect(result.routes).toEqual([route("a/one")]);
   });
 
@@ -82,7 +82,7 @@ describe("pool resolution", () => {
     const result = resolveRoleRoutes(
       [route("pool review"), route("pool review")],
       document.pools,
-      healthy([]),
+      healthy(),
       1000,
     );
     expect(result.routes).toEqual([route("a/one"), route("b/two")]);
@@ -116,7 +116,7 @@ describe("pool resolution", () => {
   });
 
   it("fails loudly on an undefined pool", () => {
-    expect(() => resolveRoleRoutes([route("pool missing")], new Map(), healthy([]), 1000)).toThrow(
+    expect(() => resolveRoleRoutes([route("pool missing")], new Map(), healthy(), 1000)).toThrow(
       /not defined/,
     );
   });
