@@ -9,17 +9,18 @@ import {
   appendFileSync,
   existsSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
 
-import type { Mode } from "../types";
+import type { Mode, SessionEvidence } from "../types";
 import { listCaseIds } from "./lib/cases";
 import { computeWorkers } from "./lib/capacity";
-import { REPO_ROOT } from "./lib/env";
-import { progressFilePath, updateProgress, writeProgress } from "./lib/progress";
+import { CASES_DIR, REPORT_DIR, REPO_ROOT } from "./lib/env";
+import { progressFilePath, readProgress, updateProgress, writeProgress } from "./lib/progress";
 import { WORKERS_DIR } from "./lib/worker";
 
 const VPX = process.platform === "win32" ? "vpx.cmd" : "vpx";
@@ -29,18 +30,100 @@ function argValue(flag: string): string | undefined {
   return index >= 0 ? process.argv[index + 1] : undefined;
 }
 
-function selectCases(): string[] {
+interface Selection {
+  caseIds: string[];
+  onlyFailed: boolean;
+}
+
+function parseList(value: string): string[] {
+  return [
+    ...new Set(
+      value
+        .split(",")
+        .map((id) => id.trim())
+        .filter((id) => id !== ""),
+    ),
+  ];
+}
+
+/** Map skill names to same-named case files (case id === skill name); fail loudly on any miss. */
+function resolveSkills(skills: string[]): string[] {
+  const missing = skills.filter((skill) => !existsSync(join(CASES_DIR, `${skill}.ts`)));
+  if (missing.length > 0)
+    throw new Error(`--skills 找不到用例文件（case id 等于技能名）：${missing.join(", ")}`);
+  return skills;
+}
+
+function evidenceJsonFiles(dir: string, recursive: boolean): string[] {
+  if (!existsSync(dir)) return [];
+  const files: string[] = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (recursive) files.push(...evidenceJsonFiles(full, true));
+    } else if (entry.name.endsWith(".json")) {
+      files.push(full);
+    }
+  }
+  return files;
+}
+
+function readEvidenceJson(file: string): SessionEvidence | null {
+  try {
+    return JSON.parse(readFileSync(file, "utf8")) as SessionEvidence;
+  } catch {
+    return null;
+  }
+}
+
+/** Latest evidence per caseId across archived rounds first, then live worker evidence. */
+function latestEvidence(): Map<string, SessionEvidence> {
+  const workerFiles: string[] = [];
+  if (existsSync(WORKERS_DIR)) {
+    for (const name of readdirSync(WORKERS_DIR)) {
+      if (!/^w\d+$/.test(name)) continue;
+      workerFiles.push(...evidenceJsonFiles(join(WORKERS_DIR, name, "evidence"), false));
+    }
+  }
+  const files = [...evidenceJsonFiles(join(REPORT_DIR, "evidence"), true), ...workerFiles];
+  const latest = new Map<string, SessionEvidence>();
+  for (const file of files) {
+    const evidence = readEvidenceJson(file);
+    if (!evidence || typeof evidence.caseId !== "string") continue;
+    const current = latest.get(evidence.caseId);
+    if (!current || (evidence.capturedAt ?? "") > (current.capturedAt ?? ""))
+      latest.set(evidence.caseId, evidence);
+  }
+  return latest;
+}
+
+/** Case ids whose latest evidence failed a verdict or hit an infra error. */
+function failedCaseIds(): string[] {
+  const failed: string[] = [];
+  for (const [caseId, evidence] of latestEvidence()) {
+    if (evidence.verdict?.passed === false || evidence.error === "infra") failed.push(caseId);
+  }
+  return failed.sort();
+}
+
+function selectCases(): Selection {
   const casesFlag = argValue("--cases");
-  if (casesFlag !== undefined)
-    return [
-      ...new Set(
-        casesFlag
-          .split(",")
-          .map((id) => id.trim())
-          .filter((id) => id !== ""),
-      ),
-    ];
-  return listCaseIds();
+  const skillsFlag = argValue("--skills");
+  const onlyFailed = process.argv.includes("--only-failed");
+  const provided = [
+    casesFlag !== undefined ? "--cases" : null,
+    skillsFlag !== undefined ? "--skills" : null,
+    onlyFailed ? "--only-failed" : null,
+  ].filter((value): value is string => value !== null);
+  if (provided.length > 1)
+    throw new Error(
+      `--cases / --skills / --only-failed 互斥，一次只能给一个（收到 ${provided.join(", ")}）`,
+    );
+  if (casesFlag !== undefined) return { caseIds: parseList(casesFlag), onlyFailed: false };
+  if (skillsFlag !== undefined)
+    return { caseIds: resolveSkills(parseList(skillsFlag)), onlyFailed: false };
+  if (onlyFailed) return { caseIds: failedCaseIds(), onlyFailed: true };
+  return { caseIds: listCaseIds(), onlyFailed: false };
 }
 
 function distribute(ids: string[], workers: number): string[][] {
@@ -156,7 +239,7 @@ async function main(): Promise<void> {
   const mode = argValue("--mode") as Mode | undefined;
   if (mode !== "raw" && mode !== "adapted")
     throw new Error(
-      "usage: run-batch.ts --mode raw|adapted [--workers N] [--cases a,b,c | --all] [--probe <seconds>] [--timeout <seconds>]",
+      "usage: run-batch.ts --mode raw|adapted [--workers N] [--cases a,b,c | --skills a,b,c | --only-failed | --all] [--round N] [--probe <seconds>] [--timeout <seconds>]",
     );
   const workersFlag = argValue("--workers");
   const explicitWorkers = workersFlag !== undefined ? Number(workersFlag) : undefined;
@@ -179,14 +262,34 @@ async function main(): Promise<void> {
   if (timeout !== undefined && (!Number.isFinite(timeout) || timeout <= 0))
     throw new Error("--timeout must be a positive number of seconds");
 
-  const caseIds = selectCases();
-  if (caseIds.length === 0) throw new Error("no cases selected; pass --cases a,b,c or --all");
+  const selection = selectCases();
+  if (selection.caseIds.length === 0) {
+    if (selection.onlyFailed) {
+      console.log("[run-batch] no failures to rerun");
+      return;
+    }
+    throw new Error(
+      "no cases selected; pass --cases a,b,c | --skills a,b,c | --only-failed | --all",
+    );
+  }
+  const caseIds = selection.caseIds;
 
   const queues = distribute(caseIds, workersArg);
   mkdirSync(WORKERS_DIR, { recursive: true });
   const logFile = join(WORKERS_DIR, "run-batch.log");
   const lockFile = join(WORKERS_DIR, "run-batch.lock");
   const progressFile = progressFilePath();
+
+  const roundArg = argValue("--round");
+  let round: number;
+  if (roundArg !== undefined) {
+    const parsed = Number(roundArg);
+    if (!Number.isInteger(parsed) || parsed < 1)
+      throw new Error("--round must be a positive integer");
+    round = parsed;
+  } else {
+    round = (readProgress(progressFile)?.round ?? 0) + 1;
+  }
 
   acquireLock(lockFile);
   try {
@@ -196,6 +299,7 @@ async function main(): Promise<void> {
       perWorker[`w${worker}`] = { done: 0, total: queue.length };
     });
     writeProgress(progressFile, {
+      round,
       total: caseIds.length,
       done: 0,
       passed: 0,

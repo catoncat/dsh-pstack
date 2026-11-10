@@ -72,6 +72,8 @@ export interface SessionEvidence {
   capturedAt: string;
   /** Set to "infra" when the run failed on infrastructure (no session / unreadable log), not a FAIL. */
   error?: string;
+  /** The judged outcome written beside the evidence so a rerun can select failures without re-digesting. */
+  verdict?: { passed: boolean; failures: string[] };
 }
 
 export interface CaseVerdict {

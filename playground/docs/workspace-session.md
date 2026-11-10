@@ -34,9 +34,26 @@ vp run playground:run-batch -- --mode raw --workers 4 --all
 vp run playground:collect -- --mode raw
 ```
 
-run-batch 把用例按轮转分到各 worker 队列并行跑，每用例把输出汇总到 `playground/.workers/run-batch.log`。阶段一默认走短探针：只等到技能加载、preset、首轮工具错误这类早期信号，窗口按用例类型取，principle-light 120 秒、behavior 300 秒，`--probe` 可全局覆盖，用例字段 `probeSeconds` 可单独覆盖。探针到点仍未结束就点界面停止按钮中止，证据标 `truncated: true`。阶段二完整回归不加 `--probe`，用 `--timeout` 等 turn/end。
+run-batch 把用例按轮转分到各 worker 队列并行跑，每用例把输出汇总到 `playground/.workers/run-batch.log`。raw 轮默认走短探针：只等到技能加载、preset、首轮工具错误这类早期信号，窗口按用例类型取，principle-light 120 秒、behavior 300 秒，`--probe` 可全局覆盖，用例字段 `probeSeconds` 可单独覆盖。探针到点仍未结束就点界面停止按钮中止，证据标 `truncated: true`。adapted 轮完整回归不加 `--probe`，用 `--timeout` 等 turn/end。
 
 单个用例调试用 `vp run playground:run -- --worker 0 --case <id> --mode raw --probe 120`。
+
+## 带轮次的重跑
+
+adapted 轮只跑上一轮失败的用例。
+
+```sh
+vp run playground:prepare -- --mode adapted --reuse --workers 4
+vp run playground:run-batch -- --mode adapted --only-failed
+vp run playground:run-batch -- --mode adapted --skills a,b
+vp run playground:collect -- --mode adapted
+```
+
+`--only-failed` 读跨轮次的最新证据，选 verdict 失败或 infra error 的用例。`--skills` 按技能名映射用例。`--reuse` 不重建 profile、工作区与证据，只重启要跑的 worker。`progress.json` 带 round 字段，每轮加一。
+
+失败四类与处理。实现缺陷改实现后 `vp run build` 再重启受影响 worker 重跑。用例缺陷改用例并更新 lock 后重跑该用例。环境错误自动重试一次仍失败再查。真实遗留写进审核报告遗留列，不重跑。
+
+收敛判据是某轮不再有实现缺陷、剩余全部是已声明遗留。收敛后必须整体全量复跑一次 adapted，通过判定为全部通过或未通过者均为已声明遗留。
 
 ## 手动流程
 
@@ -51,7 +68,7 @@ run-batch 把用例按轮转分到各 worker 队列并行跑，每用例把输�
 
 ## 证据与判定
 
-run-case 把 SessionEvidence 与 CaseVerdict 写入 `w<k>/evidence/w<k>-<case>-<mode>-<stamp>.json`，文件名带 worker 前缀防串。collect 汇总全部 worker 的证据，重读会话日志重新 digest 再判定，渲染 `playground/reports/stage1-<mode>-<日期>.md`。阶段一不判通过，失败即发现。阶段二沿用首轮通过口径，产物正确、无工具错误、无重复技能加载、无先错后对。
+run-case 把 SessionEvidence 与 CaseVerdict 写入 `w<k>/evidence/w<k>-<case>-<mode>-<stamp>.json`，文件名带 worker 前缀防串。collect 汇总全部 worker 的证据，重读会话日志重新 digest 再判定，渲染 `playground/reports/run-<mode>-<日期>.md`。raw 轮不判通过，失败即发现。adapted 轮沿用首轮通过口径，产物正确、无工具错误、无重复技能加载、无先错后对。
 
 ## 常见坑
 

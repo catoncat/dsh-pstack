@@ -46,5 +46,5 @@ export function handle(_path: string): unknown {
     { kind: "preset-active", detail: "poteto-mode" },
   ],
   intent:
-    "一个真实的功能开发请求并要求给出可验证的完成标准，正是 poteto-mode 作为根 preset 常驻并调度其它技能的场景。阶段一 raw 环境没有 preset 机制，此断言预期失败并记为缺口。",
+    "一个真实的功能开发请求并要求给出可验证的完成标准，正是 poteto-mode 作为根 preset 常驻并调度其它技能的场景。raw 轮 环境没有 preset 机制，此断言预期失败并记为缺口。",
 };

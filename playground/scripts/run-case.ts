@@ -359,6 +359,7 @@ function buildInfraEvidence(
     assistantText: "",
     capturedAt,
     error: "infra",
+    verdict: { passed: false, failures: ["infra"] },
   };
 }
 
@@ -456,9 +457,10 @@ async function main(): Promise<void> {
     capturedAt,
     outcome.truncated,
   );
+  const verdict = buildVerdict(skillCase.expect, evidence, workspaceDir);
+  evidence.verdict = { passed: verdict.passed, failures: verdict.failures };
   mkdirSync(paths.evidenceDir, { recursive: true });
   writeFileSync(evidenceFile, `${JSON.stringify(evidence, null, 2)}\n`);
-  const verdict = buildVerdict(skillCase.expect, evidence, workspaceDir);
 
   console.log(
     `[run-case] ${workerTag} ${caseId} [${mode}] probe=${probeSeconds ?? "-"} truncated=${outcome.truncated} ${verdict.passed ? "PASS" : "FAIL"}`,

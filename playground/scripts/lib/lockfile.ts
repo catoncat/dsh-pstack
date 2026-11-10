@@ -20,6 +20,10 @@ export interface SkillLock {
   skillPath: string;
   skillHash: string;
   status: SkillStatus;
+  /** True only when the skill truly depends on a dsh.md Cursor-only feature. */
+  cursorOnly: boolean;
+  /** Why the skill is cursor-only, or the review note when it is not. */
+  cursorNote: string;
 }
 
 export interface Exclusion {
@@ -29,16 +33,28 @@ export interface Exclusion {
 
 export interface LockFile {
   upstream: { repo: string; commit: string };
+  round?: number;
+  status?: string;
   skills: Record<string, SkillLock>;
   exclusions: Exclusion[];
 }
 
-// Skills that cannot run on DSH at all. This table, not the per-skill status, is the
-// source of truth: a fresh lock marks these excluded and records why.
-export const EXCLUSIONS: Record<string, string> = {
+/** The review note on every skill that uses none of dsh.md's Cursor-only features. */
+export const CURSOR_FREE_NOTE = "reviewed dsh.md Cursor-only features: none used";
+
+/**
+ * The one source of truth for Cursor-only dependencies: a skill qualifies only when a
+ * step truly needs dsh.md's Cursor-only services (Automations/routines, Bugbot, cloud
+ * agents, Cursor Projects, built-in PR tool). Merely describing those features, or using
+ * the words "automation"/"routine" in prose, does not qualify.
+ */
+export const CURSOR_ONLY_REASONS: Record<string, string> = {
   "make-bot-ui":
-    "依赖 Cursor Automations / routine / SendToUser webhook，DSH 无对应服务，按 dsh.md Cursor-only features 舍弃",
+    "依赖 Cursor Automations 的 routine 与 SendToUser webhook（sender key、wake loop），DSH 无对应服务，按 dsh.md Cursor-only features 舍弃",
 };
+
+// The exclusion table is generated from the cursor-only table, never maintained separately.
+export const EXCLUSIONS: Record<string, string> = CURSOR_ONLY_REASONS;
 
 export function sha256File(path: string): string {
   return `sha256:${createHash("sha256").update(readFileSync(path)).digest("hex")}`;
@@ -85,20 +101,30 @@ export function buildLock(existing: LockFile | null): LockFile {
   const cases = new Set(caseSkills());
   const skills: Record<string, SkillLock> = {};
   for (const name of upstreamSkillNames()) {
+    const cursorOnly = name in CURSOR_ONLY_REASONS;
     const prior = existing?.skills[name]?.status;
-    const status: SkillStatus = prior ?? (name in EXCLUSIONS ? "excluded" : "pending");
+    // Cursor-only skills are excluded by definition; any other skill never stays excluded.
+    const status: SkillStatus = cursorOnly
+      ? "excluded"
+      : prior === "excluded"
+        ? "pending"
+        : (prior ?? "pending");
     skills[name] = {
       caseFile: cases.has(name) ? `playground/cases/${name}.ts` : null,
       skillPath: `upstream/cursor-plugins/pstack/skills/${name}/SKILL.md`,
       skillHash: sha256File(upstreamSkillFile(name)),
       status,
+      cursorOnly,
+      cursorNote: cursorOnly ? CURSOR_ONLY_REASONS[name] : CURSOR_FREE_NOTE,
     };
   }
-  const exclusions = Object.entries(EXCLUSIONS)
+  const exclusions = Object.entries(CURSOR_ONLY_REASONS)
     .map(([skill, reason]) => ({ skill, reason }))
     .sort((a, b) => a.skill.localeCompare(b.skill));
   return {
     upstream: { repo: "cursor-plugins/pstack", commit: upstreamCommit() },
+    round: existing?.round ?? 0,
+    status: existing?.status ?? "pending-approval",
     skills,
     exclusions,
   };

@@ -20,6 +20,8 @@ export interface ProgressFailure {
 }
 
 export interface ProgressState {
+  /** 1-based run-batch round; the capture round evidence archives under. */
+  round: number;
   total: number;
   done: number;
   passed: number;

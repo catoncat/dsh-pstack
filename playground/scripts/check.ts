@@ -146,6 +146,14 @@ function checkLockDrift(lock: LockFile): DriftProblem[] {
       problems.push({ skill, reason: "excluded 技能却仍存在用例文件" });
   }
 
+  // cursorOnly and status must agree: a cursor-only skill is excluded, and only it.
+  for (const [skill, entry] of Object.entries(lock.skills)) {
+    if (entry.cursorOnly && entry.status !== "excluded")
+      problems.push({ skill, reason: "cursorOnly=true 但 status!=excluded" });
+    if (entry.status === "excluded" && entry.cursorOnly !== true)
+      problems.push({ skill, reason: "status=excluded 但 cursorOnly!=true" });
+  }
+
   return problems;
 }
 

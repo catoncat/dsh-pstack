@@ -4,9 +4,9 @@
 
 ## 两阶段流程
 
-阶段一 raw 发现。环境不装 dsh-pstack，用官方 `@deepseek-ai/dsh-skill-filesystem` 挂载 `upstream/cursor-plugins/pstack/skills` 的原始技能。逐用例执行，只记录证据与缺口，不判通过。每个技能的缺口汇总成需要的 dsh.md 适配说明与需要的插件工具，写入 `reports/stage1-findings.md`。结论经用户确认后按 `port/AGENTS.md` 的流程回填 `port/audit.md`。
+raw 轮 发现。环境不装 dsh-pstack，用官方 `@deepseek-ai/dsh-skill-filesystem` 挂载 `upstream/cursor-plugins/pstack/skills` 的原始技能。逐用例执行，只记录证据与缺口，不判通过。每个技能的缺口汇总成需要的 dsh.md 适配说明与需要的插件工具，写入 `reports/skill-audit.md`。结论经用户确认后按 `port/AGENTS.md` 的流程回填 `port/audit.md`。
 
-阶段二 adapted 回归。适配说明与插件工具落地后，用同名用例在装了 dsh-pstack 的环境镜像复验，按首轮通过口径判定。
+adapted 轮 adapted 回归。适配说明与插件工具落地后，用同名用例在装了 dsh-pstack 的环境镜像复验，按首轮通过口径判定。
 
 ## 多 worker 并行
 
@@ -25,18 +25,21 @@
 
 ```sh
 vp run playground:prepare -- --mode raw --workers 4 --reset   # 建 N 个 worker 并启动
+vp run playground:prepare -- --mode raw --reuse --workers 4   # 保留证据只重启 worker
 vp run playground:bootstrap -- --all                          # 浏览器引导，关弹窗并校验直达工作区
-vp run playground:check                                       # 58 技能静态可加载检查
-vp run playground:run-batch -- --mode raw --workers 4 --all   # 并行跑批，短探针为主
+vp run playground:check                                       # 58 技能与 lock 漂移检查
+vp run playground:run-batch -- --mode raw --all               # 并行跑批，短探针为主
+vp run playground:run-batch -- --mode raw --only-failed       # 只重跑上一轮失败用例
+vp run playground:run-batch -- --mode raw --skills a,b        # 按技能名重跑
 vp run playground:run -- --worker 0 --case <id> --mode raw    # 单用例调试
-vp run playground:collect -- --mode raw                       # 汇总证据为报告
-vp run playground:status                                      # 打印单一进度文件
+vp run playground:collect -- --mode raw                       # 归档证据并生成 run-raw 报告
+vp run playground:status                                      # 打印单一进度文件与轮次
 vp run playground:lock                                        # 重算用例与上游 lock
 vp run playground:stop                                        # 停全部 worker 与浏览器
 vp run playground:browser -- --worker 0 --shot out.png        # 临时浏览器操作
 ```
 
-运行期目录 `playground/.workers` 与每次运行生成的 `reports/stage1-raw-*.md` 都已忽略，`reports/stage1-findings.md` 是人工整理的结论，进库。
+运行期目录 `playground/.workers`、每次运行生成的 `reports/run-raw-*.md` 与 `reports/run-adapted-*.md`、归档证据 `reports/evidence/` 都已忽略，`reports/skill-audit.md` 是人工整理、待审批的审核报告，进库。
 
 ## 用例
 
@@ -44,4 +47,4 @@ vp run playground:browser -- --worker 0 --shot out.png        # 临时浏览器�
 
 ## 判定口径
 
-阶段一只记证据，以短探针取早期信号，证据标 `truncated`。阶段二首轮通过需要同时满足用户产物正确、没有工具错误、没有重复技能加载、没有先错后对。bash 返回 completed 不代表命令成功，判定看事件与产物。涉及模型选择的结论由用户确认，agent 用会话日志佐证。
+raw 轮只记证据，以短探针取早期信号，证据标 `truncated`。adapted 轮首轮通过需要同时满足用户产物正确、没有工具错误、没有重复技能加载、没有先错后对。bash 返回 completed 不代表命令成功，判定看事件与产物。涉及模型选择的结论由用户确认，agent 用会话日志佐证。

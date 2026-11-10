@@ -16,11 +16,12 @@ import {
   startWeb,
   stopWeb,
   writeHomePatch,
+  type ProviderPlan,
 } from "./lib/env";
 import type { Mode } from "../types";
 import { listCaseIds } from "./lib/cases";
 import { computeWorkers } from "./lib/capacity";
-import { listWorkers, workerPaths, WORKERS_DIR } from "./lib/worker";
+import { listWorkers, workerCount, workerPaths, WORKERS_DIR } from "./lib/worker";
 
 function argValue(flag: string): string | undefined {
   const index = process.argv.indexOf(flag);
@@ -67,19 +68,51 @@ async function assertWorkersHealthy(started: Started[]): Promise<void> {
   }
 }
 
+/** Restart web only for workers 0..count-1, retaining each worker's profile, home, workspaces, and evidence. */
+async function runReuse(plan: ProviderPlan, count: number): Promise<void> {
+  const workers = Array.from({ length: count }, (_, index) => workerPaths(index));
+  for (const paths of workers) {
+    const { stopped } = stopWeb(paths);
+    if (stopped) console.log(`[prepare] reuse: stopped worker ${paths.index}`);
+  }
+  const started: Started[] = await Promise.all(
+    workers.map(async (paths) => {
+      const { url, port } = await startWeb(paths, plan);
+      return { index: paths.index, url, port };
+    }),
+  );
+  for (const entry of started)
+    console.log(`[prepare] worker ${entry.index} url=${entry.url} port=${entry.port}`);
+  await assertWorkersHealthy(started);
+  console.log(
+    `[prepare] reuse: restarted ${count} worker(s); profile, home, workspaces and evidence retained`,
+  );
+}
+
 async function main(): Promise<void> {
   const mode = argValue("--mode") as Mode | undefined;
   if (mode !== "raw" && mode !== "adapted") {
     throw new Error(
-      "usage: prepare.ts --mode raw|adapted [--reset] [--workers N] [--main <model-substring>]",
+      "usage: prepare.ts --mode raw|adapted [--reset | --reuse] [--workers N] [--main <model-substring>]",
     );
   }
   const mainFilter = argValue("--main");
   const reset = process.argv.includes("--reset");
+  const reuse = process.argv.includes("--reuse");
+  if (reset && reuse) throw new Error("--reset 与 --reuse 互斥");
   const workersFlag = argValue("--workers");
   const explicitWorkers = workersFlag !== undefined ? Number(workersFlag) : undefined;
   if (explicitWorkers !== undefined && (!Number.isInteger(explicitWorkers) || explicitWorkers < 1))
     throw new Error("--workers must be a positive integer");
+
+  if (reuse) {
+    const plan = loadProviderPlan(mainFilter);
+    const count = explicitWorkers ?? workerCount();
+    if (count < 1) throw new Error("--reuse 需要已准备的 worker 目录，或显式 --workers N");
+    await runReuse(plan, count);
+    return;
+  }
+
   const capacity = computeWorkers(explicitWorkers);
   const workersArg = capacity.workers;
   if (explicitWorkers === undefined)

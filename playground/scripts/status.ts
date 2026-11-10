@@ -12,6 +12,7 @@ function main(): void {
     return;
   }
 
+  console.log(`[status] round ${Number.isInteger(state.round) ? state.round : 1}`);
   console.log(
     `[status] ${state.done}/${state.total} done (passed ${state.passed}, failed ${state.failed}, error ${state.error})`,
   );
