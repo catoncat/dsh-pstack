@@ -134,7 +134,7 @@ describe("pstack_subagent arguments and planning", () => {
     const result = await startPlannedChildren(
       {
         options: { provider: "cpa", model: "parent" },
-        session: { requestHeader: () => undefined },
+        session: { header: {}, requestHeader: () => undefined },
       } as unknown as Agent,
       plan,
       runtime,
@@ -161,7 +161,7 @@ describe("pstack_subagent arguments and planning", () => {
     const runtime = { ...base, subagents } as unknown as DelegationRuntime;
     const plan = planDelegation(args({ role: "arena runners" }), runtime);
     const result = await startPlannedChildren(
-      { options: {} } as unknown as Agent,
+      { options: {}, session: { header: {} } } as unknown as Agent,
       plan,
       runtime,
       new AbortController().signal,

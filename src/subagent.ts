@@ -124,6 +124,12 @@ export type DelegationResult =
       readonly children: readonly ChildRecord[];
       readonly diagnostics: readonly string[];
       readonly failure: DelegationFailure;
+    }
+  | {
+      readonly kind: "forbidden";
+      readonly depth: number;
+      readonly children: readonly ChildRecord[];
+      readonly diagnostics: readonly string[];
     };
 
 /** The live services one delegation reads. */
@@ -335,6 +341,10 @@ export function planDelegation(
   };
 }
 
+function callerDepth(agent: Agent): number {
+  return Math.max(agent.session.header.delegationDepth ?? 0, agent.options.subagentDepth ?? 0);
+}
+
 /** Start every planned child after one final capability and route check. */
 export async function startPlannedChildren(
   parent: Agent,
@@ -342,6 +352,11 @@ export async function startPlannedChildren(
   runtime: DelegationRuntime,
   signal: AbortSignal,
 ): Promise<DelegationResult> {
+  const depth = callerDepth(parent);
+  if (depth > 0) {
+    return { kind: "forbidden", depth, children: [], diagnostics: [] };
+  }
+
   const provider = runtime.subagents.getProvider(plan.provider);
   if (provider === undefined) {
     const available = runtime.subagents.list();
@@ -502,6 +517,8 @@ const TOOL_DESCRIPTION = [
   "",
   "Omit `maxDepth` to use the configured row and Host delegation cap; an explicit value cannot exceed that cap.",
   "",
+  "A session that is already a delegate cannot spawn. Do the assigned work in that session. Do not retry.",
+  "",
   "`agent` picks a DSH agent preset: `poteto-agent` mounts the pstack implementation delegate and receives the absolute path of the poteto-mode instructions; `comment-sicko` mounts the comment reviewer; `readonly` mounts a read-only research preset with the sandbox policy set to read-only; `general` joins the parent preset.",
   "",
   "`role` selects a configured pstack role and therefore the child's model route and starting effort. Null inherits the parent route. Automatic panel roles start one child per configured entry; `pstack_roles` reports which roles accept `roleIndex`.",
@@ -513,7 +530,8 @@ const OUTPUT_SCHEMA: JsonSchemaNode = {
   type: "object",
   additionalProperties: false,
   properties: {
-    kind: { type: "string", enum: ["activation", "activations", "partial"] },
+    kind: { type: "string", enum: ["activation", "activations", "partial", "forbidden"] },
+    depth: { type: "integer" },
     children: {
       type: "array",
       items: {
@@ -549,6 +567,13 @@ const OUTPUT_SCHEMA: JsonSchemaNode = {
 };
 
 function renderDelegation(result: DelegationResult): string {
+  if (result.kind === "forbidden") {
+    return [
+      "Spawn refused. This session is already a delegate.",
+      "The session that received /poteto-mode owns every spawn.",
+      "Do this work in this session. Do not wait for a nested agent, and do not call pstack_subagent again.",
+    ].join("\n");
+  }
   const lines = [
     result.kind === "partial"
       ? `started ${result.children.length} of ${result.failure.total} children; entry ${result.failure.index + 1} failed: ${result.failure.reason}`
