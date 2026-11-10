@@ -15,6 +15,8 @@ prepare 完成这些事。重建 `playground/.dsh` 运行期 home。从 `playgro
 
 bootstrap 完成这些事。用持久浏览器 profile（`playground/.browser/`）打开 token URL。若出现「预览版说明」弹窗则自动点掉，持久 profile 会让它不再出现。校验页面已直达预注册工作区且模型 chip 显示预期探针。截图存 `playground/.browser/ready.png`。
 
+运行期 home 的 approval 策略固定为 never。无人值守的会话没有审批应答者，ask 策略会让敏感工具调用永久挂起。never 把需要审批的动作确定性拒绝，模型看到拒绝后继续，拒绝会记进会话证据。
+
 ## 手动流程
 
 脚本不可用或需要人工复核时按下面走。

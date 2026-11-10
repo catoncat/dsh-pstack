@@ -207,6 +207,14 @@ export function writeHomePatch(plan: ProviderPlan): void {
       name: "@deepseek-ai/dsh-llm-pi-ai",
       config: { providers: plan.providers },
     },
+    {
+      // Unattended cases have no answerer behind the approval seam; a pending
+      // request would hang the turn forever. "never" rejects gated actions
+      // deterministically so the model sees the rejection and moves on.
+      id: "approval",
+      name: "@deepseek-ai/dsh-user-approval",
+      config: { policy: "never" },
+    },
   ];
   writeFileSync(HOME_PATCH_FILE, yamlDump(patch, { lineWidth: 120 }));
 }
