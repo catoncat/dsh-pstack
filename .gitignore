@@ -5,4 +5,6 @@ dist
 .DS_Store
 # Scratch space for local verification; never part of the package.
 .tmp
-# Local-only backup of the pre-rework playground; never part of the package.
+
+# Local pnpm store created by tooling; never part of the package.
+.pnpm-store/
