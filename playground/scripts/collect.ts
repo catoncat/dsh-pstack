@@ -6,7 +6,7 @@ import { join } from "node:path";
 
 import type { Expectation, Mode, SessionEvidence } from "../types";
 import { loadCase, loadSmokeCase } from "./lib/cases";
-import { buildVerdict } from "./lib/evidence";
+import { buildVerdict, digestSession, toSessionEvidence } from "./lib/evidence";
 import { EVIDENCE_DIR, REPORT_DIR, WORKSPACE_ROOT } from "./lib/env";
 
 function argValue(flag: string): string | undefined {
@@ -67,7 +67,19 @@ async function main(): Promise<void> {
   const rows: string[] = [];
   let passed = 0;
   for (const caseId of [...perCase.keys()].sort()) {
-    const evidence = perCase.get(caseId) as SessionEvidence;
+    const stored = perCase.get(caseId) as SessionEvidence;
+    // Re-digest from the session log so verdicts track the current pipeline even
+    // when the stored evidence predates a digest field.
+    const evidence =
+      stored.sessionFile && existsSync(stored.sessionFile)
+        ? toSessionEvidence(
+            digestSession(stored.sessionFile, stored.sessionId),
+            stored.caseId,
+            stored.mode,
+            stored.sessionFile,
+            stored.capturedAt,
+          )
+        : stored;
     const { expectations, found } = await resolveExpectations(caseId);
     const workspaceDir = join(WORKSPACE_ROOT, caseId);
     const verdict = buildVerdict(expectations, evidence, workspaceDir);
