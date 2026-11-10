@@ -121,7 +121,7 @@ function readHostProviders(): Record<string, HostProvider> {
  * when config.json asks for a route the host does not serve, so prepare fails loudly
  * instead of booting a web app that cannot answer.
  */
-export function loadProviderPlan(): ProviderPlan {
+export function loadProviderPlan(mainFilter?: string): ProviderPlan {
   const config = readConfig();
   const hostProviders = readHostProviders();
 
@@ -161,9 +161,15 @@ export function loadProviderPlan(): ProviderPlan {
   }
 
   const lowRoutes = routes.filter((route) => route.efforts.includes("low"));
-  const mainRoute = lowRoutes.find((route) => /minimax/i.test(route.model)) ?? lowRoutes[0];
+  const mainRoute =
+    lowRoutes.find((route) => new RegExp(mainFilter ?? "minimax", "i").test(route.model)) ??
+    (mainFilter === undefined ? lowRoutes[0] : undefined);
   if (!mainRoute)
-    throw new Error("no allowed route exposes a low reasoning effort; the default probe needs one");
+    throw new Error(
+      mainFilter
+        ? `no allowed low route matches --main ${mainFilter}`
+        : "no allowed route exposes a low reasoning effort; the default probe needs one",
+    );
   const mainModel = (providers[mainRoute.provider].models ?? []).find(
     (model) => model.id === mainRoute.model,
   );

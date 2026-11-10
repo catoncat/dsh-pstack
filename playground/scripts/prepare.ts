@@ -27,8 +27,9 @@ function argValue(flag: string): string | undefined {
 async function main(): Promise<void> {
   const mode = argValue("--mode") as Mode | undefined;
   if (mode !== "raw" && mode !== "adapted") {
-    throw new Error("usage: prepare.ts --mode raw|adapted [--reset]");
+    throw new Error("usage: prepare.ts --mode raw|adapted [--reset] [--main <model-substring>]");
   }
+  const mainFilter = argValue("--main");
   const reset = process.argv.includes("--reset");
 
   if (reset) {
@@ -39,7 +40,7 @@ async function main(): Promise<void> {
     mkdirSync(DSH_HOME, { recursive: true });
   }
 
-  const plan = loadProviderPlan();
+  const plan = loadProviderPlan(mainFilter);
   buildProfile(mode);
   copyCredentials();
   writeHomePatch(plan);
