@@ -55,6 +55,24 @@ const TERMS = [
   },
 ];
 const ROUTE_KEY = "Run another pstack skill";
+const DSH_MODEL_FILE = "$DSH_HOME/pstack-models.mdc";
+
+function adaptForDsh(text) {
+  return text
+    .replace(/~\/\.cursor\/rules\/pstack-models\.mdc/g, DSH_MODEL_FILE)
+    .replace(
+      `Write \`${DSH_MODEL_FILE}\`, an always-applied rule that sets pstack's model per role.`,
+      `Write \`${DSH_MODEL_FILE}\`, the DSH role configuration file that sets pstack's model per role.`,
+    )
+    .replace(
+      `with \`alwaysApply: true\`, a \`# budget\` line`,
+      `with no frontmatter and a \`# budget\` line`,
+    )
+    .replace(
+      /```\n---\ndescription: pstack per-role model choices \(overrides skill defaults\)\nalwaysApply: true\n---\n/,
+      "```\n",
+    );
+}
 
 function walk(dir) {
   return readdirSync(dir).flatMap((name) => {
@@ -168,18 +186,32 @@ function render() {
   files.set("LICENSE", file(join(SOURCE, "LICENSE")));
   for (const [path, entry] of files) {
     if (!path.endsWith(".md")) continue;
-    const text = entry.bytes.toString("utf8").replace(LINK, (link, href) => {
-      const target = targetPath(path, href);
-      if (!target || target.split("/")[0] === ".." || has(files, target)) return link;
-      const kind = statSync(join(SOURCE, target)).isDirectory() ? "tree" : "blob";
-      return `](${GITHUB}/${kind}/main/pstack/${target}${href.slice(href.search(/[#?]|$/))})`;
-    });
+    const sourceText = entry.bytes.toString("utf8");
+    const text = (path === ADAPTER_TREE ? sourceText : adaptForDsh(sourceText)).replace(
+      LINK,
+      (link, href) => {
+        const target = targetPath(path, href);
+        if (!target || target.split("/")[0] === ".." || has(files, target)) return link;
+        const kind = statSync(join(SOURCE, target)).isDirectory() ? "tree" : "blob";
+        return `](${GITHUB}/${kind}/main/pstack/${target}${href.slice(href.search(/[#?]|$/))})`;
+      },
+    );
     entry.bytes = Buffer.from(text);
   }
   return files;
 }
 
 const rendered = render();
+for (const [path, entry] of rendered) {
+  if (path === ADAPTER_TREE || !path.endsWith(".md")) continue;
+  if (entry.bytes.toString("utf8").includes("~/.cursor/rules/pstack-models.mdc")) {
+    problems.push(`${path} still contains the Cursor model-rule path`);
+  }
+}
+if (problems.length > 0) {
+  for (const problem of problems) console.log(`FAIL ${problem}`);
+  process.exit(1);
+}
 const dangling = [];
 for (const [path, entry] of rendered) {
   if (!path.endsWith(".md")) continue;
