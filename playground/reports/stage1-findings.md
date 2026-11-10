@@ -661,3 +661,20 @@ ketchup-video 无视频渲染、statechart 无 SVG 渲染、make-bot-ui 无 rout
 58. ✅ why
 
 共 58 条，逐个核对齐全，无遗漏。
+
+## 交叉探针复核
+
+用 deepseek-v4.1-flash low 复跑四个用例，检查主探针结论是否 minimax 特有。
+
+| 用例 | 结束 | 加载请求 | 工具错误 | 与主探针一致性 |
+| --- | --- | --- | --- | --- |
+| poteto-mode | 截断 | agent-browser | bash | X1 复现，standard preset，未加载 poteto-mode |
+| unslop | 完成 | 无 | 无 | X1 复现，未加载技能 |
+| interrogate | 截断 | 无 | 无 | 未加载技能，本轮未触发角色路由报错 |
+| make-bot-ui | 截断 | agent-browser | bash | X1 与 X3 复现，未触发提问报错 |
+
+结论：X1（隐藏技能无法用标准 skill 工具加载）与 X3（bash description 必填）跨模型复现，属环境与工具层事实。X5（无人值守提问失败）与 X6（角色路由缺失）本轮 flash 样本未触发，只算单探针观察，不做跨模型断言。
+
+## 基建遗留
+
+本轮 29 个用例被重复执行两次，原因是长批次被工具移入后台时被再次进入，两个 run-batch 循环交错。run-batch 已加 pid 锁拒绝并发重入，阶段二跑批前需确认锁生效。
