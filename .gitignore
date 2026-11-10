@@ -6,4 +6,3 @@ dist
 # Scratch space for local verification; never part of the package.
 .tmp
 # Local-only backup of the pre-rework playground; never part of the package.
-playground_backup/

@@ -42,14 +42,23 @@ run-batch 把用例按轮转分到各 worker 队列并行跑，每用例把输�
 
 adapted 轮只跑上一轮失败的用例。
 
+第一轮 adapted 要用构建后的插件重建 worker profile，同时保留 raw 证据，因此这一次不加 `--reuse`。
+
 ```sh
-vp run playground:prepare -- --mode adapted --reuse --workers 4
+vp run playground:prepare -- --mode adapted --workers 4
 vp run playground:run-batch -- --mode adapted --only-failed
-vp run playground:run-batch -- --mode adapted --skills a,b
 vp run playground:collect -- --mode adapted
 ```
 
-`--only-failed` 读跨轮次的最新证据，选 verdict 失败或 infra error 的用例。`--skills` 按技能名映射用例。`--reuse` 不重建 profile、工作区与证据，只重启要跑的 worker。`progress.json` 带 round 字段，每轮加一。
+之后的轮次重启同一批 worker，不动 profile、工作区与证据。
+
+```sh
+vp run playground:prepare -- --mode adapted --reuse --workers 4
+vp run playground:run-batch -- --mode adapted --only-failed --round 2
+vp run playground:run-batch -- --mode adapted --skills a,b
+```
+
+`--only-failed` 读跨轮次的最新证据，选 verdict 失败或 infra error 的用例。`--skills` 按技能名映射用例。`--round` 写入轮次。`--reuse` 不重建 profile、工作区与证据，只重启要跑的 worker。`progress.json` 带 round 字段，每轮加一。
 
 失败四类与处理。实现缺陷改实现后 `vp run build` 再重启受影响 worker 重跑。用例缺陷改用例并更新 lock 后重跑该用例。环境错误自动重试一次仍失败再查。真实遗留写进审核报告遗留列，不重跑。
 

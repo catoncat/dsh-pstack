@@ -21,7 +21,7 @@ import { listCaseIds } from "./lib/cases";
 import { computeWorkers } from "./lib/capacity";
 import { CASES_DIR, REPORT_DIR, REPO_ROOT } from "./lib/env";
 import { progressFilePath, readProgress, updateProgress, writeProgress } from "./lib/progress";
-import { WORKERS_DIR } from "./lib/worker";
+import { WORKERS_DIR, workerCount } from "./lib/worker";
 
 const VPX = process.platform === "win32" ? "vpx.cmd" : "vpx";
 
@@ -246,10 +246,15 @@ async function main(): Promise<void> {
   if (explicitWorkers !== undefined && (!Number.isInteger(explicitWorkers) || explicitWorkers < 1))
     throw new Error("--workers must be a positive integer");
   const capacity = computeWorkers(explicitWorkers);
-  const workersArg = capacity.workers;
+  // Never start more workers than were prepared; auto mode caps at the prepared count.
+  const prepared = workerCount();
+  const workersArg =
+    explicitWorkers === undefined && prepared > 0
+      ? Math.min(capacity.workers, prepared)
+      : capacity.workers;
   if (explicitWorkers === undefined)
     console.log(
-      `[run-batch] 检测到 ${capacity.cores} 核 / ${capacity.availableGB.toFixed(1)} G 可用，采用 ${workersArg} 个 worker`,
+      `[run-batch] 检测到 ${capacity.cores} 核 / ${capacity.availableGB.toFixed(1)} G 可用，已 prepare ${prepared} 个 worker，采用 ${workersArg} 个`,
     );
   else console.log(`[run-batch] --workers override：采用 ${workersArg} 个 worker`);
 

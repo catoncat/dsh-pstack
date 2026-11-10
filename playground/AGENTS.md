@@ -1,6 +1,6 @@
 # Playground agent 须知
 
-- 本目录只做 browser 验证，不新增 headless 用例或 headless runner。
+- 本目录只做真实浏览器验证。
 - 环境准备与执行一律走脚本，手动步骤与常见坑见 `docs/workspace-session.md`。
 - 端口不再固定。每个 worker 用 `dsh --port 0` 动态分配端口，从启动输出解析真实端口。不要写死任何固定端口。
 - 多 worker 各自一套运行期目录，全在 `playground/.workers/w<k>/` 下（home、browser、workspace、evidence）。不要跨 worker 共用 home 或浏览器 profile。

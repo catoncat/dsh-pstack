@@ -1,6 +1,6 @@
 # Playground
 
-本目录是 dsh-pstack 的 browser-only 真实环境验证基建。它对 58 个上游技能逐个留存测试用例，在真实 DSH Web 会话里执行，证据来自持久化会话事件与截图。不做 headless 验证，headless 缺 Web 标准 preset 的服务，结论不代表 Web 行为。
+本目录是 dsh-pstack 的真实环境验证基建。它对 58 个上游技能逐个留存测试用例，在真实 DSH Web 会话里执行，证据来自持久化会话事件与截图。
 
 ## 两阶段流程
 
@@ -16,7 +16,7 @@ adapted 轮 adapted 回归。适配说明与插件工具落地后，用同名用
 
 1. 仓库根目录 `vp install`，按 `port/AGENTS.md` 准备生成树后 `vp run build`。
 2. 确认 `dsh` 在 PATH 中。
-3. 复制 `config.example.json` 为 `config.json`，填允许的 provider、apiKey、模型与思考等级。该文件已忽略。
+3. 自己创建 `playground/config.json`，填允许的 provider、apiKey、模型与思考等级。不要复制模板，脚本在文件缺失或为空时直接报错。该文件已忽略。
 4. `vp run playground:prepare -- --mode raw --workers 4 --reset`，再 `vp run playground:bootstrap -- --all`。
 
 环境准备细节、手动流程、常见坑见 `docs/workspace-session.md`。

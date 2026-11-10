@@ -13,12 +13,12 @@ import {
   readFileSync,
   writeFileSync,
 } from "node:fs";
-import { basename, join } from "node:path";
+import { basename, join, relative } from "node:path";
 
 import type { Expectation, Mode, SessionEvidence } from "../types";
 import { loadCase, loadSmokeCase } from "./lib/cases";
 import { buildVerdict, digestSession, toSessionEvidence } from "./lib/evidence";
-import { REPORT_DIR } from "./lib/env";
+import { PLAYGROUND_DIR, REPORT_DIR } from "./lib/env";
 import { progressFilePath, readProgress } from "./lib/progress";
 import { WORKERS_DIR, workerPaths } from "./lib/worker";
 
@@ -167,7 +167,7 @@ async function main(): Promise<void> {
   const lines = [
     `# Playground evidence — ${mode} — ${date}`,
     "",
-    `Generated ${new Date().toISOString()} from ${WORKERS_DIR}/w*/evidence; archived to reports/evidence/${archiveSubdir}/.`,
+    `Generated ${new Date().toISOString()} from ${relative(PLAYGROUND_DIR, WORKERS_DIR)}/w*/evidence; archived to reports/evidence/${archiveSubdir}/.`,
     "",
     `- total: ${perCase.size}`,
     `- passed: ${passed}`,

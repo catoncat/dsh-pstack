@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Run playground verification
 
-Drive the browser-only playground through the whole verification loop. It verifies upstream pstack skills against a real DSH Web session and ends with an audit report whose every evidence path exists. It never uses headless runs. Report names carry no stage number: the pending-approval audit is `reports/skill-audit.md`, a run is `reports/run-raw-<date>.md` or `reports/run-adapted-<date>.md`.
+Drive the playground through the whole verification loop against a real DSH Web session. It ends with an audit report whose every evidence path exists. Report names carry no stage number: the pending-approval audit is `reports/skill-audit.md`, a run is `reports/run-raw-<date>.md` or `reports/run-adapted-<date>.md`.
 
 ## 1. Prepare the machine
 
@@ -15,7 +15,7 @@ Run from the repository root.
 1. `vp install`.
 2. Follow `port/AGENTS.md` to stage the generated tree, then `vp run build`.
 3. Confirm `dsh` is on PATH.
-4. Copy `playground/config.example.json` to `playground/config.json` and fill the allowed provider, apiKey, models and efforts. This file is ignored.
+4. Create `playground/config.json` yourself with the allowed provider, apiKey, models and efforts. Do not copy a template; the operator writes this file by hand. Every script that needs it fails loudly when it is absent or empty, and the file is ignored by git.
 
 ## 2. Prepare workers
 
@@ -24,10 +24,7 @@ Worker count is detected from the machine unless overridden. Each worker owns `p
 ```sh
 vp run playground:prepare -- --mode raw --reset
 vp run playground:prepare -- --mode raw --reset --workers 6
-vp run playground:prepare -- --reuse --workers 4
 ```
-
-`--reuse` keeps the existing profiles, workspaces and evidence and only restarts the workers it will run. Use it between rounds so evidence survives.
 
 ## 3. Land the browser profile
 
@@ -47,11 +44,11 @@ vp run playground:collect -- --mode raw
 
 Collect writes `reports/run-raw-<date>.md` and archives the round's evidence under `reports/evidence/<round>-<date>/`. Every row names its archived evidence file.
 
-Then write the audit report `reports/skill-audit.md`, one section per skill, with the four fixed columns: upstream capability, current implementation status and gap, suggested dsh.md adaptation and plugin tools, and pending approval. Status starts at pending approval. Stop here and hand the report to the operator for per-section approval.
+Then write the audit report `reports/skill-audit.md`, one section per skill. Each section states the upstream capability and the current status and gap, and leaves two empty rows for the operator to fill during approval: the suggested dsh.md adaptation and the suggested plugin tools. Status starts at pending approval. Do not pre-fill the suggestions. Stop here and hand the report to the operator for per-section approval.
 
 ## 5. Adapt after approval
 
-For each approved section, implement the suggested dsh.md adaptation and plugin tools, then build the shippable plugin.
+For each approved section, fill in and implement the operator's suggested dsh.md adaptation and plugin tools, then build the shippable plugin.
 
 ```sh
 vp run build
@@ -59,23 +56,30 @@ vp run build
 
 ## 6. Adapted regression rounds
 
-Run only the cases that failed the previous round.
+The first adapted round rebuilds the worker profile with the freshly built plugin while keeping the raw evidence. Do not pass `--reuse` on that first round, or the workers keep the old raw profile.
 
 ```sh
-vp run playground:prepare -- --mode adapted --reuse --workers 4
+vp run playground:prepare -- --mode adapted --workers 4
 vp run playground:run-batch -- --mode adapted --only-failed
-vp run playground:run-batch -- --mode adapted --skills <a>,<b>
 vp run playground:collect -- --mode adapted
 ```
 
-`--only-failed` reads the latest evidence across archived rounds and selects cases whose verdict failed or whose run ended in an infra error. `--skills` maps skill names to their cases. Progress in `playground/status` and `playground/.workers/progress.json` carries the round number.
+Later rounds restart the same workers without touching profiles, workspaces or evidence.
+
+```sh
+vp run playground:prepare -- --mode adapted --reuse --workers 4
+vp run playground:run-batch -- --mode adapted --only-failed --round 2
+vp run playground:run-batch -- --mode adapted --skills <a>,<b>
+```
+
+`--only-failed` reads the latest evidence across archived rounds and selects cases whose verdict failed or whose run ended in an infra error. `--skills` maps skill names to their cases. `--round` sets the round written to progress. Progress in `playground/status` and `playground/.workers/progress.json` carries the round number.
 
 Classify each failure and act.
 
 - Implementation defect: fix the implementation, `vp run build`, restart the affected workers, rerun the affected cases.
 - Case defect: fix the case, update `cases.lock.json`, rerun that case.
 - Environment error: retry once automatically; if it fails again, investigate.
-- True residual: record it in the audit report residual column with the reason and do not rerun.
+- True residual: record it in the audit report residual row with the reason and do not rerun.
 
 Repeat until a round has no implementation defect and every remaining item is a declared residual.
 
@@ -93,7 +97,7 @@ Pass when every case passes or every non-passing case is a declared residual wit
 
 ## 8. Close the report
 
-Update every section of `reports/skill-audit.md` to its final state, passed or residual with the reason, and record the round number and status in `cases.lock.json`. The next round starts from step 5.
+Update every section of `reports/skill-audit.md` to its final state, passed or residual with the reason, and record the round and status in `cases.lock.json`. The next round starts from step 5.
 
 ## Conventions
 
