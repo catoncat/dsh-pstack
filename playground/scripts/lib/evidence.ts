@@ -72,6 +72,7 @@ export function digestSession(file: string, sessionId: string, worker = 0): Sess
 
   const toolCalls: ToolCallEvidence[] = [];
   const callsById = new Map<string, ToolCallEvidence>();
+  const skillCallById = new Map<string, string>();
   const skillLoads: string[] = [];
   let workspacePath: string | null = null;
   let agentPreset: string | null = null;
@@ -114,7 +115,9 @@ export function digestSession(file: string, sessionId: string, worker = 0): Sess
           const args = parseArguments(data.arguments);
           const skillName = typeof args.name === "string" ? args.name : "";
           const resource = typeof args.resource === "string" ? args.resource : "";
-          if (skillName) skillLoads.push(resource ? `${skillName}#${resource}` : skillName);
+          // Record the attempt keyed by call id; only a successful result counts as a load.
+          if (skillName)
+            skillCallById.set(callId, resource ? `${skillName}#${resource}` : skillName);
         }
         break;
       }
@@ -132,6 +135,8 @@ export function digestSession(file: string, sessionId: string, worker = 0): Sess
           call.errorText = textOfContent(message.content).slice(0, 2000);
         } else {
           call.status = "ok";
+          const loaded = skillCallById.get(callId);
+          if (loaded !== undefined) skillLoads.push(loaded);
         }
         break;
       }
