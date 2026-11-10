@@ -49,14 +49,17 @@ export async function apply(ctx: Context): Promise<() => Promise<void>> {
     "pstack-config.locale.plugins",
   );
   ctx.effect(() => ctx.locale.register(NS.roles, catalogs.roles), "pstack-config.locale.roles");
-  // The tool-slot contract lives in a host client package this bundle does not
-  // depend on, so the keyed registration goes through a structural signature.
+  // The tool-slot service stays runtime-erased in this bundle, so registration
+  // goes through a small structural signature.
   const slots = ctx.slots as unknown as {
     inject(name: string, contribution: () => unknown): unknown;
-    register(spec: { name: string; key: string }, component: unknown): () => void;
+    register(spec: { name: string; key: string; locale?: string }, component: unknown): () => void;
   };
   slots.inject("tool.call.toolview", () =>
-    slots.register({ name: "tool.call.toolview", key: "pstack_subagent" }, SubagentRow),
+    slots.register(
+      { name: "tool.call.toolview", key: "pstack_subagent", locale: NS.config },
+      SubagentRow,
+    ),
   );
 
   // Observe the plugin-manager namespace without gating the role action on it.

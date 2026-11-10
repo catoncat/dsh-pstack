@@ -84,6 +84,7 @@
     "@deepseek-ai/dsh-client-ui-renderer": "catalog:types",
     "@deepseek-ai/dsh-client-ui-settings": "catalog:types",
     "@deepseek-ai/dsh-client-ui-slots": "catalog:types",
+    "@deepseek-ai/dsh-client-ui-tool": "catalog:types",
     "@deepseek-ai/dsh-llm": "catalog:types",
     "@deepseek-ai/dsh-plugin-manager": "catalog:types",
     "@deepseek-ai/dsh-sandbox-policy": "catalog:runtime",
