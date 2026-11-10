@@ -13,10 +13,6 @@ import { CASES_DIR, RAW_SKILLS_DIR, REPO_ROOT } from "./env";
 
 export const LOCK_FILE = join(REPO_ROOT, "playground", "cases.lock.json");
 export const PACKAGE_JSON = join(REPO_ROOT, "package.json");
-/** The legacy capability audit lock. Read once only, to seed a brand-new baseline. */
-const LEGACY_AUDIT_LOCK = join(REPO_ROOT, "port", "audit.lock.json");
-
-export const LOCK_SCHEMA_VERSION = 2;
 
 export type SkillStatus = "audited" | "excluded" | "pending";
 
@@ -44,12 +40,8 @@ export interface Baseline {
   dshVersion: string;
   /** The upstream/cursor-plugins commit this baseline pins. */
   pstackCommit: string;
-  /** Release compatibility key; seeded once from the legacy audit lock, then hand-maintained. */
+  /** Release compatibility key; carried forward verbatim once set. */
   compatibilityKey: string;
-  /** "initial" on the first baseline; carried forward verbatim on every later regeneration. */
-  transition: string;
-  /** The prior baseline id during a transition, or null. */
-  previous: string | null;
 }
 
 export interface Exclusion {
@@ -58,7 +50,6 @@ export interface Exclusion {
 }
 
 export interface LockFile {
-  schemaVersion: number;
   baseline: Baseline;
   round?: number;
   status?: string;
@@ -135,17 +126,7 @@ export function upstreamCommit(): string {
   return result.stdout.trim() || "unknown";
 }
 
-/** Seed a compatibility key from the legacy audit lock, if it still exists. */
-function legacyCompatibilityKey(): string | null {
-  if (!existsSync(LEGACY_AUDIT_LOCK)) return null;
-  const legacy = JSON.parse(readFileSync(LEGACY_AUDIT_LOCK, "utf8")) as {
-    baseline?: { compatibilityKey?: string };
-  };
-  const key = legacy.baseline?.compatibilityKey;
-  return typeof key === "string" && key.trim() !== "" ? key : null;
-}
-
-/** Derive a first compatibility key from the DSH range when no legacy lock exists. */
+/** Derive a first compatibility key from the DSH range. */
 function derivedCompatibilityKey(): string {
   const version =
     packageDshVersion()
@@ -154,21 +135,14 @@ function derivedCompatibilityKey(): string {
   return `dsh-${version}+port-v1`;
 }
 
-/**
- * Build the release baseline. An existing baseline's compatibilityKey, transition, and
- * previous carry forward verbatim. A brand-new lock seeds compatibilityKey once from the
- * legacy audit lock; after that the lock is the only source and the legacy file is gone.
- */
+/** Build the release baseline, carrying an existing compatibilityKey forward verbatim. */
 function buildBaseline(existing: LockFile | null): Baseline {
   const prior = existing?.baseline;
-  const compatibilityKey =
-    prior?.compatibilityKey ?? legacyCompatibilityKey() ?? derivedCompatibilityKey();
+  const compatibilityKey = prior?.compatibilityKey ?? derivedCompatibilityKey();
   return {
     dshVersion: packageDshVersion(),
     pstackCommit: upstreamCommit(),
     compatibilityKey,
-    transition: prior?.transition ?? "initial",
-    previous: prior?.previous ?? null,
   };
 }
 
@@ -203,7 +177,6 @@ export function buildLock(existing: LockFile | null): LockFile {
     .map(([skill, reason]) => ({ skill, reason }))
     .sort((a, b) => a.skill.localeCompare(b.skill));
   return {
-    schemaVersion: LOCK_SCHEMA_VERSION,
     baseline: buildBaseline(existing),
     round: existing?.round ?? 0,
     status: existing?.status ?? "pending-approval",

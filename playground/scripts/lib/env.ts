@@ -6,6 +6,7 @@
 
 import { spawn, spawnSync } from "node:child_process";
 import {
+  chmodSync,
   closeSync,
   copyFileSync,
   existsSync,
@@ -41,6 +42,25 @@ export const HOST_PATCH_FILE = join(homedir(), ".dsh", "profiles", "web", "cordi
 export const RAW_SKILLS_DIR = join(REPO_ROOT, "upstream", "cursor-plugins", "pstack", "skills");
 
 export const HOST = "127.0.0.1";
+
+/**
+ * A per-worker writable runtime and temp dir. The verification host runs with a
+ * read-only HOME and a read-only default XDG_RUNTIME_DIR, which makes pnpm's
+ * store-operation lock (during `dsh plugin install`) and dsh's runtime sockets fail
+ * with EROFS. Point both at a worker-local writable dir so prepare and startWeb work.
+ */
+function runtimeEnv(paths: WorkerPaths): Record<string, string> {
+  const runtime = join(paths.root, "xdg-runtime");
+  const tmp = join(paths.root, "tmp");
+  mkdirSync(runtime, { recursive: true });
+  mkdirSync(tmp, { recursive: true });
+  try {
+    chmodSync(runtime, 0o700);
+  } catch {
+    // best effort; some filesystems ignore mode bits
+  }
+  return { XDG_RUNTIME_DIR: runtime, TMPDIR: tmp };
+}
 
 const DSH_BIN = process.env.DSH_BIN ?? (process.platform === "win32" ? "dsh.cmd" : "dsh");
 
@@ -335,7 +355,7 @@ export function profileDirFor(paths: WorkerPaths): string {
 export function installPlugins(paths: WorkerPaths): void {
   const result = spawnSync(DSH_BIN, ["plugin", "--profile", PROFILE_NAME, "install"], {
     cwd: REPO_ROOT,
-    env: { ...process.env, DSH_HOME: paths.home },
+    env: { ...process.env, ...runtimeEnv(paths), DSH_HOME: paths.home },
     stdio: "inherit",
   });
   if (result.error)
@@ -433,7 +453,12 @@ export async function startWeb(paths: WorkerPaths, plan: ProviderPlan): Promise<
   const args = ["--profile", PROFILE_NAME, "--port", "0", "--host", HOST, "--no-open"];
   const child = spawn(DSH_BIN, args, {
     cwd: REPO_ROOT,
-    env: { ...process.env, DSH_HOME: paths.home, [plan.apiKeyEnv]: plan.apiKey },
+    env: {
+      ...process.env,
+      ...runtimeEnv(paths),
+      DSH_HOME: paths.home,
+      [plan.apiKeyEnv]: plan.apiKey,
+    },
     detached: true,
     stdio: ["ignore", logFd, logFd],
   });

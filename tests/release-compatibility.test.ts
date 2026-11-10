@@ -54,7 +54,6 @@ function prepare(): void {
   mkdirSync(join(ROOT, "upstream", "cursor-plugins", "pstack"), { recursive: true });
   writeJson("package.json", { version: "0.3.0-beta.1", engines: { dsh: RANGE } });
   writeJson("playground/cases.lock.json", {
-    schemaVersion: 2,
     baseline: { compatibilityKey: KEY },
   });
   writeJson("upstream/cursor-plugins/pstack/plugin.json", { version: "0.15.36" });

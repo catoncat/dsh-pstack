@@ -2,7 +2,7 @@
 // per-worker queues, then run each worker's queue serially by spawning one run-case
 // child process per case. Parallelism comes from the child processes, because the
 // agent-browser daemon cannot be driven concurrently inside one process. Every case
-// transition rewrites playground/.workers/progress.json so a run is observable.
+// Each finished case rewrites playground/.workers/progress.json so a run is observable.
 
 import { spawn } from "node:child_process";
 import {

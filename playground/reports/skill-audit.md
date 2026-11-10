@@ -1,6 +1,6 @@
 # 技能审核报告
 
-基线：dsh >=0.2.2-rc.1，pstack ae5650febf4320793844c12c4adaa937f417f8da，compatibilityKey dsh-0.2.2-rc.1+port-v1，transition initial。
+基线：dsh >=0.2.2-rc.1，pstack ae5650febf4320793844c12c4adaa937f417f8da，compatibilityKey dsh-0.2.2-rc.1+port-v1。
 
 本报告待用户逐条审批。当前实现只作事实描述，不是结论；建议列留空，由用户在审批时填写。审批后按用户填写的建议实现适配与插件工具，`vp run build` 出构建版 dsh-pstack，adapted 轮只用构建版跑 raw 轮失败的用例，跑完回填本报告的缺口闭合状态。
 
@@ -25,10 +25,10 @@
 | 维度 | 内容 |
 | --- | --- |
 | 上游能力 | 写代码前先勾勒类型、签名与模块结构，并在实现填充时持续参与；适用于 /architect 或直接编码会锁死错误结构的重要工作。 |
-| 当前实现：会话结果 | turnEnd=completed，调用 9 次 |
-| 当前实现：工具错误 | 无 |
-| 当前实现：缺口 | 技能未被成功加载（X1，隐藏技能无法用标准 skill 工具加载） |
-| 证据 | playground/.workers/w0/evidence/w0-architect-adapted-2026-11-10T09-55-20-400Z.json |
+| 当前实现：会话结果 | turnEnd=completed，调用 24 次 |
+| 当前实现：工具错误 | todo_write |
+| 当前实现：缺口 | 无早期信号缺口 |
+| 证据 | playground/.workers/w0/evidence/w0-architect-adapted-2026-11-10T10-07-33-260Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
 | 审批状态 | 待审批 |
@@ -694,7 +694,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w3-tdd-raw-2026-11-10T09-09-23-349Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 审批状态 | 已审批 2026-11-10T10:03:34.553Z（第 1 轮） |
+| 审批状态 | 待审批 |
 
 ### teach
 
@@ -746,7 +746,7 @@
 | 证据 | playground/reports/evidence/1-2026-11-10/w7-unslop-raw-2026-11-10T09-09-28-778Z.json |
 | 建议的 dsh.md 适配 | 待审批填写 |
 | 建议的插件工具 | 待审批填写 |
-| 审批状态 | 已审批 2026-11-10T10:03:34.553Z（第 1 轮） |
+| 审批状态 | 待审批 |
 
 ### why
 

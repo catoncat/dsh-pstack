@@ -1,36 +1,25 @@
 # pstack 移植与维护
 
-本文件是移植和扩展的基准。它保存适配规则、审核结论、扩展目标和重建注意事项。
+本文件是移植与生成的基准。它保存适配文档规则、生成与发布约束、扩展目标和重建注意事项。
 
 ## 固定边界
 
 - 根 `pstack/` 只放生成的插件树。生成器可以整体替换该目录，不允许把手工文件放在其中。
-- 根 `port/` 集中保存移植工具与适配资料，能力与用例审核由 playground 承载。以 `dsh.md` 为源生成的英文适配文档进入生成树；面向中文用户与审核者的版本不进入生成树，由 `README.zh.md` 直接链接。
-- `port/dsh.md` 是当前适配文案的唯一手写来源，必须按 `playground/reports/skill-audit.md` 的审批结果、当前 `cordis.patch.yml` 和实现维护。可选插件表以包名为主键，不另外维护编号。
+- 根 `port/` 集中保存移植工具与适配资料。以 `dsh.md` 为源生成的英文适配文档进入生成树；面向中文用户与审核者的版本不进入生成树，由 `README.zh.md` 直接链接。
+- `port/dsh.md` 是当前适配文案的唯一手写来源，必须按审核通过的适配说明、当前 `cordis.patch.yml` 和实现维护。可选插件表以包名为主键，不另外维护编号。
 - 插件源码、测试、扩展登记和回归记录都在生成树之外。生成器不会修改这些内容。
 - 根 `package.json` 的 `exports` 由根 `vite.config.ts` 生成。主 pack 的 `entry` 为 `./src/*.ts`；仅第一个 pack 的 `customExports` 补齐非源码入口。其他 pack 使用 `exports: false`。
 - `upstream/cursor-plugins` 提供 pstack 源文件。DSH 的基线来自目标运行时及其随附文档和 API。
 - DSH 适配以 Web profile 的标准模式为基线。验证在 playground 的真实 Web 会话中进行。
 - 上游 `claude-code.md` 明确排除的 Cursor 云服务和平台能力同样舍弃。通用本地能力可以独立适配，但不宣称其等价于云服务。
 
-## 审核（playground 承载）
-
-能力与用例审核统一在 playground 进行，不再维护 port 侧审核文档。
-
-- `playground/reports/skill-audit.md` 是待审批审核报告，每个技能一节，固定四行：上游能力、当前实现与缺口、建议的 dsh.md 适配与插件工具、待审批。建议两行由用户审批时填写。
-- 审批结果写回 `playground/cases.lock.json`。每个技能记 caseFile、skillPath、skillHash、status、approvedAt、approvedRound、approvedHash。`vp run playground:approve -- --skill a,b --round N` 落审批。
-- 基线在同一个 lock 的 baseline：dshVersion、pstackCommit、compatibilityKey、transition。上游或 DSH 基线变化时 `vp run playground:check` 报漂移，相关技能需重新审批。破坏性更新更换 compatibilityKey 并按新基线重建。
-- 审核闭环：playground 跑 raw 轮，出 skill-audit，用户逐条审批并填写建议，按建议实现 dsh.md 与插件工具，`vp run build`，adapted 轮只跑失败用例，循环到无实现缺陷，收敛后整体复跑一次。
-- `port/dsh.md` 仍是适配文案的唯一手写来源，按审批后的建议与当前实现维护。
-
 ## 从 0 到 1
 
-1. 固定上游版本，完成全部技能和脚本的能力审核，结果写入 `playground/reports/skill-audit.md`。
-2. 等用户填写审核结论。只有明确要求插件补足的部分才进入开发。
-3. 在新会话按已审核要求实现插件，使用 playground 验证。
-4. 参照上游 `claude-code.md` 编写 `port/dsh.md`，同时产出中文审核版。
-5. 用 `port/generate.mjs` 生成根 `pstack/`，用 `--check` 检查生成漂移。
-6. 验证生成树中的链接、适配提示和已确认行为。
+1. 按审核通过的适配说明编写 `port/dsh.md`，同时产出中文版 `port/dsh.zh.md`。
+2. 维护可选插件表，以包名为主键，不另外维护编号。
+3. 用 `port/generate.mjs` 生成根 `pstack/`，用 `--check` 检查生成漂移。
+4. 验证生成树中的链接、适配提示与已确认行为。
+
 
 脚本原样复制，保留依赖文件和可执行权限，不重写为 Node。为每个脚本登记用途、解释器、外部命令和限制。非常用能力不默认提供插件内补偿。环境不满足时明确报告不可用，不将跳过算作适配成功。
 
