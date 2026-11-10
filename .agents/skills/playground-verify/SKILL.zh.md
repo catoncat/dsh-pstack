@@ -8,18 +8,18 @@ disable-model-invocation: true
 
 驱动 playground 走完整个验证闭环，面对一个真实的 DSH Web 会话。它以一份审核报告收尾，报告里每条证据路径都真实存在。报告名不带阶段序号：待审批的审核报告是 `reports/skill-audit.md`，单次运行是 `reports/run-raw-<date>.md` 或 `reports/run-adapted-<date>.md`。
 
-## 1. 准备机器
+## 1. 一次性机器准备
 
-在仓库根目录执行。
+这些步骤每台机器只做一次。当 `dsh` 在 PATH 中、`playground/config.json` 已填好、插件构建是最新时，整节跳过。只有依赖或插件源码变了才重新执行 `vp install` 与 `vp run build`。
 
 1. `vp install`。
 2. 按 `port/AGENTS.md` 把生成的目录树准备好，然后 `vp run build`。
 3. 确认 `dsh` 在 PATH 中。
-4. 自己创建 `playground/config.json`，填入允许的 provider、apiKey、模型与思考等级。不要复制模板；这个文件由操作者手写。每个需要它的脚本在它缺失或为空时都会大声报错，且该文件被 git 忽略。
+4. 把 `playground/config.example.json` 的内容复制到 `playground/config.json`，填入真实的供应商与 apiKey。每个需要它的脚本在缺失或为空时都会大声报错，且该文件被 git 忽略。
 
-## 2. 准备 worker
+## 2. 每轮准备 worker
 
-worker 数量由机器检测得出，除非被覆盖。每个 worker 独占 `playground/.workers/w<k>/`，拥有自己的 DSH home、浏览器 profile、工作区根目录和证据目录，并从 `dsh --port 0` 绑定一个由操作系统分配的端口。不存在固定端口。
+每轮都执行。worker 数量由机器检测得出，除非被覆盖。每个 worker 独占 `playground/.workers/w<k>/`，拥有自己的 DSH home、浏览器 profile、工作区根目录和证据目录，并从 `dsh --port 0` 绑定一个由操作系统分配的端口。不存在固定端口。
 
 ```sh
 vp run playground:prepare -- --mode raw --reset

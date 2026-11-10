@@ -16,7 +16,7 @@ adapted 轮 adapted 回归。适配说明与插件工具落地后，用同名用
 
 1. 仓库根目录 `vp install`，按 `port/AGENTS.md` 准备生成树后 `vp run build`。
 2. 确认 `dsh` 在 PATH 中。
-3. 自己创建 `playground/config.json`，填允许的 provider、apiKey、模型与思考等级。不要复制模板，脚本在文件缺失或为空时直接报错。该文件已忽略。
+3. 把 `playground/config.example.json` 的内容复制到 `playground/config.json`，填入真实的供应商与 apiKey。该文件已忽略，脚本在缺失或为空时直接报错。
 4. `vp run playground:prepare -- --mode raw --workers 4 --reset`，再 `vp run playground:bootstrap -- --all`。
 
 环境准备细节、手动流程、常见坑见 `docs/workspace-session.md`。

@@ -7,7 +7,7 @@
 .browser/
 .workspace/
 
-# Local config written by hand with provider keys and allowed routes.
+# Local config with provider keys and allowed routes; copy config.example.json and fill the real values.
 config.json
 node_modules
 *.log

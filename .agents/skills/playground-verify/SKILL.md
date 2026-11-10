@@ -8,18 +8,18 @@ disable-model-invocation: true
 
 Drive the playground through the whole verification loop against a real DSH Web session. It ends with an audit report whose every evidence path exists. Report names carry no stage number: the pending-approval audit is `reports/skill-audit.md`, a run is `reports/run-raw-<date>.md` or `reports/run-adapted-<date>.md`.
 
-## 1. Prepare the machine
+## 1. One-time machine setup
 
-Run from the repository root.
+Run these steps once per machine. Skip the whole section when `dsh` is on PATH, `playground/config.json` is filled, and the plugin build is current. Repeat `vp install` and `vp run build` only after dependencies or plugin source change.
 
 1. `vp install`.
 2. Follow `port/AGENTS.md` to stage the generated tree, then `vp run build`.
 3. Confirm `dsh` is on PATH.
-4. Create `playground/config.json` yourself with the allowed provider, apiKey, models and efforts. Do not copy a template; the operator writes this file by hand. Every script that needs it fails loudly when it is absent or empty, and the file is ignored by git.
+4. Copy the contents of `playground/config.example.json` into `playground/config.json` and fill the real provider and apiKey. Every script that needs it fails loudly when it is missing or empty, and the file is ignored by git.
 
-## 2. Prepare workers
+## 2. Prepare workers each round
 
-Worker count is detected from the machine unless overridden. Each worker owns `playground/.workers/w<k>/` with its own DSH home, browser profile, workspace root and evidence dir, and binds an OS-assigned port from `dsh --port 0`. There is no fixed port.
+Run this every round. Worker count is detected from the machine unless overridden. Each worker owns `playground/.workers/w<k>/` with its own DSH home, browser profile, workspace root and evidence dir, and binds an OS-assigned port from `dsh --port 0`. There is no fixed port.
 
 ```sh
 vp run playground:prepare -- --mode raw --reset

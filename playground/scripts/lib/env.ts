@@ -58,7 +58,7 @@ function workspaceStoreFile(paths: WorkerPaths): string {
 export function readConfig(): PlaygroundConfig {
   if (!existsSync(CONFIG_FILE)) {
     throw new Error(
-      `missing ${CONFIG_FILE}; create it yourself with the allowed provider, apiKey, models and efforts (see playground/README.md)`,
+      `missing ${CONFIG_FILE}; copy the contents of playground/config.example.json into it and fill the real provider and apiKey`,
     );
   }
   const parsed = JSON.parse(readFileSync(CONFIG_FILE, "utf8")) as PlaygroundConfig;
