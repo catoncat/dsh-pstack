@@ -102,6 +102,7 @@ vp run playground:collect -- --mode adapted
 ## 约定
 
 - 用例 prompt 保持自然的用户请求。绝不点名工具或展开调用参数。
+- 运行中没有真人回答问题。run-case 会自己应答 ask_user_question 卡片：用例自身的 `answers` 规则优先，否则选第一个选项或填入默认文本，每个回答都记入证据。
 - 模型选择属于操作者。每台机器确认一次；agent 引用会话事件作为证据。
 - 上游技能集与每个技能的用例映射位于 `playground/cases.lock.json`。`vp run playground:check` 在出现漂移时失败。
 - 仅限 Cursor 的技能在 lock 中以原因排除，不获得用例，因此 `--all` 只覆盖可运行的技能。

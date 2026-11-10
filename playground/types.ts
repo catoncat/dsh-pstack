@@ -47,6 +47,8 @@ export interface SkillCase {
   intent: string;
   /** Per-case probe window override, in seconds. Wins over the kind default but not `--probe`. */
   probeSeconds?: number;
+  /** Scripted answers for ask_user_question when no human is present. First matching rule wins. */
+  answers?: Array<{ match: string; selected?: string[]; custom?: string }>;
 }
 
 export interface ToolCallEvidence {
@@ -74,6 +76,8 @@ export interface SessionEvidence {
   error?: string;
   /** The judged outcome written beside the evidence so a rerun can select failures without re-digesting. */
   verdict?: { passed: boolean; failures: string[] };
+  /** Questions the harness answered on the user's behalf, with the answer it gave. */
+  autoAnswers?: Array<{ question: string; answer: string }>;
 }
 
 export interface CaseVerdict {

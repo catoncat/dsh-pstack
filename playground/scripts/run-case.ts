@@ -228,10 +228,12 @@ function waitForMatch(
   startedAtMs: number,
   prompt: string,
   waitMs: number,
+  onPoll?: () => void,
 ): { match: MatchResult | null; ended: boolean } {
   const deadline = Date.now() + waitMs;
   let match: MatchResult | null = null;
   while (Date.now() < deadline) {
+    if (onPoll) onPoll();
     match = findMatchingSession(paths, before, startedAtMs, prompt);
     if (match && sessionHasTurnEnd(match.file)) return { match, ended: true };
     sleep(POLL_INTERVAL_MS);
@@ -264,6 +266,80 @@ interface AttemptOutcome {
   digest: SessionDigest;
   matchFile: string;
   truncated: boolean;
+  autoAnswers: Array<{ question: string; answer: string }>;
+}
+
+/** Default free-text answer when a question offers no options and the case declares nothing. */
+const DEFAULT_ANSWER_TEXT = "按你的最佳判断继续";
+
+/**
+ * Answer any open ask_user_question card as the absent user would, so an unattended case
+ * keeps moving instead of aborting at the question. A case's own `answers` rules win; for
+ * anything unmatched the first option is taken, or the default text is typed when there
+ * are no options. Every answer is recorded for the evidence and the report.
+ */
+function answerPendingQuestions(
+  session: BrowserSession,
+  skillCase: SkillCase,
+  log: Array<{ question: string; answer: string }>,
+): void {
+  const raw = session.eval<string>(
+    `(() => {
+      const rules = ${JSON.stringify(skillCase.answers ?? [])};
+      const fallback = ${JSON.stringify(DEFAULT_ANSWER_TEXT)};
+      const visible = (el) => !!el && (el.offsetParent !== null || el.getClientRects().length > 0);
+      const containers = [...document.querySelectorAll("[data-question-key]")].filter(visible);
+      if (containers.length === 0) return "[]";
+      const setValue = (input, text) => {
+        const proto = input.tagName === "TEXTAREA" ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+        const setter = Object.getOwnPropertyDescriptor(proto, "value").set;
+        setter.call(input, text);
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      };
+      const actions = [];
+      for (const c of containers) {
+        const question = (c.innerText || "").trim().split("\\n").slice(0, 3).join(" ").slice(0, 300);
+        const rule = rules.find((r) => question.includes(r.match));
+        const rows = [...c.querySelectorAll("[data-option-row]")].filter(visible);
+        let answer = "";
+        if (rule && rule.selected && rule.selected.length) {
+          for (const label of rule.selected) {
+            const row = rows.find((r) => ((r.getAttribute("data-option-line") || r.innerText || "")).includes(label));
+            if (row) { row.click(); answer += label + " "; }
+          }
+        } else if (!rule || (!rule.selected && !rule.custom)) {
+          if (rows.length) {
+            rows[0].click();
+            answer = (rows[0].getAttribute("data-option-line") || rows[0].innerText || "").trim();
+          }
+        }
+        let custom = rule && rule.custom ? rule.custom : "";
+        if (!custom && rows.length === 0) custom = fallback;
+        const input = c.querySelector("[data-question-reply] textarea, [data-question-reply] input, textarea, input:not([type=checkbox]):not([type=radio])");
+        if (custom && input) {
+          setValue(input, custom);
+          answer = answer ? answer + " / " + custom : custom;
+        }
+        actions.push({ question, answer: answer || "(clicked first option)" });
+      }
+      const scope = containers[0].closest("[role=dialog]") || containers[0].parentElement?.parentElement?.parentElement || containers[0];
+      const inScope = [...scope.querySelectorAll("button")].filter((b) => !b.disabled && visible(b));
+      const submit = inScope.find((b) => /回复|提交|reply|submit/i.test((b.getAttribute("aria-label") || "") + " " + (b.innerText || "")));
+      if (submit) { submit.click(); return JSON.stringify(actions); }
+      const next = inScope.find((b) => /下一|next/i.test((b.getAttribute("aria-label") || "") + " " + (b.innerText || "")));
+      if (next) { next.click(); return JSON.stringify(actions); }
+      return JSON.stringify(actions);
+    })()`,
+  );
+  try {
+    const parsed = JSON.parse(raw) as Array<{ question: string; answer: string }>;
+    for (const entry of parsed) {
+      log.push(entry);
+      console.log(`[run-case] auto-answered "${entry.question}" -> ${entry.answer}`);
+    }
+  } catch {
+    // no question card this poll
+  }
 }
 
 interface AttemptInput {
@@ -289,6 +365,7 @@ function attemptCase(input: AttemptInput): AttemptOutcome {
     input;
   const caseId = skillCase.id;
   const workerTag = `w${workerIndex}`;
+  const autoAnswers: Array<{ question: string; answer: string }> = [];
   const session = createBrowserSession({
     session: `w${workerIndex}`,
     browserDir: paths.browserDir,
@@ -351,7 +428,14 @@ function attemptCase(input: AttemptInput): AttemptOutcome {
       );
     }
 
-    const { match, ended } = waitForMatch(paths, before, startedAtMs, skillCase.prompt, waitMs);
+    const { match, ended } = waitForMatch(
+      paths,
+      before,
+      startedAtMs,
+      skillCase.prompt,
+      waitMs,
+      () => answerPendingQuestions(session, skillCase, autoAnswers),
+    );
     let truncated = false;
     if (!match) {
       throw new InfraError(
@@ -385,7 +469,10 @@ function attemptCase(input: AttemptInput): AttemptOutcome {
         throw new InfraError(`reading session log hit ENOENT: ${match.file} (worker ${workerTag})`);
       throw error;
     }
-    return { digest, matchFile: match.file, truncated };
+    // The session event records the preset at creation; we switch it in the composer
+    // before sending, so record the preset the turn actually ran under.
+    if (preset !== undefined) digest.agentPreset = preset;
+    return { digest, matchFile: match.file, truncated, autoAnswers };
   } finally {
     session.close();
   }
@@ -416,6 +503,7 @@ function buildInfraEvidence(
     capturedAt,
     error: "infra",
     verdict: { passed: false, failures: ["infra"] },
+    autoAnswers: [],
   };
 }
 
@@ -521,6 +609,7 @@ async function main(): Promise<void> {
   );
   const verdict = buildVerdict(skillCase.expect, evidence, workspaceDir);
   evidence.verdict = { passed: verdict.passed, failures: verdict.failures };
+  if (outcome.autoAnswers.length > 0) evidence.autoAnswers = outcome.autoAnswers;
   mkdirSync(paths.evidenceDir, { recursive: true });
   writeFileSync(evidenceFile, `${JSON.stringify(evidence, null, 2)}\n`);
 

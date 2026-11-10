@@ -37,6 +37,7 @@ vp run playground:collect -- --mode raw
 run-batch 把用例按轮转分到各 worker 队列并行跑，每用例把输出汇总到 `playground/.workers/run-batch.log`。raw 轮默认走短探针：只等到技能加载、preset、首轮工具错误这类早期信号，窗口按用例类型取，principle-light 120 秒、behavior 300 秒，`--probe` 可全局覆盖，用例字段 `probeSeconds` 可单独覆盖。探针到点仍未结束就点界面停止按钮中止，证据标 `truncated: true`。adapted 轮完整回归不加 `--probe`，用 `--timeout` 等 turn/end。
 
 单个用例调试用 `vp run playground:run -- --worker 0 --case <id> --mode raw --probe 120`。
+无人值守时 run-case 会自己应答 ask_user_question：用例字段 `answers`（match、selected、custom）优先，未命中就选第一个选项，没有选项时填默认文本“按你的最佳判断继续”，每个自动回答写入证据的 autoAnswers 并显示在审核报告的自动应答行。
 
 ## 带轮次的重跑
 
