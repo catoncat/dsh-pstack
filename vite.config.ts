@@ -62,6 +62,9 @@ export default defineConfig({
       typecheck: {
         command: "tsc --noEmit -p tsconfig.json",
       },
+      "playground:typecheck": {
+        command: "tsc --noEmit -p playground/tsconfig.json",
+      },
       generate: {
         command: "vpx port/generate.mjs",
         cache: false,
@@ -74,32 +77,32 @@ export default defineConfig({
         command: "vpx port/release-compatibility.ts --check",
         cache: false,
       },
-      playground: {
-        command: "vpx playground/start.mjs",
+      "playground:prepare": {
+        command: "vpx playground/scripts/prepare.ts",
         cache: false,
       },
-      "playground:reset": {
-        command: "vpx playground/start.mjs --reset",
+      "playground:bootstrap": {
+        command: "vpx playground/scripts/bootstrap.ts",
         cache: false,
       },
-      "playground:reinstall": {
-        command: "vpx playground/start.mjs --reinstall",
+      "playground:stop": {
+        command: "vpx playground/scripts/stop.ts",
+        cache: false,
+      },
+      "playground:check": {
+        command: "vpx playground/scripts/check.ts",
+        cache: false,
+      },
+      "playground:run": {
+        command: "vpx playground/scripts/run-case.ts",
+        cache: false,
+      },
+      "playground:collect": {
+        command: "vpx playground/scripts/collect.ts",
         cache: false,
       },
       "playground:browser": {
-        command: "vpx playground/browser.mjs",
-        cache: false,
-      },
-      cases: {
-        command: "vpx playground/cases-run.mjs",
-        cache: false,
-      },
-      "cases:list": {
-        command: "vpx playground/cases-run.mjs --list",
-        cache: false,
-      },
-      "cases:check": {
-        command: "vpx playground/cases-run.mjs --check",
+        command: "vpx playground/scripts/browser.ts",
         cache: false,
       },
     },

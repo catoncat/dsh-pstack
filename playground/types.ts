@@ -57,6 +57,7 @@ export interface SessionEvidence {
   mode: Mode;
   sessionId: string;
   sessionFile: string;
+  workspacePath: string | null;
   route: { provider: string; model: string; effort: string } | null;
   skillLoads: string[];
   toolCalls: ToolCallEvidence[];

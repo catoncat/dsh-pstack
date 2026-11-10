@@ -9,6 +9,8 @@ vp run playground:prepare -- --mode raw --reset
 vp run playground:bootstrap
 ```
 
+在会杀进程树的沙箱 shell 里（agent 工具调用常见），detached 的 web 会在单条命令结束后被回收。这种环境把 prepare、bootstrap、run-case、collect 串在同一条命令或同一个后台 job 里执行。真实终端可以分步执行，web 会持续存活。
+
 prepare 完成这些事。重建 `playground/.dsh` 运行期 home。从 `playground/config.json` 读允许的 provider 与模型，结合宿主 web profile 的 provider 配置生成 home 级 cordis patch，默认模型设为主探针。复制 `~/.dsh/.credentials.yaml` 免去登录。按 `playground/cases/` 的每个用例预注册独立工作区到 `playground/.workspace/<caseId>`，并写入 home 的 `storages/workspace.json`。以 detached 方式在固定端口 17353 启动 `dsh web`，把带 token 的 URL 写入 `playground/.dsh/web-url.txt`，pid 写入 `playground/.dsh/web.pid`。raw 模式不装 dsh-pstack，用官方 `@deepseek-ai/dsh-skill-filesystem` 直接挂载 `upstream/cursor-plugins/pstack/skills`。adapted 模式安装本仓库插件，技能来自生成树。
 
 bootstrap 完成这些事。用持久浏览器 profile（`playground/.browser/`）打开 token URL。若出现「预览版说明」弹窗则自动点掉，持久 profile 会让它不再出现。校验页面已直达预注册工作区且模型 chip 显示预期探针。截图存 `playground/.browser/ready.png`。
