@@ -11,7 +11,7 @@
 - `w<k>/workspace/<caseId>` 是该 worker 跑某个用例的工作区。
 - `w<k>/evidence` 放该 worker 的用例证据。
 
-每个 worker 用 `dsh --port 0` 由系统动态分配端口，prepare 从启动输出 `dsh web: http://127.0.0.1:<port>/?token=...` 解析真实端口与 URL，写入该 worker 的 `web-url.txt`。端口不再固定，也不再有 17353 约定。默认 4 个 worker，`--workers N` 可调，worker 内队列串行、worker 间并行。
+每个 worker 用 `dsh --port 0` 由系统动态分配端口，prepare 从启动输出 `dsh web: http://127.0.0.1:<port>/?token=...` 解析真实端口与 URL，写入该 worker 的 `web-url.txt`。端口不再固定，也不再有固定端口约定。worker 数默认按机器核数与可用内存自适应，`--workers N` 可覆盖，worker 内队列串行、worker 间并行。
 
 ## 一键准备
 
@@ -47,7 +47,7 @@ run-batch 把用例按轮转分到各 worker 队列并行跑，每用例把输�
 3. 左侧「工作区」已预注册全部用例工作区，点名字即进入。新增时点工作区标题行的加号，选择该 worker 的 `workspace/` 下目录。
 4. 新建会话点侧栏顶部的「新会话」按钮。未命名的旧会话在列表里也显示为「新会话」，认准顶部带加号图标的那个。
 5. 键入用例 prompt，按 Enter 发送，输入框清空即成功。未清空时点输入区右侧圆形发送按钮。
-6. 完成的信号是对话区出现「已完成」与用时。原始事件在 `w<k>/home/sessions/<slug>/<id>/session.v4.jsonl.zstd`，用 `zstdcat` 查看。
+6. 完成的信号是对话区出现「已完成」与用时。原始事件在每个 worker 目录的 `sessions/<slug>/<id>/session.v4.jsonl.zstd`，用 `zstdcat` 查看。
 
 ## 证据与判定
 

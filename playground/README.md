@@ -10,7 +10,7 @@
 
 ## 多 worker 并行
 
-每个 worker 一套独立运行环境，目录在 `playground/.workers/w<k>/` 下，各自独立的 DSH home、浏览器 profile、工作区根、证据目录与动态端口（`dsh --port 0`）。默认 4 个 worker，`--workers N` 可调，worker 内串行、worker 间并行。端口不再固定。
+每个 worker 一套独立运行环境，目录在 `playground/.workers/w<k>/` 下，各自独立的 DSH home、浏览器 profile、工作区根、证据目录与动态端口（`dsh --port 0`）。worker 数默认按机器核数与可用内存自适应，`--workers N` 可覆盖，worker 内串行、worker 间并行。端口不再固定。
 
 ## 准备
 
@@ -30,6 +30,8 @@ vp run playground:check                                       # 58 技能静态�
 vp run playground:run-batch -- --mode raw --workers 4 --all   # 并行跑批，短探针为主
 vp run playground:run -- --worker 0 --case <id> --mode raw    # 单用例调试
 vp run playground:collect -- --mode raw                       # 汇总证据为报告
+vp run playground:status                                      # 打印单一进度文件
+vp run playground:lock                                        # 重算用例与上游 lock
 vp run playground:stop                                        # 停全部 worker 与浏览器
 vp run playground:browser -- --worker 0 --shot out.png        # 临时浏览器操作
 ```

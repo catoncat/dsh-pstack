@@ -16,3 +16,6 @@ node_modules
 # Generated per-run stage report; stage1-findings.md is the hand-curated record.
 reports/stage1-raw-*.md
 reports/stage1-adapted-*.md
+
+# Archived evidence for the audit report; regenerated per run.
+reports/evidence/

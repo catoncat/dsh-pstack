@@ -2,9 +2,9 @@
 
 - 本目录只做 browser 验证，不新增 headless 用例或 headless runner。
 - 环境准备与执行一律走脚本，手动步骤与常见坑见 `docs/workspace-session.md`。
-- 端口不再固定。每个 worker 用 `dsh --port 0` 动态分配端口，从启动输出解析真实端口。不要再写死 17353。
+- 端口不再固定。每个 worker 用 `dsh --port 0` 动态分配端口，从启动输出解析真实端口。不要写死任何固定端口。
 - 多 worker 各自一套运行期目录，全在 `playground/.workers/w<k>/` 下（home、browser、workspace、evidence）。不要跨 worker 共用 home 或浏览器 profile。
-- 默认 4 个 worker，`--workers N` 可调。worker 内串行，worker 间并行。
+- worker 数默认按机器核数与可用内存自适应，`--workers N` 可覆盖。worker 内串行，worker 间并行。
 - 改了插件源码先 `vp run build` 再 `--reset` 重启。
 - 浏览器操作序列必须在单一进程内完成，agent-browser daemon 随进程树退出。并行只能靠多个子进程，不能在一个进程里并发 agent-browser。
 - 用例 prompt 必须是自然的用户请求，不得点名工具或展开调用参数。阶段二每个目标首次调用成功才算通过，失败后重试、重复加载或先错后对判失败。
