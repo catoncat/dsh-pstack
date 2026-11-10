@@ -1,6 +1,8 @@
-// Run one skill case against the prepared web instance end to end: materialize the
-// case workspace, drive the real composer in one browser process, locate the session
-// it created, wait for the turn to end, and persist evidence plus a verdict.
+// Run one skill case against one prepared worker's web instance end to end:
+// materialize the case workspace, drive the real composer in one browser process,
+// locate the session it created, wait for turn/end (or a probe window), then persist
+// evidence plus a verdict. In probe mode the turn is aborted at the window's end and
+// the evidence is marked truncated.
 
 import { existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -9,12 +11,18 @@ import type { Mode, SkillCase, ToolCallEvidence } from "../types";
 import { createBrowserSession, type BrowserSession } from "./lib/browser";
 import { loadCase, loadCaseFile } from "./lib/cases";
 import { buildVerdict, digestSession, readSessionEvents, toSessionEvidence } from "./lib/evidence";
-import { DSH_HOME, EVIDENCE_DIR, WORKSPACE_ROOT, readWebUrl } from "./lib/env";
+import { readWebUrl } from "./lib/env";
+import { workerPaths, type WorkerPaths } from "./lib/worker";
 
 const COMPOSER_SELECTOR = '[data-composer-input="true"]';
 const NEW_SESSION_LABEL = "新会话";
 const DEFAULT_WAIT_SECONDS = 900;
 const POLL_INTERVAL_MS = 2_000;
+/** Stage-one short-probe window per case kind, in seconds. */
+const DEFAULT_PROBE_SECONDS: Record<SkillCase["kind"], number> = {
+  behavior: 300,
+  "principle-light": 120,
+};
 
 function argValue(flag: string): string | undefined {
   const index = process.argv.indexOf(flag);
@@ -30,8 +38,8 @@ interface SessionFile {
   file: string;
 }
 
-function listSessionFiles(): SessionFile[] {
-  const root = join(DSH_HOME, "sessions");
+function listSessionFiles(paths: WorkerPaths): SessionFile[] {
+  const root = join(paths.home, "sessions");
   if (!existsSync(root)) return [];
   const files: SessionFile[] = [];
   for (const slug of readdirSync(root)) {
@@ -108,8 +116,12 @@ function startSession(session: BrowserSession, workspaceTitle: string): string {
   return viaWorkspace;
 }
 
-function materializeWorkspace(caseId: string, files: Record<string, string>): string {
-  const workspaceDir = join(WORKSPACE_ROOT, caseId);
+function materializeWorkspace(
+  paths: WorkerPaths,
+  caseId: string,
+  files: Record<string, string>,
+): string {
+  const workspaceDir = join(paths.workspaceRoot, caseId);
   rmSync(workspaceDir, { recursive: true, force: true });
   mkdirSync(workspaceDir, { recursive: true });
   for (const [relative, content] of Object.entries(files)) {
@@ -125,44 +137,84 @@ interface MatchResult {
   file: string;
 }
 
-function waitForSession(
+/** Find the session whose first user message contains the prompt, created after `startedAtMs`. */
+function findMatchingSession(
+  paths: WorkerPaths,
+  before: Set<string>,
+  startedAtMs: number,
+  prompt: string,
+): MatchResult | null {
+  for (const { id, file } of listSessionFiles(paths)) {
+    // The app creates a blank session on open and reuses it on "新会话", so an id in
+    // `before` can still be the target once its zstd log is rewritten. mtime tells us
+    // the log moved after we started sending.
+    const recent = !before.has(id) || statSync(file).mtimeMs >= startedAtMs - 2000;
+    if (!recent) continue;
+    const events = readSessionEvents(file);
+    if (events.length === 0) continue;
+    if (!firstUserText(events).includes(prompt)) continue;
+    return { id, file };
+  }
+  return null;
+}
+
+function sessionHasTurnEnd(file: string): boolean {
+  return readSessionEvents(file).some((event) => event.type === "turn/end");
+}
+
+/** Poll until the matched session reaches turn/end or `waitMs` elapses, returning the best match. */
+function waitForMatch(
+  paths: WorkerPaths,
   before: Set<string>,
   startedAtMs: number,
   prompt: string,
   waitMs: number,
-): MatchResult | null {
+): { match: MatchResult | null; ended: boolean } {
   const deadline = Date.now() + waitMs;
+  let match: MatchResult | null = null;
   while (Date.now() < deadline) {
-    for (const { id, file } of listSessionFiles()) {
-      // The app creates a blank session on open and reuses it on "新会话", so an id in
-      // `before` can still be the target once its zstd log is rewritten. mtime tells us
-      // the log moved after we started sending.
-      const recent = !before.has(id) || statSync(file).mtimeMs >= startedAtMs - 2000;
-      if (!recent) continue;
-      const events = readSessionEvents(file);
-      if (events.length === 0) continue;
-      if (!firstUserText(events).includes(prompt)) continue;
-      if (events.some((event) => event.type === "turn/end")) return { id, file };
-    }
+    match = findMatchingSession(paths, before, startedAtMs, prompt);
+    if (match && sessionHasTurnEnd(match.file)) return { match, ended: true };
     sleep(POLL_INTERVAL_MS);
   }
-  return null;
+  if (!match) match = findMatchingSession(paths, before, startedAtMs, prompt);
+  return { match, ended: match ? sessionHasTurnEnd(match.file) : false };
+}
+
+/**
+ * Click the stop button to abort an in-flight turn. First an aria-label match, then the
+ * visible "停止" label, then the last enabled svg button as a fallback.
+ */
+function stopInFlightTurn(session: BrowserSession): string {
+  return session.eval<string>(
+    `(() => {
+      const buttons = [...document.querySelectorAll("button")];
+      const aria = buttons.find((button) => /停止|stop/i.test(button.getAttribute("aria-label") || ""));
+      if (aria) { aria.click(); return "aria"; }
+      const text = buttons.find((button) => button.innerText.trim() === "停止");
+      if (text) { text.click(); return "text"; }
+      const withSvg = buttons.filter((button) => !button.disabled && button.querySelector("svg"));
+      const last = withSvg.at(-1);
+      if (last) { last.click(); return "svg"; }
+      return "none";
+    })()`,
+  );
 }
 
 async function main(): Promise<void> {
   const mode = argValue("--mode") as Mode | undefined;
   if (mode !== "raw" && mode !== "adapted")
     throw new Error(
-      "usage: run-case.ts --case <id> --mode raw|adapted [--case-file <path>] [--timeout <seconds>]",
+      "usage: run-case.ts --worker <k> --case <id> --mode raw|adapted [--probe <seconds>] [--timeout <seconds>] [--case-file <path>]",
     );
-  const timeoutArg = Number(argValue("--timeout") ?? DEFAULT_WAIT_SECONDS);
-  if (!Number.isFinite(timeoutArg) || timeoutArg <= 0)
-    throw new Error("--timeout must be a positive number of seconds");
-  const sessionWaitMs = timeoutArg * 1000;
+  const workerIndex = Number(argValue("--worker") ?? "0");
+  if (!Number.isInteger(workerIndex) || workerIndex < 0)
+    throw new Error("--worker must be a non-negative integer");
+  const paths = workerPaths(workerIndex);
+
   const caseFileArg = argValue("--case-file");
   const caseIdArg = argValue("--case");
   if (!caseFileArg && !caseIdArg) throw new Error("missing --case <id> (or --case-file <path>)");
-
   const skillCase: SkillCase = caseFileArg
     ? await loadCaseFile(caseFileArg)
     : await loadCase(caseIdArg as string);
@@ -172,24 +224,48 @@ async function main(): Promise<void> {
       `[run-case] ${caseId} does not list stage "${mode}" (has ${skillCase.stages.join(",")}); running anyway`,
     );
 
-  const workspaceDir = materializeWorkspace(caseId, skillCase.workspaceFiles);
-  const url = readWebUrl();
+  const probeFlag = argValue("--probe");
+  const timeoutFlag = argValue("--timeout");
+  const timeoutSeconds = timeoutFlag !== undefined ? Number(timeoutFlag) : DEFAULT_WAIT_SECONDS;
+  if (!Number.isFinite(timeoutSeconds) || timeoutSeconds <= 0)
+    throw new Error("--timeout must be a positive number of seconds");
+  let probeSeconds: number | null;
+  if (probeFlag !== undefined) {
+    const parsed = Number(probeFlag);
+    if (!Number.isFinite(parsed) || parsed <= 0)
+      throw new Error("--probe must be a positive number of seconds");
+    probeSeconds = parsed;
+  } else if (timeoutFlag !== undefined) {
+    probeSeconds = null; // explicit --timeout runs the full wait, no short probe
+  } else {
+    probeSeconds = skillCase.probeSeconds ?? DEFAULT_PROBE_SECONDS[skillCase.kind];
+  }
+  const waitMs = probeSeconds !== null ? probeSeconds * 1000 : timeoutSeconds * 1000;
 
-  const session = createBrowserSession({ session: "playground" });
+  const workspaceDir = materializeWorkspace(paths, caseId, skillCase.workspaceFiles);
+  const url = readWebUrl(paths);
+
+  const workerTag = `w${workerIndex}`;
+  const session = createBrowserSession({
+    session: `w${workerIndex}`,
+    browserDir: paths.browserDir,
+  });
   const capturedAt = new Date().toISOString();
   const stamp = capturedAt.replace(/[:.]/g, "-");
-  const evidenceFile = join(EVIDENCE_DIR, `${caseId}-${mode}-${stamp}.json`);
-  const screenshotFile = join(EVIDENCE_DIR, `${caseId}-${mode}-${stamp}.png`);
+  const evidenceFile = join(paths.evidenceDir, `${workerTag}-${caseId}-${mode}-${stamp}.json`);
+  const screenshotFile = join(paths.evidenceDir, `${workerTag}-${caseId}-${mode}-${stamp}.png`);
 
   try {
     session.open(url);
     session.wait(6000);
     dismissPreview(session);
 
-    const before = new Set(listSessionFiles().map((entry) => entry.id));
+    const before = new Set(listSessionFiles(paths).map((entry) => entry.id));
     const startedAtMs = Date.now();
     const startedVia = startSession(session, caseId);
-    console.log(`[run-case] started session via ${startedVia} for workspace "${caseId}"`);
+    console.log(
+      `[run-case] worker ${workerIndex} started session via ${startedVia} for workspace "${caseId}"`,
+    );
 
     session.wait(2500);
     if (
@@ -229,23 +305,40 @@ async function main(): Promise<void> {
       );
     }
 
-    const match = waitForSession(before, startedAtMs, skillCase.prompt, sessionWaitMs);
+    const { match, ended } = waitForMatch(paths, before, startedAtMs, skillCase.prompt, waitMs);
+    let truncated = false;
     if (!match) {
       session.screenshot(screenshotFile);
       throw new Error(
-        `no session matching the prompt reached turn/end within ${sessionWaitMs / 1000}s (screenshot ${screenshotFile})`,
+        `no session matching the prompt appeared within ${waitMs / 1000}s (screenshot ${screenshotFile})`,
+      );
+    }
+    if (!ended) {
+      if (probeSeconds === null) {
+        session.screenshot(screenshotFile);
+        throw new Error(
+          `no session matching the prompt reached turn/end within ${timeoutSeconds}s (screenshot ${screenshotFile})`,
+        );
+      }
+      const how = stopInFlightTurn(session);
+      session.wait(2000);
+      truncated = true;
+      console.log(
+        `[run-case] probe window ${probeSeconds}s expired without turn/end; stopped turn via ${how} (truncated)`,
       );
     }
     session.wait(1000);
     session.screenshot(screenshotFile);
 
-    const digest = digestSession(match.file, match.id);
-    const evidence = toSessionEvidence(digest, caseId, mode, match.file, capturedAt);
-    mkdirSync(EVIDENCE_DIR, { recursive: true });
+    const digest = digestSession(match.file, match.id, workerIndex);
+    const evidence = toSessionEvidence(digest, caseId, mode, match.file, capturedAt, truncated);
+    mkdirSync(paths.evidenceDir, { recursive: true });
     writeFileSync(evidenceFile, `${JSON.stringify(evidence, null, 2)}\n`);
     const verdict = buildVerdict(skillCase.expect, evidence, workspaceDir);
 
-    console.log(`[run-case] ${caseId} [${mode}] ${verdict.passed ? "PASS" : "FAIL"}`);
+    console.log(
+      `[run-case] ${workerTag} ${caseId} [${mode}] probe=${probeSeconds ?? "-"} truncated=${truncated} ${verdict.passed ? "PASS" : "FAIL"}`,
+    );
     if (!verdict.passed) for (const failure of verdict.failures) console.log(`  - ${failure}`);
     console.log(
       `[run-case] route=${evidence.route ? `${evidence.route.provider}/${evidence.route.model}[${evidence.route.effort}]` : "unknown"} turnEnd=${evidence.turnEndReason ?? "none"}`,

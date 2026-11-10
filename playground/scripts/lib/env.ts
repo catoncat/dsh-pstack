@@ -1,6 +1,8 @@
-// Environment building blocks shared by every playground script: fixed paths,
-// the provider plan read from the host profile plus config.json, the generated
-// DSH home, workspace pre-registration, and the detached web lifecycle.
+// Environment building blocks shared by every playground script: repo paths, the
+// provider plan read from the host profile plus config.json, the generated DSH home,
+// workspace pre-registration, and the detached web lifecycle. Every runtime-state
+// function takes one worker's paths so independent workers never share a home,
+// browser profile, workspace root, or evidence dir.
 
 import { spawn, spawnSync } from "node:child_process";
 import {
@@ -13,13 +15,13 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { createServer } from "node:net";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { dump as yamlDump, load as yamlLoad } from "js-yaml";
 
 import type { AllowedRoute, Mode, PlaygroundConfig } from "../../types";
+import type { WorkerPaths } from "./worker";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -30,32 +32,28 @@ export const CASES_DIR = join(PLAYGROUND_DIR, "cases");
 export const PROFILE_TEMPLATE_DIR = join(PLAYGROUND_DIR, "profile");
 
 export const CONFIG_FILE = join(PLAYGROUND_DIR, "config.json");
-export const DSH_HOME = join(PLAYGROUND_DIR, ".dsh");
 export const PROFILE_NAME = "playground";
-export const PROFILE_DIR = join(DSH_HOME, "profiles", PROFILE_NAME);
-export const HOME_PATCH_FILE = join(DSH_HOME, "cordis.patch.yml");
 export const CREDENTIALS_SOURCE = join(homedir(), ".dsh", ".credentials.yaml");
 
-export const WORKSPACE_ROOT = join(PLAYGROUND_DIR, ".workspace");
-export const WORKSPACE_STORE = join(DSH_HOME, "storages", "workspace.json");
-
-export const EVIDENCE_DIR = join(DSH_HOME, "evidence");
 export const REPORT_DIR = join(PLAYGROUND_DIR, "reports");
-
-export const BROWSER_DIR = join(PLAYGROUND_DIR, ".browser");
-export const BROWSER_HOME = join(BROWSER_DIR, "home");
-export const BROWSER_RUNTIME = join(BROWSER_DIR, "run");
 
 export const HOST_PATCH_FILE = join(homedir(), ".dsh", "profiles", "web", "cordis.patch.yml");
 export const RAW_SKILLS_DIR = join(REPO_ROOT, "upstream", "cursor-plugins", "pstack", "skills");
 
-export const PORT = 17353;
 export const HOST = "127.0.0.1";
-export const WEB_URL_FILE = join(DSH_HOME, "web-url.txt");
-export const WEB_PID_FILE = join(DSH_HOME, "web.pid");
-export const WEB_LOG_FILE = join(DSH_HOME, "web.log");
 
 const DSH_BIN = process.env.DSH_BIN ?? (process.platform === "win32" ? "dsh.cmd" : "dsh");
+
+/** The DSH home-level files that live inside one worker's home directory. */
+function homePatchFile(paths: WorkerPaths): string {
+  return join(paths.home, "cordis.patch.yml");
+}
+function profileDir(paths: WorkerPaths): string {
+  return join(paths.home, "profiles", PROFILE_NAME);
+}
+function workspaceStoreFile(paths: WorkerPaths): string {
+  return join(paths.home, "storages", "workspace.json");
+}
 
 export function readConfig(): PlaygroundConfig {
   if (!existsSync(CONFIG_FILE)) {
@@ -190,8 +188,8 @@ export function loadProviderPlan(mainFilter?: string): ProviderPlan {
 }
 
 /** Write the machine-local home patch: default probe route plus the filtered llm-pi-ai provider. */
-export function writeHomePatch(plan: ProviderPlan): void {
-  mkdirSync(DSH_HOME, { recursive: true });
+export function writeHomePatch(paths: WorkerPaths, plan: ProviderPlan): void {
+  mkdirSync(paths.home, { recursive: true });
   const patch = [
     {
       id: "agent-default-model",
@@ -216,7 +214,7 @@ export function writeHomePatch(plan: ProviderPlan): void {
       config: { policy: "never" },
     },
   ];
-  writeFileSync(HOME_PATCH_FILE, yamlDump(patch, { lineWidth: 120 }));
+  writeFileSync(homePatchFile(paths), yamlDump(patch, { lineWidth: 120 }));
 }
 
 export interface HomePlan {
@@ -227,10 +225,10 @@ export interface HomePlan {
 }
 
 /** Read back what prepare actually applied, so bootstrap/run-case verify the real config not a recomputation. */
-export function readHomePlan(): HomePlan {
-  if (!existsSync(HOME_PATCH_FILE))
-    throw new Error(`missing ${HOME_PATCH_FILE}; run playground:prepare first`);
-  const entries = yamlLoad(readFileSync(HOME_PATCH_FILE, "utf8")) as Array<{
+export function readHomePlan(paths: WorkerPaths): HomePlan {
+  const file = homePatchFile(paths);
+  if (!existsSync(file)) throw new Error(`missing ${file}; run playground:prepare first`);
+  const entries = yamlLoad(readFileSync(file, "utf8")) as Array<{
     id?: string;
     config?: Record<string, unknown>;
   }>;
@@ -253,10 +251,10 @@ export function readHomePlan(): HomePlan {
   };
 }
 
-export function copyCredentials(): void {
-  mkdirSync(DSH_HOME, { recursive: true });
+export function copyCredentials(paths: WorkerPaths): void {
+  mkdirSync(paths.home, { recursive: true });
   if (existsSync(CREDENTIALS_SOURCE)) {
-    copyFileSync(CREDENTIALS_SOURCE, join(DSH_HOME, ".credentials.yaml"));
+    copyFileSync(CREDENTIALS_SOURCE, join(paths.home, ".credentials.yaml"));
     return;
   }
   console.warn(
@@ -264,9 +262,9 @@ export function copyCredentials(): void {
   );
 }
 
-export function resetHome(): void {
-  rmSync(DSH_HOME, { recursive: true, force: true });
-  mkdirSync(DSH_HOME, { recursive: true });
+export function resetHome(paths: WorkerPaths): void {
+  rmSync(paths.home, { recursive: true, force: true });
+  mkdirSync(paths.home, { recursive: true });
 }
 
 function profileManifest(mode: Mode): Record<string, unknown> {
@@ -298,32 +296,32 @@ function rawSkillPatch(): { insert: unknown[] } {
 }
 
 /** Rebuild the runtime profile from the template: the mode picks the bundles and the raw skill mount. */
-export function buildProfile(mode: Mode): void {
-  rmSync(PROFILE_DIR, { recursive: true, force: true });
-  mkdirSync(PROFILE_DIR, { recursive: true });
+export function buildProfile(paths: WorkerPaths, mode: Mode): void {
+  const dir = profileDir(paths);
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
 
-  copyFileSync(
-    join(PROFILE_TEMPLATE_DIR, "pnpm-workspace.yaml"),
-    join(PROFILE_DIR, "pnpm-workspace.yaml"),
-  );
+  copyFileSync(join(PROFILE_TEMPLATE_DIR, "pnpm-workspace.yaml"), join(dir, "pnpm-workspace.yaml"));
   const templatePatch = join(PROFILE_TEMPLATE_DIR, "cordis.patch.yml");
   if (mode === "raw") {
     const entries = (yamlLoad(readFileSync(templatePatch, "utf8")) as unknown[]) ?? [];
     entries.push(rawSkillPatch());
-    writeFileSync(join(PROFILE_DIR, "cordis.patch.yml"), yamlDump(entries, { lineWidth: 120 }));
+    writeFileSync(join(dir, "cordis.patch.yml"), yamlDump(entries, { lineWidth: 120 }));
   } else {
-    copyFileSync(templatePatch, join(PROFILE_DIR, "cordis.patch.yml"));
+    copyFileSync(templatePatch, join(dir, "cordis.patch.yml"));
   }
-  writeFileSync(
-    join(PROFILE_DIR, "package.json"),
-    `${JSON.stringify(profileManifest(mode), null, 2)}\n`,
-  );
+  writeFileSync(join(dir, "package.json"), `${JSON.stringify(profileManifest(mode), null, 2)}\n`);
 }
 
-export function installPlugins(): void {
+/** Path to one worker's installed profile dir, so adapted mode can clone it to the rest. */
+export function profileDirFor(paths: WorkerPaths): string {
+  return profileDir(paths);
+}
+
+export function installPlugins(paths: WorkerPaths): void {
   const result = spawnSync(DSH_BIN, ["plugin", "--profile", PROFILE_NAME, "install"], {
     cwd: REPO_ROOT,
-    env: { ...process.env, DSH_HOME },
+    env: { ...process.env, DSH_HOME: paths.home },
     stdio: "inherit",
   });
   if (result.error)
@@ -337,11 +335,12 @@ export interface WorkspaceRegistration {
   defaultTitle: string;
 }
 
-export function registerWorkspaces(caseIds: string[]): WorkspaceRegistration {
+export function registerWorkspaces(paths: WorkerPaths, caseIds: string[]): WorkspaceRegistration {
   const ids = [...new Set(caseIds)].sort();
   if (ids.length === 0) ids.push("playground");
-  mkdirSync(WORKSPACE_ROOT, { recursive: true });
-  mkdirSync(dirname(WORKSPACE_STORE), { recursive: true });
+  mkdirSync(paths.workspaceRoot, { recursive: true });
+  const storeFile = workspaceStoreFile(paths);
+  mkdirSync(dirname(storeFile), { recursive: true });
 
   const now = new Date().toISOString();
   const dirs: Record<string, string> = {};
@@ -350,7 +349,7 @@ export function registerWorkspaces(caseIds: string[]): WorkspaceRegistration {
 
   for (const caseId of ids) {
     const workspaceId = randomId();
-    const path = join(WORKSPACE_ROOT, caseId);
+    const path = join(paths.workspaceRoot, caseId);
     mkdirSync(path, { recursive: true });
     dirs[caseId] = path;
     workspaceIds.push(workspaceId);
@@ -369,7 +368,7 @@ export function registerWorkspaces(caseIds: string[]): WorkspaceRegistration {
     },
     tables: { workspaces: tables },
   };
-  writeFileSync(WORKSPACE_STORE, `${JSON.stringify(store, null, 2)}\n`);
+  writeFileSync(storeFile, `${JSON.stringify(store, null, 2)}\n`);
   return { dirs, defaultId, defaultTitle: ids[0] };
 }
 
@@ -378,10 +377,13 @@ export interface StoredWorkspace {
   title: string;
 }
 
-export function readWorkspaceStore(): { defaultTitle: string; workspaces: StoredWorkspace[] } {
-  if (!existsSync(WORKSPACE_STORE))
-    throw new Error(`missing ${WORKSPACE_STORE}; run playground:prepare first`);
-  const store = JSON.parse(readFileSync(WORKSPACE_STORE, "utf8")) as {
+export function readWorkspaceStore(paths: WorkerPaths): {
+  defaultTitle: string;
+  workspaces: StoredWorkspace[];
+} {
+  const file = workspaceStoreFile(paths);
+  if (!existsSync(file)) throw new Error(`missing ${file}; run playground:prepare first`);
+  const store = JSON.parse(readFileSync(file, "utf8")) as {
     global: { workspaceIds: string[]; defaultWorkspaceId: string };
     tables: { workspaces: Record<string, StoredWorkspace> };
   };
@@ -394,40 +396,35 @@ function randomId(): string {
   return crypto.randomUUID();
 }
 
-export async function assertPortFree(): Promise<void> {
-  const state = await new Promise<string>((resolvePromise) => {
-    const server = createServer();
-    server.once("error", (error: NodeJS.ErrnoException) =>
-      resolvePromise(error.code === "EADDRINUSE" ? "busy" : `error:${error.code}`),
-    );
-    server.once("listening", () => server.close(() => resolvePromise("free")));
-    server.listen(PORT, HOST);
-  });
-  if (state === "busy")
-    throw new Error(
-      `port ${HOST}:${PORT} is already in use; stop the other instance. The playground never falls back to another port`,
-    );
-  if (state !== "free") throw new Error(`cannot bind ${HOST}:${PORT} (${state})`);
-}
-
-const sleep = (ms: number): void => {
+const syncSleep = (ms: number): void => {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 };
 
-/** Spawn the web app detached, then wait for its tokenized URL line on stdout. */
-export async function startWeb(plan: ProviderPlan): Promise<string> {
-  await assertPortFree();
-  mkdirSync(DSH_HOME, { recursive: true });
-  const logFd = openSync(WEB_LOG_FILE, "w");
-  const args = ["--profile", PROFILE_NAME, "--port", String(PORT), "--host", HOST, "--no-open"];
+const asyncSleep = (ms: number): Promise<void> =>
+  new Promise((resolvePromise) => setTimeout(resolvePromise, ms));
+
+export interface StartedWeb {
+  url: string;
+  port: number;
+}
+
+/**
+ * Spawn the web app detached with `--port 0` (the OS assigns a free port), then poll
+ * its log for the tokenized URL line and persist the url/pid/log to the worker's own
+ * files. The wait loop is async so prepare can start several workers concurrently.
+ */
+export async function startWeb(paths: WorkerPaths, plan: ProviderPlan): Promise<StartedWeb> {
+  mkdirSync(paths.home, { recursive: true });
+  const logFd = openSync(paths.logFile, "w");
+  const args = ["--profile", PROFILE_NAME, "--port", "0", "--host", HOST, "--no-open"];
   const child = spawn(DSH_BIN, args, {
     cwd: REPO_ROOT,
-    env: { ...process.env, DSH_HOME, [plan.apiKeyEnv]: plan.apiKey },
+    env: { ...process.env, DSH_HOME: paths.home, [plan.apiKeyEnv]: plan.apiKey },
     detached: true,
     stdio: ["ignore", logFd, logFd],
   });
   closeSync(logFd);
-  writeFileSync(WEB_PID_FILE, `${child.pid ?? ""}\n`);
+  writeFileSync(paths.pidFile, `${child.pid ?? ""}\n`);
   child.unref();
 
   let exited: number | null = null;
@@ -437,40 +434,43 @@ export async function startWeb(plan: ProviderPlan): Promise<string> {
 
   const deadline = Date.now() + 120_000;
   while (Date.now() < deadline) {
-    const found = readWebUrlFromLog();
+    const found = readWebUrlFromLog(paths.logFile);
     if (found) {
-      writeFileSync(WEB_URL_FILE, `${found}\n`);
-      return found;
+      const port = Number(new URL(found).port);
+      writeFileSync(paths.urlFile, `${found}\n`);
+      return { url: found, port };
     }
     if (exited !== null)
       throw new Error(
-        `web exited (code ${String(exited)}) before printing a URL. Log tail:\n${logTail()}`,
+        `worker ${paths.index} web exited (code ${String(exited)}) before printing a URL. Log tail:\n${logTail(paths.logFile)}`,
       );
-    sleep(500);
+    await asyncSleep(500);
   }
-  throw new Error(`web did not print a URL within 120s. Log tail:\n${logTail()}`);
+  throw new Error(
+    `worker ${paths.index} web did not print a URL within 120s. Log tail:\n${logTail(paths.logFile)}`,
+  );
 }
 
-function readWebUrlFromLog(): string | null {
-  if (!existsSync(WEB_LOG_FILE)) return null;
-  const match = readFileSync(WEB_LOG_FILE, "utf8").match(/^dsh web:\s*(http:\/\/\S+)$/m);
+function readWebUrlFromLog(logFile: string): string | null {
+  if (!existsSync(logFile)) return null;
+  const match = readFileSync(logFile, "utf8").match(/^dsh web:\s*(http:\/\/\S+)$/m);
   return match ? match[1] : null;
 }
 
-function logTail(): string {
-  if (!existsSync(WEB_LOG_FILE)) return "(no log)";
-  return readFileSync(WEB_LOG_FILE, "utf8").trim().split("\n").slice(-20).join("\n");
+function logTail(logFile: string): string {
+  if (!existsSync(logFile)) return "(no log)";
+  return readFileSync(logFile, "utf8").trim().split("\n").slice(-20).join("\n");
 }
 
-export function readWebUrl(): string {
-  if (!existsSync(WEB_URL_FILE))
-    throw new Error(`missing ${WEB_URL_FILE}; run playground:prepare first`);
-  return readFileSync(WEB_URL_FILE, "utf8").trim();
+export function readWebUrl(paths: WorkerPaths): string {
+  if (!existsSync(paths.urlFile))
+    throw new Error(`missing ${paths.urlFile}; run playground:prepare first`);
+  return readFileSync(paths.urlFile, "utf8").trim();
 }
 
-export function readWebPid(): number | null {
-  if (!existsSync(WEB_PID_FILE)) return null;
-  const pid = Number(readFileSync(WEB_PID_FILE, "utf8").trim());
+export function readWebPid(paths: WorkerPaths): number | null {
+  if (!existsSync(paths.pidFile)) return null;
+  const pid = Number(readFileSync(paths.pidFile, "utf8").trim());
   return Number.isInteger(pid) && pid > 0 ? pid : null;
 }
 
@@ -483,17 +483,40 @@ export function isAlive(pid: number): boolean {
   }
 }
 
-export function stopWeb(): { stopped: boolean; pid: number | null } {
-  const pid = readWebPid();
-  if (pid === null) return { stopped: false, pid: null };
-  if (isAlive(pid)) {
-    signalGroup(pid, "SIGTERM");
-    const deadline = Date.now() + 10_000;
-    while (Date.now() < deadline && isAlive(pid)) sleep(200);
-    if (isAlive(pid)) signalGroup(pid, "SIGKILL");
+/**
+ * True only when `pid` is a live DSH web process for this profile. A stale pid file can
+ * point at a PID that the OS has since reused (notably across sandbox PID namespaces);
+ * signalling that would kill an unrelated process, so we verify the command line first.
+ */
+function isDshWeb(pid: number): boolean {
+  if (!isAlive(pid)) return false;
+  try {
+    const cmdline = readFileSync(`/proc/${pid}/cmdline`, "utf8");
+    return cmdline.includes("dsh") && cmdline.includes(PROFILE_NAME);
+  } catch {
+    // No /proc (non-Linux): fall back to liveness alone.
+    return true;
   }
-  rmSync(WEB_PID_FILE, { force: true });
-  rmSync(WEB_URL_FILE, { force: true });
+}
+
+export function stopWeb(paths: WorkerPaths): { stopped: boolean; pid: number | null } {
+  const pid = readWebPid(paths);
+  if (pid === null) {
+    rmSync(paths.pidFile, { force: true });
+    rmSync(paths.urlFile, { force: true });
+    return { stopped: false, pid: null };
+  }
+  if (!isDshWeb(pid)) {
+    rmSync(paths.pidFile, { force: true });
+    rmSync(paths.urlFile, { force: true });
+    return { stopped: false, pid };
+  }
+  signalGroup(pid, "SIGTERM");
+  const deadline = Date.now() + 10_000;
+  while (Date.now() < deadline && isAlive(pid)) syncSleep(200);
+  if (isAlive(pid)) signalGroup(pid, "SIGKILL");
+  rmSync(paths.pidFile, { force: true });
+  rmSync(paths.urlFile, { force: true });
   return { stopped: true, pid };
 }
 

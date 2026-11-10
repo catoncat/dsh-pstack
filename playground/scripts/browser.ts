@@ -3,8 +3,8 @@
 // capture must happen in a single invocation.
 //
 // Usage:
-//   vpx playground/scripts/browser.ts [url] [steps...]
-//   url defaults to playground/.dsh/web-url.txt.
+//   vpx playground/scripts/browser.ts [--worker <k>] [url] [steps...]
+//   --worker defaults to 0; url defaults to that worker's web-url.txt.
 // Steps (run in the order given):
 //   --wait <ms>            wait for a duration
 //   --wait-for <selector>  wait until a selector is present
@@ -18,14 +18,29 @@
 import { join } from "node:path";
 
 import { createBrowserSession } from "./lib/browser";
-import { EVIDENCE_DIR, readWebUrl } from "./lib/env";
+import { readWebUrl } from "./lib/env";
+import { workerPaths } from "./lib/worker";
 
 function main(): void {
   const argv = process.argv.slice(2);
+  let workerIndex = 0;
+  const workerPos = argv.indexOf("--worker");
+  if (workerPos >= 0) {
+    const parsed = Number(argv[workerPos + 1]);
+    if (!Number.isInteger(parsed) || parsed < 0)
+      throw new Error("--worker must be a non-negative integer");
+    workerIndex = parsed;
+    argv.splice(workerPos, 2);
+  }
+  const paths = workerPaths(workerIndex);
+
   let url: string | undefined;
   if (argv.length > 0 && !argv[0].startsWith("--")) url = argv.shift();
-  const target = url ?? readWebUrl();
-  const session = createBrowserSession({ session: "playground" });
+  const target = url ?? readWebUrl(paths);
+  const session = createBrowserSession({
+    session: `w${workerIndex}`,
+    browserDir: paths.browserDir,
+  });
   let keepOpen = false;
 
   try {
@@ -70,7 +85,7 @@ function main(): void {
         }
       }
     }
-    if (!keepOpen) session.screenshot(join(EVIDENCE_DIR, `browser-${Date.now()}.png`));
+    if (!keepOpen) session.screenshot(join(paths.evidenceDir, `browser-${Date.now()}.png`));
   } finally {
     if (!keepOpen) session.close();
   }

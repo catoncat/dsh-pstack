@@ -97,6 +97,10 @@ export default defineConfig({
         command: "vpx playground/scripts/run-case.ts",
         cache: false,
       },
+      "playground:run-batch": {
+        command: "vpx playground/scripts/run-batch.ts",
+        cache: false,
+      },
       "playground:collect": {
         command: "vpx playground/scripts/collect.ts",
         cache: false,

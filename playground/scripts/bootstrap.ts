@@ -1,21 +1,49 @@
-// Land the persistent browser profile in the prepared workspace: open the tokenized
+// Land the persistent browser profile in each prepared worker: open its tokenized
 // URL, dismiss the preview notice, and prove the page shows the workspace and model
-// chip instead of a login or 401 wall.
+// chip instead of a login or 401 wall. `--worker <k>` checks one, `--all` checks all,
+// default is the first worker.
 
 import { join } from "node:path";
 
-import { BROWSER_DIR, readHomePlan, readWebUrl, readWorkspaceStore } from "./lib/env";
 import { createBrowserSession } from "./lib/browser";
+import { readHomePlan, readWebUrl, readWorkspaceStore } from "./lib/env";
+import { listWorkers, workerPaths, type WorkerPaths } from "./lib/worker";
 
 const CONTINUE_LABEL = "继续";
 const PREVIEW_NOTICE = "预览版说明";
 
-async function main(): Promise<void> {
-  const url = readWebUrl();
-  const plan = readHomePlan();
-  const { defaultTitle } = readWorkspaceStore();
+function argValue(flag: string): string | undefined {
+  const index = process.argv.indexOf(flag);
+  return index >= 0 ? process.argv[index + 1] : undefined;
+}
 
-  const session = createBrowserSession({ session: "playground" });
+function selectWorkers(): WorkerPaths[] {
+  if (process.argv.includes("--all")) {
+    const workers = listWorkers();
+    if (workers.length === 0)
+      throw new Error("no prepared workers found; run playground:prepare first");
+    return workers;
+  }
+  const workerFlag = argValue("--worker");
+  if (workerFlag !== undefined) {
+    const index = Number(workerFlag);
+    if (!Number.isInteger(index) || index < 0)
+      throw new Error("--worker must be a non-negative integer");
+    return [workerPaths(index)];
+  }
+  const workers = listWorkers();
+  return workers.length > 0 ? [workers[0]] : [workerPaths(0)];
+}
+
+function validateWorker(paths: WorkerPaths): string[] {
+  const url = readWebUrl(paths);
+  const plan = readHomePlan(paths);
+  const { defaultTitle } = readWorkspaceStore(paths);
+
+  const session = createBrowserSession({
+    session: `w${paths.index}`,
+    browserDir: paths.browserDir,
+  });
   const failures: string[] = [];
   try {
     session.open(url);
@@ -51,22 +79,33 @@ async function main(): Promise<void> {
     if (/登录|401|authentication required|sign in|unauthorized|认证失败/i.test(body))
       failures.push("page shows a login / 401 / authentication wall");
 
-    session.screenshot(join(BROWSER_DIR, "ready.png"));
+    session.screenshot(join(paths.browserDir, "ready.png"));
 
     if (failures.length > 0) {
-      console.error("[bootstrap] validation failed:");
+      console.error(`[bootstrap] worker ${paths.index} validation failed:`);
       for (const failure of failures) console.error(`  - ${failure}`);
-      console.error(`\n[bootstrap] body text:\n${body.slice(0, 2000)}`);
-      process.exitCode = 1;
-      return;
+      console.error(`\n[bootstrap] worker ${paths.index} body text:\n${body.slice(0, 2000)}`);
+    } else {
+      console.log(
+        `[bootstrap] worker ${paths.index} ready: workspace="${defaultTitle}" model="${plan.name}" effort="${plan.effort}"`,
+      );
+      console.log(
+        `[bootstrap] worker ${paths.index} screenshot=${join(paths.browserDir, "ready.png")}`,
+      );
     }
-    console.log(
-      `[bootstrap] ready: workspace="${defaultTitle}" model="${plan.name}" effort="${plan.effort}"`,
-    );
-    console.log(`[bootstrap] screenshot=${join(BROWSER_DIR, "ready.png")}`);
   } finally {
     session.close();
   }
+  return failures;
+}
+
+async function main(): Promise<void> {
+  const workers = selectWorkers();
+  let failed = 0;
+  for (const paths of workers) {
+    if (validateWorker(paths).length > 0) failed += 1;
+  }
+  if (failed > 0) process.exitCode = 1;
 }
 
 main().catch((error: unknown) => {

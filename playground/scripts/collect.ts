@@ -1,5 +1,6 @@
-// Collect the evidence files for one stage into a Markdown report: per-case verdict,
-// route, tool errors, duplicate skill loads, and the reasons behind each failure.
+// Collect the evidence files for one stage, across every worker, into a Markdown
+// report: per-case verdict, worker, truncation, route, tool errors, duplicate skill
+// loads, and the reasons behind each failure.
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -7,7 +8,8 @@ import { join } from "node:path";
 import type { Expectation, Mode, SessionEvidence } from "../types";
 import { loadCase, loadSmokeCase } from "./lib/cases";
 import { buildVerdict, digestSession, toSessionEvidence } from "./lib/evidence";
-import { EVIDENCE_DIR, REPORT_DIR, WORKSPACE_ROOT } from "./lib/env";
+import { REPORT_DIR } from "./lib/env";
+import { WORKERS_DIR, workerPaths } from "./lib/worker";
 
 function argValue(flag: string): string | undefined {
   const index = process.argv.indexOf(flag);
@@ -30,10 +32,32 @@ async function resolveExpectations(
   return { expectations: [], found: false };
 }
 
-function latestPerCase(files: string[]): Map<string, SessionEvidence> {
+/** Every evidence JSON across all worker evidence dirs whose stored mode matches. */
+function loadEvidenceByMode(mode: Mode): SessionEvidence[] {
+  if (!existsSync(WORKERS_DIR)) return [];
+  const collected: SessionEvidence[] = [];
+  for (const workerDir of readdirSync(WORKERS_DIR)) {
+    if (!/^w\d+$/.test(workerDir)) continue;
+    const evidenceDir = join(WORKERS_DIR, workerDir, "evidence");
+    if (!existsSync(evidenceDir)) continue;
+    for (const name of readdirSync(evidenceDir)) {
+      if (!name.endsWith(".json")) continue;
+      try {
+        const evidence = JSON.parse(
+          readFileSync(join(evidenceDir, name), "utf8"),
+        ) as SessionEvidence;
+        if (evidence.mode === mode) collected.push(evidence);
+      } catch {
+        // skip a partial or non-evidence json
+      }
+    }
+  }
+  return collected;
+}
+
+function latestPerCase(files: SessionEvidence[]): Map<string, SessionEvidence> {
   const latest = new Map<string, SessionEvidence>();
-  for (const file of files) {
-    const evidence = JSON.parse(readFileSync(file, "utf8")) as SessionEvidence;
+  for (const evidence of files) {
     const current = latest.get(evidence.caseId);
     if (!current || evidence.capturedAt > current.capturedAt) latest.set(evidence.caseId, evidence);
   }
@@ -56,36 +80,39 @@ function escapeCell(value: string): string {
 async function main(): Promise<void> {
   const mode = argValue("--mode") as Mode | undefined;
   if (mode !== "raw" && mode !== "adapted") throw new Error("usage: collect.ts --mode raw|adapted");
-  if (!existsSync(EVIDENCE_DIR))
-    throw new Error(`no evidence dir ${EVIDENCE_DIR}; run playground:run first`);
 
-  const files = readdirSync(EVIDENCE_DIR)
-    .filter((name) => name.endsWith(".json") && name.includes(`-${mode}-`))
-    .map((name) => join(EVIDENCE_DIR, name));
-  const perCase = latestPerCase(files);
+  const collected = loadEvidenceByMode(mode);
+  if (collected.length === 0)
+    throw new Error(
+      `no ${mode} evidence under ${WORKERS_DIR}/w*/evidence; run playground:run-batch first`,
+    );
+  const perCase = latestPerCase(collected);
 
   const rows: string[] = [];
   let passed = 0;
   for (const caseId of [...perCase.keys()].sort()) {
     const stored = perCase.get(caseId) as SessionEvidence;
+    const worker = Number.isInteger(stored.worker) ? stored.worker : 0;
     // Re-digest from the session log so verdicts track the current pipeline even
     // when the stored evidence predates a digest field.
     const evidence =
       stored.sessionFile && existsSync(stored.sessionFile)
         ? toSessionEvidence(
-            digestSession(stored.sessionFile, stored.sessionId),
+            digestSession(stored.sessionFile, stored.sessionId, worker),
             stored.caseId,
             stored.mode,
             stored.sessionFile,
             stored.capturedAt,
+            stored.truncated ?? false,
           )
         : stored;
     const { expectations, found } = await resolveExpectations(caseId);
-    const workspaceDir = join(WORKSPACE_ROOT, caseId);
+    const workspaceDir = join(workerPaths(worker).workspaceRoot, caseId);
     const verdict = buildVerdict(expectations, evidence, workspaceDir);
     const failures = [...verdict.failures];
     if (!found) failures.push("no case definition found for this evidence");
-    if (verdict.passed && failures.length === 0) passed += 1;
+    const status = evidence.truncated ? "PROBE" : failures.length === 0 ? "PASS" : "FAIL";
+    if (status === "PASS") passed += 1;
 
     const errors = evidence.toolCalls
       .filter((call) => call.status === "error")
@@ -94,9 +121,8 @@ async function main(): Promise<void> {
     const route = evidence.route
       ? `${evidence.route.provider}/${evidence.route.model}[${evidence.route.effort}]`
       : "unknown";
-    const status = failures.length === 0 ? "PASS" : "FAIL";
     rows.push(
-      `| ${escapeCell(caseId)} | ${status} | ${escapeCell(evidence.turnEndReason ?? "none")} | ${escapeCell(route)} | ${escapeCell(errors.join(", ") || "-")} | ${escapeCell(duplicates.join(", ") || "-")} | ${escapeCell(failures.join("; ") || "-")} |`,
+      `| ${escapeCell(caseId)} | w${worker} | ${status} | ${evidence.truncated ? "yes" : "no"} | ${escapeCell(evidence.turnEndReason ?? "none")} | ${escapeCell(route)} | ${escapeCell(errors.join(", ") || "-")} | ${escapeCell(duplicates.join(", ") || "-")} | ${escapeCell(failures.join("; ") || "-")} |`,
     );
   }
 
@@ -104,14 +130,14 @@ async function main(): Promise<void> {
   const lines = [
     `# Stage 1 evidence — ${mode} — ${date}`,
     "",
-    `Generated ${new Date().toISOString()} from ${EVIDENCE_DIR}.`,
+    `Generated ${new Date().toISOString()} from ${WORKERS_DIR}/w*/evidence.`,
     "",
     `- total: ${perCase.size}`,
     `- passed: ${passed}`,
     `- failed: ${perCase.size - passed}`,
     "",
-    "| case | verdict | turn end | route | tool errors | duplicate loads | failures |",
-    "| --- | --- | --- | --- | --- | --- | --- |",
+    "| case | worker | verdict | truncated | turn end | route | tool errors | duplicate loads | failures |",
+    "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ...rows,
     "",
   ];

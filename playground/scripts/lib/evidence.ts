@@ -22,6 +22,7 @@ interface SessionEvent {
 
 export interface SessionDigest {
   sessionId: string;
+  worker: number;
   workspacePath: string | null;
   agentPreset: string | null;
   route: { provider: string; model: string; effort: string } | null;
@@ -65,7 +66,7 @@ function textOfContent(content: unknown): string {
 
 const SKILL_TOOLS = new Set(["skill", "pstack_skill", "pstack-skill"]);
 
-export function digestSession(file: string, sessionId: string): SessionDigest {
+export function digestSession(file: string, sessionId: string, worker = 0): SessionDigest {
   const events = readSessionEvents(file);
   if (events.length === 0) throw new Error(`session file has no readable events: ${file}`);
 
@@ -158,6 +159,7 @@ export function digestSession(file: string, sessionId: string): SessionDigest {
 
   return {
     sessionId,
+    worker,
     workspacePath,
     agentPreset,
     route,
@@ -186,10 +188,13 @@ export function toSessionEvidence(
   mode: Mode,
   sessionFile: string,
   capturedAt: string,
+  truncated: boolean,
 ): SessionEvidence {
   return {
     caseId,
     mode,
+    worker: digest.worker,
+    truncated,
     sessionId: digest.sessionId,
     sessionFile,
     workspacePath: digest.workspacePath,
@@ -233,6 +238,8 @@ export function judgeExpectations(
   for (const expectation of expectations) {
     switch (expectation.kind) {
       case "turn-completed": {
+        // A short-probe run aborts the turn on purpose; that is not a defect.
+        if (evidence.truncated) break;
         if (evidence.turnEndReason !== "completed") {
           failures.push(
             `turn-completed: turn ended with ${evidence.turnEndReason ?? "no turn/end"}`,

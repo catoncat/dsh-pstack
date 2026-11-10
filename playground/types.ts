@@ -45,6 +45,8 @@ export interface SkillCase {
   workspaceFiles: Record<string, string>;
   expect: Expectation[];
   intent: string;
+  /** Per-case probe window override, in seconds. Wins over the kind default but not `--probe`. */
+  probeSeconds?: number;
 }
 
 export interface ToolCallEvidence {
@@ -56,6 +58,8 @@ export interface ToolCallEvidence {
 export interface SessionEvidence {
   caseId: string;
   mode: Mode;
+  worker: number;
+  truncated: boolean;
   sessionId: string;
   sessionFile: string;
   workspacePath: string | null;

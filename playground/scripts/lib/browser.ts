@@ -4,10 +4,10 @@
 
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync } from "node:fs";
-import { homedir } from "node:os";
-import { dirname, join } from "node:path";
+import { homedir, tmpdir } from "node:os";
+import { basename, dirname, join } from "node:path";
 
-import { BROWSER_HOME, BROWSER_RUNTIME, REPO_ROOT } from "./env";
+import { REPO_ROOT } from "./env";
 
 const BIN = join(
   REPO_ROOT,
@@ -57,24 +57,33 @@ export interface BrowserSession {
 
 export interface BrowserOptions {
   session?: string;
+  /** This worker's browser profile dir; each worker keeps its own HOME so sessions never collide. */
+  browserDir: string;
 }
 
-export function browserEnv(): NodeJS.ProcessEnv {
-  for (const dir of [BROWSER_HOME, join(BROWSER_HOME, ".config"), BROWSER_RUNTIME])
-    mkdirSync(dir, { recursive: true });
+export function browserEnv(browserDir: string): NodeJS.ProcessEnv {
+  const home = join(browserDir, "home");
+  const config = join(home, ".config");
+  // agent-browser's daemon socket has a 103-byte path budget; the worker home sits deep
+  // in the repo checkout, so both the runtime dir and the socket dir go to a short tmp
+  // path. HOME (the Chrome profile) stays under the worker so profiles never collide.
+  const workerTag = basename(dirname(browserDir));
+  const socketDir = join(tmpdir(), `pgw-${workerTag}`);
+  for (const dir of [home, config, socketDir]) mkdirSync(dir, { recursive: true });
   return {
     ...process.env,
-    HOME: BROWSER_HOME,
-    XDG_CONFIG_HOME: join(BROWSER_HOME, ".config"),
-    XDG_RUNTIME_DIR: BROWSER_RUNTIME,
+    HOME: home,
+    XDG_CONFIG_HOME: config,
+    XDG_RUNTIME_DIR: socketDir,
+    AGENT_BROWSER_SOCKET_DIR: socketDir,
   };
 }
 
-export function createBrowserSession(options: BrowserOptions = {}): BrowserSession {
+export function createBrowserSession(options: BrowserOptions): BrowserSession {
   if (!existsSync(BIN))
     throw new Error(`agent-browser binary not found at ${BIN}; run \`vp install\``);
-  const env = browserEnv();
-  const session = options.session ?? "playground";
+  const env = browserEnv(options.browserDir);
+  const session = options.session ?? "w0";
   const base = [
     "--session",
     session,
