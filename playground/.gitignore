@@ -1,5 +1,6 @@
 # Per-worker runtime: DSH home, browser profile, workspaces, evidence.
 .workers/
+.workers-*/
 
 # Legacy single-instance runtime paths, kept ignored so stale dirs never leak.
 .dsh/

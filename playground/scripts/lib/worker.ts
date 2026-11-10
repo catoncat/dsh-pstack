@@ -7,7 +7,9 @@ import { join } from "node:path";
 
 import { PLAYGROUND_DIR } from "./env";
 
-export const WORKERS_DIR = join(PLAYGROUND_DIR, ".workers");
+// A probe run may point PLAYGROUND_WORKERS_DIR at a sibling dir so the cross-probe
+// evidence never overwrites the primary probe's sessions and report.
+export const WORKERS_DIR = process.env.PLAYGROUND_WORKERS_DIR ?? join(PLAYGROUND_DIR, ".workers");
 
 export interface WorkerPaths {
   index: number;
