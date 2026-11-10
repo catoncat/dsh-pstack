@@ -1,49 +1,40 @@
 # Playground
 
-本目录提供真实 DSH 环境的验证基建。插件功能和适配结论由移植审核文档决定，不在这里预设。
+本目录是 dsh-pstack 的 browser-only 真实环境验证基建。它对 58 个上游技能逐个留存测试用例，在真实 DSH Web 会话里执行，证据来自持久化会话事件与截图。不做 headless 验证，headless 缺 Web 标准 preset 的服务，结论不代表 Web 行为。
+
+## 两阶段流程
+
+阶段一 raw 发现。环境不装 dsh-pstack，用官方 `@deepseek-ai/dsh-skill-filesystem` 挂载 `upstream/cursor-plugins/pstack/skills` 的原始技能。逐用例执行，只记录证据与缺口，不判通过。每个技能的缺口汇总成需要的 dsh.md 适配说明与需要的插件工具，写入 `reports/stage1-raw-<日期>.md`。结论经用户确认后按 `port/AGENTS.md` 的流程回填 `port/audit.md`。
+
+阶段二 adapted 回归。适配说明与插件工具落地后，用同名用例在装了 dsh-pstack 的环境镜像复验，按首轮通过口径判定，报告写入 `reports/stage1-adapted-<日期>.md`。
 
 ## 准备
 
-1. 在仓库根目录运行 `vp install`。
-2. 按 `port/AGENTS.md` 准备插件源码和生成树，再运行 `vp run build`。
-3. 确认 `dsh` 在 PATH 中。
-4. 运行 `vp run playground`，启动 `127.0.0.1:17353` 上的 Web 环境。
+1. 仓库根目录 `vp install`，按 `port/AGENTS.md` 准备生成树后 `vp run build`。
+2. 确认 `dsh` 在 PATH 中。
+3. 复制 `config.example.json` 为 `config.json`，填允许的 provider、apiKey、模型与思考等级。该文件已忽略。
+4. `vp run playground:prepare -- --mode raw --reset`，再 `vp run playground:bootstrap`。
 
-启动器每次同步 `playground/profile/`、宿主凭据和模型配置。运行期文件、依赖、会话和凭据保存在已忽略的 `playground/.dsh/`。
+环境准备的细节、手动新建工作区与会话的流程、常见坑见 `docs/workspace-session.md`。
 
-```sh
-vp run playground:reset       # 重建运行期 profile
-vp run playground:reinstall   # 重新安装插件依赖
-```
-
-端口固定为 `17353`。冲突时先确认是否已有 playground，不自行更换端口或停止其他服务。
-
-## 浏览器验证
-
-使用 `dsh web` 输出的带 token URL。
+## 任务
 
 ```sh
-vp run playground:browser -- '<token URL>' --out .tmp/playground.png
-vp run playground:browser -- '<token URL>' --click '<界面文本>' --no-shot
+vp run playground:prepare -- --mode raw --reset   # 重建运行期 home 并启动 17353
+vp run playground:bootstrap                        # 浏览器引导，关弹窗并校验直达工作区
+vp run playground:check                            # 58 技能静态可加载检查
+vp run playground:run -- --case <id> --mode raw    # 单用例浏览器执行与判定
+vp run playground:collect -- --mode raw            # 汇总证据为报告
+vp run playground:stop                             # 停 web 与浏览器
+vp run playground:browser -- --shot out.png        # 临时浏览器操作
 ```
 
-helper 输出页面正文、控制台错误和截图。也可以直接使用 `node_modules/.bin/agent-browser` 操作页面。
+端口固定 17353，冲突报错不回落。运行期 home 是 `playground/.dsh`，浏览器 profile 是 `playground/.browser`，用例工作区是 `playground/.workspace`，三者都已忽略。
 
-## 无头验证
+## 用例
 
-复制 `playground/config.example.json` 为 `playground/config.json`，填写允许使用的 provider、apiKey、模型和思考等级。该文件已被忽略。
+`cases/<skill>.ts` 一个技能一个文件，形状见 `types.ts`。工作流技能是完整行为用例，principle 叶子是轻量用例。prompt 必须是自然的用户请求，不点名工具或技能。`cases/index.ts` 是注册表。新增技能时补用例文件并在注册表登记。
 
-```sh
-vp run cases:list       # 列出用例和就绪状态
-vp run cases:check      # 校验配置、部署和路由，不调用模型
-vp run cases            # 运行已注册用例
-vp run cases -- --case CASE-ID
-```
+## 判定口径
 
-`cases/*.case.mjs` 注册用例。复制 `cases/_template.mjs` 开始。runner 提供事件流、工具调用和进程结果，每个用例定义自己的断言。报告写入 `playground/.dsh/cases-report/`，原始会话保存在 `playground/.dsh/sessions/`。
-
-无头用例的提示词必须是自然的用户请求，不能直接点名工具或展开调用参数。每个目标只允许首次调用成功；出现失败后重试、重复加载或先错后对，该用例判为失败。
-
-用例默认串行运行。每个用例即使写不同的 `pstack-models.mdc`，所有子进程仍共享同一个 `DSH_HOME` 和 profile；要并行运行，需要为每个 worker 复制独立的 DSH home 和 profile，不能只拆角色文件。runner 在正常结束和 SIGINT/SIGTERM 时都会执行当前用例的 cleanup。
-
-不要把涉及用户模型选择的验证结论交给 agent 自行确认。自动化结果用于核对行为和日志，模型路由是否符合用户意图仍由用户确认。
+阶段一只记证据。阶段二首轮通过需要同时满足用户产物正确、没有工具错误、没有重复技能加载、没有先错后对。bash 返回 completed 不代表命令成功，判定看事件与产物。涉及模型选择的结论由用户确认，agent 用会话日志佐证。

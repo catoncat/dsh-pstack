@@ -1,5 +1,14 @@
-# Runtime DSH home for the playground: sessions, logs, credentials, installed deps.
+# Runtime DSH home for the playground: sessions, logs, credentials, evidence, installed deps.
 .dsh/
+
+# Persistent browser profile and runtime dirs for browser verification.
+.browser/
+
+# Per-case verification workspaces.
+.workspace/
 
 # Local config with provider keys and allowed routes; copy config.example.json.
 config.json
+node_modules
+*.log
+.DS_Store
