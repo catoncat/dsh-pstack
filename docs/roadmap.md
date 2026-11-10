@@ -86,14 +86,22 @@ Riskiest unknown first, then visible before writable, then automation.
 5. **Child fleet panel.** Live rows, route chips, failure markers, click to open the child.
 6. **Prompt overrides.** Read a skill body, show its provenance, write an override file,
    reload, and confirm the delegate sees the edited text.
-7. **Route health.** Record outcomes, mark a route unhealthy after two consecutive
-   failures, and let panel roles skip unhealthy entries.
+7. **Route health UI.** Surface the records unit 1 already writes: a health column per
+   route, the cooldown state, and the last error.
 
-## Open decisions
+## Decisions
 
-1. Prompt overrides: whole-body replacement or an appended global instruction block.
-2. Route health: mark only, or also skip automatically in panels.
-3. Fleet panel source: client projection first with a remote fallback, or remote only.
+1. Prompt overrides replace a skill body, keep a version history, restore any version in
+   one click, and flag an override whose upstream skill changed since it was written.
+2. Model routes live in four ordered pools written in the same role file. A role names a
+   pool. A panel repeats the pool reference once per child. Each reference takes the next
+   healthy candidate this call has not used. A pool with no healthy candidate fails the
+   call with the candidate list.
+3. Route health is a durable per-model record. Two consecutive failures put a route in a
+   thirty minute cooldown, one success clears the streak. Health feeds pool resolution, so
+   the UI marker and the automatic skip are the same fact.
+4. The child fleet panel reads the Session's `subagentCatalog` projection first and falls
+   back to a Host read when the projection is unavailable.
 
 ## Verification harness
 
